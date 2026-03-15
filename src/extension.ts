@@ -343,6 +343,30 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
   );
 
+  // Search command (US-08, T10-01)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('awesome-coding-assistants.search', async () => {
+      const query = await vscode.window.showInputBox({
+        prompt: 'Search customizations...',
+        placeHolder: 'Search customizations...',
+        value: catalogTreeProvider.getSearchQuery(),
+      });
+      if (query === undefined) {
+        return; // Cancelled
+      }
+      catalogTreeProvider.setSearchQuery(query);
+      await vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.searchActive', query.length > 0);
+    }),
+  );
+
+  // Clear Search command (US-08, T10-04)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('awesome-coding-assistants.clearSearch', async () => {
+      catalogTreeProvider.setSearchQuery('');
+      await vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.searchActive', false);
+    }),
+  );
+
   outputChannel.info('All commands registered');
 }
 

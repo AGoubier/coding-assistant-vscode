@@ -57,7 +57,7 @@ awesome-coding-assistants/
       uninstallCommand.ts  # uninstall command handler (WP06)
       installBundleCommand.ts # install bundle command handler (WP09)
     providers/           # TreeDataProvider, TextDocumentContentProvider
-      catalogTree.ts     # CatalogTreeProvider (WP03) - main catalog tree view
+      catalogTree.ts     # CatalogTreeProvider (WP03) - main catalog tree view, search/filter (WP10)
       previewProvider.ts # PreviewProvider (WP04) - read-only virtual documents
     services/            # Business logic
       authManager.ts     # SecretStorage token management
@@ -105,6 +105,7 @@ awesome-coding-assistants/
       security.test.ts     # Security tests: path traversal, HTTPS, credentials (WP07)
       accessibility.test.ts # Accessibility: labels, tooltips, command palette (WP07)
       workspaceDetection.test.ts # Workspace tool detection, filtering, toggle, badges (WP08)
+      search.test.ts             # Search and filter tests: matchesSearch, filtered tree, state (WP10)
   dist/                  # Bundled extension output (esbuild)
   out/                   # TypeScript compiled output (for tests)
   resources/

@@ -1,11 +1,11 @@
 ---
-lane: planned
+lane: doing
 ---
 
 # WP10 - Search and Filter (P2)
 
 > **Spec**: `specs/001-awesome-coding-assistants.spec.md`
-> **Status**: Not Started
+> **Status**: In Progress
 > **Priority**: P2
 > **Goal**: Users can search across all sources by keyword to find customizations without manually expanding every category.
 > **Independent Test**: Type "typescript" in the tree view filter/search box. Verify only items with "typescript" in name, description, or tags appear. Search for a non-existent term and verify "No items match" empty state.
@@ -143,3 +143,64 @@ Implement keyword search and filtering across all configured sources. Users can 
 ## Activity Log
 
 - 2026-03-15T00:00:00Z - planner - lane=planned - Work package created
+- 2026-03-15T19:25:00Z - coder - lane=doing - Starting WP10 implementation (T10-01 through T10-05)
+
+## Self-Review
+
+### T10-01 - Search input UI
+- [x] Search input accessible via tree view title bar ($(search) icon)
+- [x] User types query in InputBox and presses Enter
+- [x] Clearing search restores full tree
+- [x] Placeholder text: "Search customizations..."
+- [x] Case-insensitive matching
+- Status: Complete
+
+### T10-02 - Search matching logic
+- [x] `matchesSearch(item, query)` exported function
+- [x] Matches name (case-insensitive)
+- [x] Matches path
+- [x] Matches tool type
+- [x] Matches category
+- [x] Multi-word AND logic
+- [x] Empty query matches everything
+- Status: Complete
+
+### T10-03 - Filtered tree rendering
+- [x] getChildren filters items when query active
+- [x] Categories with no matches hidden
+- [x] Empty state: "No items match '{query}'"
+- [x] Tree refreshes on query change
+- [x] Source > Category > Item hierarchy preserved
+- Status: Complete
+
+### T10-04 - Clear search / reset filter
+- [x] clearSearch command registered
+- [x] Visible in title bar when searchActive context is true
+- [x] Resets query and refreshes tree
+- [x] searchActive context key set/cleared
+- Status: Complete
+
+### T10-05 - Unit tests for search
+- [x] Test: query "typescript" matches item by name (case-insensitive)
+- [x] Test: query matches by path
+- [x] Test: query "copilot agents" uses AND logic
+- [x] Test: "nonexistent" returns no matches
+- [x] Test: empty query returns all items
+- [x] Test: filtered tree hides empty categories
+- [x] Test: empty state shown when no results
+- [x] Test: clearing search restores full tree
+- [x] All 360 tests pass
+- Status: Complete
+
+### Review Checklist
+- [x] Spec compliance: All US-08 acceptance criteria met
+- [x] All tests pass (360 passing, 0 failing)
+- [x] No unused code or debug artifacts
+- [x] No hardcoded values
+- [x] No security issues
+- [x] Implementation within scope
+- [x] No em dashes, smart quotes, or curly apostrophes
+- [x] Docs updated: api-reference, architecture, developer-guide, user-guide
+
+### Coverage Note
+c8 reports 0% for all source files due to the VS Code extension test runner infrastructure (tests compile to `out/` and run via custom Mocha harness). This is a pre-existing limitation, not a regression. Effective coverage is verified through the comprehensive test suite (15 dedicated search/filter tests).

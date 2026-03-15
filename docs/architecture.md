@@ -67,6 +67,7 @@ Extension Host (src/extension.ts)
 10. On uninstall: files are deleted and manifest entry is removed
 11. CatalogTreeProvider discovers bundles from `bundles/*.json` in source repos and displays them under a "Bundles" category
 12. On install bundle: each item is installed sequentially with progress, supporting cross-source references and optional/required items
+13. Search/filter: CatalogTreeProvider stores a search query and applies `matchesSearch()` to filter items by name, path, tool, and category when rendering the tree
 
 ## Extension Activation
 
@@ -93,6 +94,7 @@ The extension activates lazily. On activation:
 20. Runs workspace tool detection on tree load (scans for `.github/agents/`, `CLAUDE.md`, etc.) and caches results per folder
 21. Listens for workspace folder changes and configuration changes to refresh tool detection and filtering
 22. Registers installBundle command for one-click bundle installation with progress and cross-source support
+23. Registers search command (InputBox-based keyword search) and clearSearch command for catalog filtering
 
 ## Security
 

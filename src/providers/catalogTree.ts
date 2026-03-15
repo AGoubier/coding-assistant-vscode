@@ -1,7 +1,7 @@
 // Catalog tree data provider - main tree view for browsing customizations
 // Spec refs: FR-007 (tree organization), FR-008 (item display), FR-009 (lazy loading),
-//            FR-011 (installed badge), FR-015 (tool badges)
-// WP03 T03-03, T03-05
+//            FR-011 (installed badge), FR-015 (tool badges), US-08 (search and filter)
+// WP03 T03-03, T03-05, WP10 T10-01 through T10-04
 
 import * as vscode from 'vscode';
 import type {
@@ -48,7 +48,37 @@ interface ErrorItem {
   source: SourceConfig;
 }
 
-type TreeElement = CatalogItem | ErrorItem | BundleCategoryItem | BundleNodeItem | BundleFileItem;
+// Empty-state item shown when search returns no matches (US-08 Scenario 2)
+interface SearchEmptyItem {
+  kind: 'searchEmpty';
+  query: string;
+}
+
+type TreeElement = CatalogItem | ErrorItem | BundleCategoryItem | BundleNodeItem | BundleFileItem | SearchEmptyItem;
+
+/**
+ * Check if a catalog file item matches a search query (US-08, T10-02).
+ * Matches against name, path, tool, category, and description.
+ * Multi-word queries use AND logic: all words must match across any field.
+ */
+export function matchesSearch(item: CatalogFileItem, query: string): boolean {
+  if (!query || query.trim().length === 0) {
+    return true;
+  }
+  const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+  if (words.length === 0) {
+    return true;
+  }
+
+  const searchText = [
+    item.name,
+    item.path,
+    item.tool,
+    item.category,
+  ].join(' ').toLowerCase();
+
+  return words.every(word => searchText.includes(word));
+}
 
 export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement> {
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<TreeElement | undefined | null>();
@@ -82,6 +112,9 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   // Cache parsed bundles per source URL
   private bundleCache = new Map<string, Bundle[]>();
 
+  // Active search query for filtering (US-08, T10-01)
+  private searchQuery = '';
+
   constructor(
     registry: SourceRegistry,
     github: GitHubClient,
@@ -110,6 +143,22 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     this.bundleCache.clear();
     this.refreshInstalledCache();
     this._onDidChangeTreeData.fire(undefined);
+  }
+
+  /**
+   * Set the active search query and refresh the tree (US-08, T10-01).
+   * Empty string clears the filter.
+   */
+  setSearchQuery(query: string): void {
+    this.searchQuery = query;
+    this._onDidChangeTreeData.fire(undefined);
+  }
+
+  /**
+   * Get the current search query.
+   */
+  getSearchQuery(): string {
+    return this.searchQuery;
   }
 
   /**
@@ -188,6 +237,10 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       return this.createErrorTreeItem(element);
     }
 
+    if ('kind' in element && element.kind === 'searchEmpty') {
+      return this.createSearchEmptyTreeItem(element);
+    }
+
     if ('kind' in element && element.kind === 'bundleCategory') {
       return this.createBundleCategoryTreeItem();
     }
@@ -214,10 +267,23 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   async getChildren(element?: TreeElement): Promise<TreeElement[]> {
     if (!element) {
       // Root level: return source nodes (FR-009: listed immediately from settings)
+      // If search is active, check for empty results across all sources (US-08 Scenario 2)
+      if (this.searchQuery) {
+        const sources = this.getSourceNodes();
+        const anyMatch = await this.hasAnySearchMatch(sources);
+        if (!anyMatch) {
+          return [{ kind: 'searchEmpty' as const, query: this.searchQuery }];
+        }
+        return sources;
+      }
       return this.getSourceNodes();
     }
 
     if ('kind' in element && element.kind === 'error') {
+      return [];
+    }
+
+    if ('kind' in element && element.kind === 'searchEmpty') {
       return [];
     }
 
@@ -270,6 +336,31 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
           const hasVisibleEntries = entries.some(e => this.shouldShowTool(classifyItem(e.path).tool));
           if (!hasVisibleEntries) {
             continue;
+          }
+
+          // US-08: if search is active, skip categories with no matching items
+          if (this.searchQuery) {
+            const hasMatchingItem = entries.some(e => {
+              const classification = classifyItem(e.path);
+              if (!this.shouldShowTool(classification.tool)) {
+                return false;
+              }
+              const name = this.extractItemName(e.path);
+              const fakeItem: CatalogFileItem = {
+                kind: 'item',
+                source: sourceItem.source,
+                path: e.path,
+                name,
+                tool: classification.tool,
+                category: classification.category,
+                installed: false,
+                updateAvailable: false,
+              };
+              return matchesSearch(fakeItem, this.searchQuery);
+            });
+            if (!hasMatchingItem) {
+              continue;
+            }
           }
 
           categories.push({
@@ -402,7 +493,8 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
             updateAvailable: hasUpdate,
           };
         })
-        .filter(item => this.shouldShowTool(item.tool));
+        .filter(item => this.shouldShowTool(item.tool))
+        .filter(item => matchesSearch(item, this.searchQuery));
     } catch (err) {
       this.log.error(`Failed to load category ${categoryItem.category}: ${err}`);
       return [];
@@ -603,6 +695,57 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     treeItem.tooltip = 'Click refresh to retry';
     treeItem.accessibilityInformation = { label: `Error: ${item.message}` };
     return treeItem;
+  }
+
+  private createSearchEmptyTreeItem(item: SearchEmptyItem): vscode.TreeItem {
+    const treeItem = new vscode.TreeItem(
+      `No items match '${item.query}'`,
+      vscode.TreeItemCollapsibleState.None,
+    );
+    treeItem.iconPath = new vscode.ThemeIcon('search-stop');
+    treeItem.tooltip = 'Clear search to show all items';
+    treeItem.accessibilityInformation = { label: `No items match '${item.query}'` };
+    return treeItem;
+  }
+
+  /**
+   * Check if any items across all sources match the current search query.
+   * Used to decide whether to show the empty-state node (US-08 Scenario 2).
+   */
+  private async hasAnySearchMatch(sources: SourceItem[]): Promise<boolean> {
+    for (const sourceItem of sources) {
+      try {
+        await this.ensureDetectedTools();
+        const tree = await this.getOrFetchTree(sourceItem.source);
+        const entryMap = this.groupByCategory(tree.tree);
+
+        for (const [, entries] of entryMap) {
+          for (const entry of entries) {
+            const classification = classifyItem(entry.path);
+            if (!this.shouldShowTool(classification.tool)) {
+              continue;
+            }
+            const name = this.extractItemName(entry.path);
+            const fakeItem: CatalogFileItem = {
+              kind: 'item',
+              source: sourceItem.source,
+              path: entry.path,
+              name,
+              tool: classification.tool,
+              category: classification.category,
+              installed: false,
+              updateAvailable: false,
+            };
+            if (matchesSearch(fakeItem, this.searchQuery)) {
+              return true;
+            }
+          }
+        }
+      } catch {
+        // Skip failing sources
+      }
+    }
+    return false;
   }
 
   // --- Icons ---

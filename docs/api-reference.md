@@ -15,6 +15,8 @@
 | `awesome-coding-assistants.clearCache` | Clear Cache | Purge all cached data |
 | `awesome-coding-assistants.showAllTools` | Toggle Show All Tools | Toggle tool filter on/off |
 | `awesome-coding-assistants.installBundle` | Install Bundle | Install all items in a practice bundle |
+| `awesome-coding-assistants.search` | Search Customizations | Open search input to filter the catalog tree by keyword |
+| `awesome-coding-assistants.clearSearch` | Clear Search | Remove the active search filter and restore the full tree |
 
 All commands are fully implemented:
 - **refresh**: Invalidates all caches, reloads master index, and refreshes the catalog tree
@@ -28,6 +30,8 @@ All commands are fully implemented:
 - **clearCache**: Purges all cached API responses
 - **showAllTools**: Toggles `showAllTools` workspace setting, refreshes catalog tree, shows confirmation message
 - **installBundle**: Installs all items in a practice bundle sequentially with progress notification. Handles cross-source references, optional/required items, and cancellation.
+- **search**: Opens an InputBox for keyword search. Filters the catalog tree to show only matching items based on name, path, tool type, and category. Uses AND logic for multi-word queries. Sets `awesome-coding-assistants.searchActive` context key.
+- **clearSearch**: Clears the active search filter, restores the full unfiltered tree, and resets the `searchActive` context key.
 
 ## Extension API
 
@@ -87,6 +91,16 @@ Implements `vscode.TreeDataProvider<TreeElement>` for the main catalog tree view
 | `getChildren` | `(element?) => Promise<TreeElement[]>` | Returns child nodes (sources at root, categories for source, items for category) |
 | `getTreeItem` | `(element) => TreeItem` | Converts a tree element to a VS Code TreeItem with icons, labels, context values, and lazy-fetched descriptions |
 | `refresh` | `() => void` | Clears internal tree cache, description cache, and fires `onDidChangeTreeData` |
+| `setSearchQuery` | `(query: string) => void` | Sets the active search filter and refreshes the tree. Empty string clears the filter. |
+| `getSearchQuery` | `() => string` | Returns the current search query string |
+
+### matchesSearch (exported utility)
+
+```typescript
+matchesSearch(item: CatalogFileItem, query: string): boolean
+```
+
+Determines whether a catalog item matches a keyword query. Matches against name, path, tool type, and category fields. Multi-word queries use AND logic (all words must match). Empty queries match everything. Case-insensitive.
 
 File item descriptions are fetched lazily via `GitHubClient.getFileContent()` on first access, extracting the first non-heading, non-frontmatter line. Descriptions are cached per file path and do not block tree rendering.
 

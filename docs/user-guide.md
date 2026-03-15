@@ -31,7 +31,7 @@ Features are being implemented incrementally. Current status:
 - [x] Auto-check for updates on activation
 - [x] Smart tool detection (auto-filter catalog by workspace tools)
 - [x] Practice bundles (one-click install of curated item collections)
-- [ ] Search and filter
+- [x] Search and filter (keyword search across all sources)
 - [ ] Import/export
 
 ## Browsing Customizations
@@ -269,6 +269,36 @@ Access commands via Cmd/Ctrl+Shift+P and search for "Awesome Coding Assistants":
 | Clear Cache | Clear all cached data |
 | Toggle Show All Tools | Show/hide items for all tools |
 | Install Bundle | Install all items in a practice bundle |
+| Search Customizations | Search the catalog by keyword |
+| Clear Search | Remove the active search filter |
+
+## Search and Filter
+
+Use the Search command to quickly find customizations across all configured sources without manually expanding categories.
+
+### Searching
+
+1. Click the **Search** icon (magnifying glass) in the tree view title bar, or run the command **Awesome Coding Assistants: Search Customizations** from the Command Palette.
+2. Type a keyword or phrase and press Enter.
+3. The tree narrows to show only items matching your query. Categories with no matches are hidden.
+4. Multi-word queries: all words must match (AND logic). For example, "copilot agents" shows only Copilot agent items.
+
+### What is Searched
+
+- Item name (e.g., "TypeScript Best Practices")
+- File path (e.g., `.github/agents/typescript-review.agent.md`)
+- Tool type ("copilot" or "claude-code")
+- Category ("agents", "prompts", "rules", etc.)
+
+### Clearing the Search
+
+- Click the **Clear Search** button in the tree view title bar (visible only when a search is active).
+- Or run the command **Awesome Coding Assistants: Clear Search** from the Command Palette.
+- The full unfiltered tree is restored.
+
+### Empty Results
+
+If no items match your query, a "No items match '{query}'" message is displayed in the tree.
 
 ## Troubleshooting
 
