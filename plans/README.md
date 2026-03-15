@@ -16,7 +16,7 @@
 | [WP07](WP07-e2e-quality.md) | E2E Tests and Quality Gate | P1 | Done | WP01-WP06 | No |
 | [WP08](WP08-tool-detection.md) | Smart Tool Detection | P2 | Complete | WP01, WP02, WP03 | Yes |
 | [WP09](WP09-bundles.md) | Org Practice Bundles | P2 | Complete | WP01, WP02, WP03, WP05 | Yes |
-| [WP10](WP10-search.md) | Search and Filter | P2 | Not Started | WP01, WP02, WP03 | Yes |
+| [WP10](WP10-search.md) | Search and Filter | P2 | Complete | WP01, WP02, WP03 | Yes |
 
 ## MVP Scope
 

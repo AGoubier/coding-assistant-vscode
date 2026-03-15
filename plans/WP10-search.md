@@ -1,11 +1,11 @@
 ---
-lane: doing
+lane: for_review
 ---
 
 # WP10 - Search and Filter (P2)
 
 > **Spec**: `specs/001-awesome-coding-assistants.spec.md`
-> **Status**: In Progress
+> **Status**: Complete
 > **Priority**: P2
 > **Goal**: Users can search across all sources by keyword to find customizations without manually expanding every category.
 > **Independent Test**: Type "typescript" in the tree view filter/search box. Verify only items with "typescript" in name, description, or tags appear. Search for a non-existent term and verify "No items match" empty state.
@@ -144,6 +144,7 @@ Implement keyword search and filtering across all configured sources. Users can 
 
 - 2026-03-15T00:00:00Z - planner - lane=planned - Work package created
 - 2026-03-15T19:25:00Z - coder - lane=doing - Starting WP10 implementation (T10-01 through T10-05)
+- 2026-03-15T20:15:00Z - coder - lane=for_review - All tasks complete, submitted for review
 
 ## Self-Review
 
