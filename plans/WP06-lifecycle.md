@@ -1,11 +1,11 @@
 ---
-lane: planned
+lane: for_review
 ---
 
 # WP06 - Lifecycle Management (Updates, Uninstall, Badges)
 
 > **Spec**: `specs/001-awesome-coding-assistants.spec.md`
-> **Status**: Not Started
+> **Status**: Complete
 > **Priority**: P1
 > **Goal**: Users can see "installed" and "update available" badges on tree items, check for upstream updates, view diffs, accept/reject updates, and uninstall items - completing the full lifecycle loop.
 > **Independent Test**: Install an item via WP05. Simulate an upstream change (mock API returns different SHA), run "Check for Updates" command, verify the update badge appears. Click "Update" and verify a diff view opens. Click "Accept Update" to apply. Click "Uninstall" to remove the item and verify the manifest entry and file are both deleted.
@@ -254,3 +254,56 @@ Implement the lifecycle management layer: installed-state badges on tree items, 
 ## Activity Log
 
 - 2026-03-15T00:00:00Z - planner - lane=planned - Work package created
+- 2026-03-15T13:15:00Z - coder - lane=doing - Starting WP06 implementation
+- 2026-03-15T13:30:00Z - coder - lane=for_review - All tasks complete, submitted for review
+
+## Self-Review
+
+### Spec Compliance
+- [x] FR-028: Manifest per workspace folder (via ManifestManager from WP05)
+- [x] FR-029: SHA comparison for update detection
+- [x] FR-030: Update indicator badge on tree items
+- [x] FR-031: Update action with diff view (installed vs upstream)
+- [x] FR-032: Check for Updates command with progress notification
+- [x] FR-033: Uninstall action with confirmation dialog
+- [x] FR-034: ETag caching for update checks (via GitHubClient.fetchWithCache)
+- [x] NFR-003: Concurrency limit of 10 for parallel update checks
+
+### Correctness
+- [x] All 247 tests pass (228 existing + 19 new lifecycle tests)
+- [x] SHA mismatch correctly detected as update
+- [x] Per-item errors don't abort entire update check
+- [x] File deletion handles already-deleted files gracefully
+- [x] Manifest updated with new SHA and updatedAt on apply
+- [x] Update cache cleared after apply/uninstall
+
+### Code Quality
+- [x] No unused code or debug artifacts
+- [x] Dependency injection via setLifecycle for tree provider
+- [x] No security issues
+
+### Scope Discipline
+- [x] Only implemented what spec requires
+- [x] No unasked-for abstractions added
+
+### Encoding
+- [x] No em dashes, smart quotes, or curly apostrophes
+
+### Documentation
+- [x] docs/architecture.md updated with LifecycleManager and command descriptions
+- [x] docs/api-reference.md updated with LifecycleManager API, update/uninstall flows
+- [x] docs/developer-guide.md updated with new files in project structure
+- [x] docs/user-guide.md updated with Updating and Uninstalling sections
+- [x] docs/configuration-guide.md reviewed - no changes needed (settings already documented)
+- [x] docs/deployment-guide.md reviewed - no changes needed
+
+### Files Created/Modified
+- Created: src/services/lifecycle.ts
+- Created: src/commands/checkUpdatesCommand.ts
+- Created: src/commands/updateCommand.ts
+- Created: src/commands/uninstallCommand.ts
+- Modified: src/providers/catalogTree.ts (manifest+lifecycle injection, installed badges)
+- Modified: src/services/manifestManager.ts (added delete to VscFs interface)
+- Modified: src/extension.ts (wiring lifecycle commands, auto-check, removed stubs)
+- Created: test/suite/lifecycle.test.ts (19 tests)
+- Modified: test/suite/installer.test.ts (fixed flaky test, added delete to mock fs)
