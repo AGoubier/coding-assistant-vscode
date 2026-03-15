@@ -4,6 +4,7 @@
   "description": "Universal browser, installer, and lifecycle manager for AI coding assistant customizations across multiple tools.",
   "version": "0.1.0",
   "publisher": "jlacube",
+  "icon": "resources/icon.svg",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -41,11 +42,24 @@
           "name": "Catalog",
           "icon": "resources/icons/activity-bar.svg"
         }
+      ],
+      "explorer": [
+        {
+          "id": "awesomeCodingAssistants.explorerCatalog",
+          "name": "Awesome Coding Assistants",
+          "icon": "resources/icons/activity-bar.svg",
+          "visibility": "collapsed"
+        }
       ]
     },
     "viewsWelcome": [
       {
         "view": "awesomeCodingAssistants.catalog",
+        "contents": "No sources configured.\nConfigure a source repository to browse AI coding assistant customizations.\n[Configure Source](command:workbench.action.openSettings?%5B%22awesome-coding-assistants.sources%22%5D)",
+        "when": "awesome-coding-assistants.noSources"
+      },
+      {
+        "view": "awesomeCodingAssistants.explorerCatalog",
         "contents": "No sources configured.\nConfigure a source repository to browse AI coding assistant customizations.\n[Configure Source](command:workbench.action.openSettings?%5B%22awesome-coding-assistants.sources%22%5D)",
         "when": "awesome-coding-assistants.noSources"
       }
@@ -131,59 +145,59 @@
       "view/title": [
         {
           "command": "awesome-coding-assistants.refresh",
-          "when": "view == awesomeCodingAssistants.catalog",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/",
           "group": "navigation"
         },
         {
           "command": "awesome-coding-assistants.checkUpdates",
-          "when": "view == awesomeCodingAssistants.catalog",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/",
           "group": "navigation"
         },
         {
           "command": "awesome-coding-assistants.showAllTools",
-          "when": "view == awesomeCodingAssistants.catalog",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/",
           "group": "navigation"
         },
         {
           "command": "awesome-coding-assistants.search",
-          "when": "view == awesomeCodingAssistants.catalog",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/",
           "group": "navigation"
         },
         {
           "command": "awesome-coding-assistants.clearSearch",
-          "when": "view == awesomeCodingAssistants.catalog && awesome-coding-assistants.searchActive",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && awesome-coding-assistants.searchActive",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
           "command": "awesome-coding-assistants.preview",
-          "when": "view == awesomeCodingAssistants.catalog && viewItem == catalogItem.item",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && viewItem == catalogItem.item",
           "group": "inline@1"
         },
         {
           "command": "awesome-coding-assistants.preview",
-          "when": "view == awesomeCodingAssistants.catalog && viewItem == catalogItem.installed",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && viewItem == catalogItem.installed",
           "group": "inline@1"
         },
         {
           "command": "awesome-coding-assistants.install",
-          "when": "view == awesomeCodingAssistants.catalog && viewItem == catalogItem.item",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && viewItem == catalogItem.item",
           "group": "inline@2"
         },
         {
           "command": "awesome-coding-assistants.update",
-          "when": "view == awesomeCodingAssistants.catalog && viewItem == catalogItem.updateAvailable",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && viewItem == catalogItem.updateAvailable",
           "group": "inline@2"
         },
         {
           "command": "awesome-coding-assistants.uninstall",
-          "when": "view == awesomeCodingAssistants.catalog && viewItem =~ /catalogItem\\.installed|catalogItem\\.updateAvailable/",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && viewItem =~ /catalogItem\\.installed|catalogItem\\.updateAvailable/",
           "group": "inline@3"
         },
         {
           "command": "awesome-coding-assistants.installBundle",
-          "when": "view == awesomeCodingAssistants.catalog && viewItem == bundleItem",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && viewItem == bundleItem",
           "group": "inline"
         }
       ]

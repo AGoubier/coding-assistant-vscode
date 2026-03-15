@@ -32,6 +32,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const githubClient = new GitHubClient(authManager, cacheManager, outputChannel);
   const sourceRegistry = new SourceRegistry(githubClient, outputChannel);
   context.subscriptions.push(sourceRegistry);
+  context.subscriptions.push(githubClient);
 
   // Initialize tree view provider
   const catalogTreeProvider = new CatalogTreeProvider(
@@ -48,6 +49,13 @@ export function activate(context: vscode.ExtensionContext): void {
     showCollapseAll: true,
   });
   context.subscriptions.push(treeView);
+
+  // Register the same tree in the Explorer panel
+  const explorerTreeView = vscode.window.createTreeView('awesomeCodingAssistants.explorerCatalog', {
+    treeDataProvider: catalogTreeProvider,
+    showCollapseAll: true,
+  });
+  context.subscriptions.push(explorerTreeView);
 
   // Set initial noSources context key for welcome view
   const updateNoSourcesContext = (): void => {
