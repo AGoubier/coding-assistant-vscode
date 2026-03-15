@@ -103,13 +103,24 @@ This is iterative within each work package. The inner loop (per task) must compl
 
 ## 1. Select Work Package
 
-List all `plans/WP*.md` files. If a specific WP was given as an argument, load it directly. Otherwise present the list via #tool:vscode/askQuestions and ask which to work on.
+**Automatic selection with priority logic** -- the Coder does NOT ask the user which WP to work on. It scans the project state and selects autonomously.
 
-Before starting, also read:
-- `plans/README.md` — for sequencing context and dependency status
+If a specific WP was given as an argument, load it directly. Otherwise, read `plans/README.md` and scan ALL `plans/WP*.md` frontmatter to determine project state, then select the next WP using this priority:
+
+| Priority | Condition | Action |
+|----------|-----------|--------|
+| 1 | WPs with `lane: to_do` and `review_status: has_feedback` | Pick the lowest-numbered WP needing fixes -- reviewer feedback takes precedence over new work |
+| 2 | WPs with `lane: planned` whose dependencies are all `lane: done` | Pick the lowest-numbered WP ready for new implementation |
+| 3 | All WPs are `lane: done` or `lane: for_review` | Execute graceful termination (Step 6) -- nothing left to implement |
+| 4 | WPs exist but all have unmet dependencies | Stop. Inform the user that remaining WPs are blocked on dependencies |
+
+If a WP with `lane: to_do` is selected (Priority 1), skip directly to **Step 5** (Handle Reviewer Feedback) instead of the full implementation flow.
+
+Before starting implementation, also read:
+- `plans/README.md` -- for sequencing context and dependency status
 - The spec section(s) referenced in the work package
-- `AGENTS.md` at the workspace root if it exists — it contains project-wide agent rules that override defaults
-- `.kittify/memory/constitution.md` if it exists — project constitution with complexity and quality gates
+- `AGENTS.md` at the workspace root if it exists -- it contains project-wide agent rules that override defaults
+- `.kittify/memory/constitution.md` if it exists -- project constitution with complexity and quality gates
 ## 1b. Environment Setup (MANDATORY)
 
 Before writing any code, ensure the development environment is properly isolated and functional:
@@ -355,7 +366,20 @@ git add <only the files changed to fix this FB-XX item>
 git commit -m "fix: address FB-<NN> <brief description of what was fixed> (WP<NN>)"
 ```
 
-8. Return to Step 4 — set `lane: for_review` and request a re-review
+8. Return to Step 4 -- set `lane: for_review` and submit for re-review
+9. **Invoke the Reviewer agent** for re-review, exactly as in Step 4b:
+
+   Invoke `#agent:5. Reviewer` with:
+
+   > WP<NN> feedback has been addressed and is ready for re-review.
+   > The work package is at lane=for_review.
+   > All FB-XX items have been remediated with:
+   > - Tests re-run and passing after each fix
+   > - Documentation updated where affected
+   >
+   > Please re-review WP<NN> focusing on the remediated FB-XX items and any regressions.
+
+   This re-review handoff is automatic -- the coder does not ask the user for permission.
 
 ### Activity Log Protocol
 
@@ -369,27 +393,34 @@ Valid lanes: `planned` -> `doing` -> `for_review` -> `done` (set by Reviewer on 
 
 Do NOT prepend or insert mid-list — always append to the end. Future timestamps cause acceptance failures.
 
-## 6. Propose Next Steps
+## 6. Automatic Continuation
 
-At the end of every interaction — whether you completed a WP, fixed feedback, or hit a blocker — always close by naming the next agent explicitly.
+After the Reviewer returns from reviewing the current WP (either via subagent return or a new invocation), the Coder **automatically continues** without waiting for user input.
 
-**IMPORTANT: Before proposing next steps, check the current state of ALL work packages.** Read `plans/README.md` and scan all `plans/WP*.md` frontmatter to determine what remains.
+### 6a. Scan Project State
 
-| Condition | Next Agent | Reason |
-|-----------|------------|--------|
-| Work package complete and submitted for review | **Reviewer** | Audits the implementation against spec, plan, and docs for adherence |
-| Reviewer returned findings (lane=to_do) | Stay in **Coder** | Address every FB-XX item before requesting a re-review |
-| Blocked by a spec ambiguity that cannot be resolved locally | **Spec Architect** | Clarify or extend the spec so implementation can continue |
-| Current WP is done and the next WP needs planning refinement | **Planner** | Add or refine tasks for the next work package |
-| All WPs with lane=done and no WPs with lane=planned/doing/to_do remain | **Hand off to user** | All planned work is complete. Summarize what was built and suggest the user review the final state. |
-| All MVP WPs are lane=done but non-MVP WPs remain with lane=planned | **Hand off to user** | MVP is complete. Present a summary and ask the user whether to continue with post-MVP work packages. |
-| Stuck after multiple attempts with no progress | **Hand off to user** | Surface the blocker clearly and let the user decide the path forward. Do not loop. |
+Read `plans/README.md` and scan ALL `plans/WP*.md` frontmatter to determine what remains.
 
-**Graceful termination protocol**: When all work packages are complete (`lane: done` or `lane: for_review`), do NOT automatically invoke another agent. Instead:
-1. Summarize all completed work packages and their outcomes
+### 6b. Decision Logic (execute in priority order)
+
+| Priority | Condition | Action |
+|----------|-----------|--------|
+| 1 | Reviewer returned **Changes Required** for current WP (`lane: to_do`) | Go to **Step 5** -- address feedback, then re-invoke Reviewer |
+| 2 | WPs with `lane: to_do` and `review_status: has_feedback` exist | Pick the lowest-numbered WP needing fixes, go to **Step 5** |
+| 3 | WPs with `lane: planned` whose dependencies are all `lane: done` | Pick the lowest-numbered WP, go to **Step 1b** (full implementation flow) |
+| 4 | All MVP WPs are `lane: done` but non-MVP WPs remain with `lane: planned` | Stop. Present MVP completion summary to user. Ask whether to continue |
+| 5 | All WPs are `lane: done` or `lane: for_review` | Execute graceful termination (below) |
+| 6 | Blocked by a spec ambiguity | Hand off to **Spec Architect** for clarification |
+| 7 | Plan tasks are missing or incorrect | Hand off to **Planner** for revision |
+| 8 | Stuck after multiple attempts with no progress | Stop. Surface the blocker to the user |
+
+### 6c. Graceful Termination Protocol
+
+When all work packages are complete (`lane: done`) and no WPs remain with `lane: planned`, `lane: to_do`, or `lane: doing`:
+1. Summarize all completed work packages and their review verdicts
 2. List any outstanding issues or WARNs from reviews
 3. Present the summary to the user
 4. Stop. Let the user decide what happens next.
 
-Always use the handoff buttons when available. Default to recommending **Reviewer** once a WP reaches `lane: for_review`.
+Always use the handoff buttons when available.
 </workflow>

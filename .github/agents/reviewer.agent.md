@@ -88,9 +88,11 @@ This is iterative per work package. Complete the full review before presenting f
 
 ## 1. Select Scope
 
-List all `plans/WP*.md` files with `Status: Complete`. If a specific WP was given, load it directly. Otherwise present completed work packages via #tool:vscode/askQuestions and ask which to review.
+**Automatic selection** -- the Reviewer does NOT ask the user which WP to review. It scans the project state and selects autonomously.
 
-If no work packages are marked complete, inform the user — there is nothing to review.
+If a specific WP was given as an argument, load it directly. Otherwise, read `plans/README.md` and scan ALL `plans/WP*.md` frontmatter to find WPs with `lane: for_review`. Select the **lowest-numbered** WP with `lane: for_review` to review first.
+
+If no work packages have `lane: for_review`, inform the user that there is nothing to review and stop.
 
 ## 2. Load All Artifacts
 
@@ -357,24 +359,34 @@ Read `plans/README.md` and scan ALL `plans/WP*.md` frontmatter to determine:
 |----------|-----------|--------|
 | 1 | Verdict is **Changes Required** | Immediately hand off to **Coder** to fix findings (via Step 7 handoff) |
 | 2 | Other WPs have `lane: for_review` | Immediately begin reviewing the next WP -- do NOT wait for user input |
-| 3 | WPs exist with `lane: planned` (respecting dependency order) | Hand off to **Coder** to implement the next WP in sequence |
-| 4 | All MVP WPs are `lane: done` but non-MVP WPs remain | Stop. Present MVP completion summary to user. Ask whether to continue with post-MVP work |
+| 3 | WPs with `lane: to_do` and `review_status: has_feedback` exist | Hand off to **Coder** to fix the lowest-numbered WP needing remediation (via Step 8c handoff) |
+| 4 | WPs with `lane: planned` whose dependencies are all `lane: done` | Hand off to **Coder** to implement the lowest-numbered ready WP (via Step 8c handoff) |
 | 5 | ALL WPs are `lane: done` | Stop. Execute graceful termination protocol (below) |
-| 6 | Spec gaps or contradictions found during review | Hand off to **Spec Architect** for correction |
-| 7 | Plan tasks were missing or incorrect | Hand off to **Planner** for revision |
-| 8 | Review cycle is stalled (`lane: blocked`) | Stop. Escalate to user |
+| 6 | No WPs are actionable (all blocked, all in-progress, or dependencies unmet) | Stop. Inform the user that no work packages are available |
+| 7 | Spec gaps or contradictions found during review | Hand off to **Spec Architect** for correction |
+| 8 | Plan tasks were missing or incorrect | Hand off to **Planner** for revision |
+| 9 | Review cycle is stalled (`lane: blocked`) | Stop. Escalate to user |
 
-**Key behavior**: When multiple WPs are `lane: for_review`, the reviewer processes them ALL in sequence before handing off to the Coder. This avoids unnecessary context switches.
+**Key behavior**: When multiple WPs are `lane: for_review`, the reviewer processes them ALL in sequence before moving on. After draining the review queue, the reviewer hands off to the Coder for the next available work (fix-needed WPs first, then planned WPs). The reviewer does NOT ask the user -- it automatically continues the pipeline. It only stops when there is genuinely nothing left to do.
 
-### 8c. Handoff to Coder for Next WP
+### 8c. Handoff to Coder
 
-When handing off to the Coder for the next planned WP, invoke `#agent:4. Coder` with:
+When handing off to the Coder (Priorities 3 and 4), invoke `#agent:4. Coder` with the appropriate message:
 
-> The previous WP<NN> has been reviewed and approved.
-> Next work package ready for implementation: WP<XX> - <title>
+**For fix-needed WPs (Priority 3)**:
+
+> WP<NN> has review findings that need remediation.
+> The work package is at lane=to_do with review_status=has_feedback.
+> Please address the FB-XX items and resubmit for re-review.
+
+**For planned WPs (Priority 4)**:
+
+> All reviews are complete. Next work package ready for implementation: WP<XX> - <title>
 > Dependencies satisfied: <list completed dependencies>
 >
 > Please implement WP<XX> following the standard workflow.
+
+These handoffs are automatic -- the reviewer does not ask the user for permission.
 
 ### 8d. Graceful Termination Protocol
 
