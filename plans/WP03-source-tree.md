@@ -1,5 +1,6 @@
 ---
-lane: for_review
+lane: to_do
+review_status: has_feedback
 ---
 
 # WP03 - Source Registry and Tree View
@@ -232,6 +233,7 @@ Implement the SourceRegistry service (reads/validates configured sources from se
 - 2025-07-19T10:00:00Z - coder - lane=doing - Starting WP03 implementation
 - 2025-07-19T11:00:00Z - coder - lane=doing - All tasks implemented, 143 tests passing
 - 2025-07-19T11:05:00Z - coder - lane=for_review - All tasks complete, submitted for review
+- 2025-07-19T12:00:00Z - reviewer - lane=to_do - Verdict: Changes Required (2 FAILs) -- awaiting remediation
 
 ## Self-Review
 
@@ -275,3 +277,166 @@ Implement the SourceRegistry service (reads/validates configured sources from se
 - [x] developer-guide.md updated with new files in project structure
 - [x] user-guide.md updated with browsing features
 - [x] configuration-guide.md already up to date (settings defined in WP01)
+
+## Review
+
+> **Reviewed by**: Reviewer Agent
+> **Date**: 2025-07-19
+> **Verdict**: Changes Required
+> **review_status**: has_feedback
+
+### Summary
+
+Changes Required. Two FAILs block approval: (1) FR-008/T03-03 file descriptions are not implemented -- tree items display name and tool icon but no brief description from file content despite explicit acceptance criteria; (2) T03-08 has test gaps -- welcome view context key test and master index merge positive-path verification are missing. Five WARNs are also recorded.
+
+### Review Feedback
+
+> Implementers: if `review_status: has_feedback` is set in the WP frontmatter, address every item below before returning for re-review. Update `review_status: acknowledged` once you begin remediation.
+
+- [ ] **FB-01**: Implement lazy file description fetching in `CatalogTreeProvider.createFileTreeItem()`. FR-008 requires "a brief description (from frontmatter or first non-heading line of the file)". T03-03 acceptance criteria: "description (from file's first non-heading line, fetched lazily)". Currently no description is set on non-installed file items. Fetch the first non-heading line asynchronously via `GitHubClient.getFileContent()`, cache it, and set `TreeItem.description`. Do not block tree rendering.
+- [ ] **FB-02**: Add a test in `sourceRegistry.test.ts` or `catalogTree.test.ts` verifying that when no sources are configured, the `awesome-coding-assistants.noSources` context key is set to `true`. T03-08 acceptance criteria bullet 2: "no sources configured -> welcome view context key is set to true".
+- [ ] **FB-03**: Fix the `sourceRegistry.test.ts` "should parse valid master index JSON" test. Currently it only asserts no errors were logged. It must verify that `getSources()` returns the merged index sources after `loadMasterIndex()`. The test's mock `getFileContent` returns valid JSON but `loadMasterIndex()` skips because the default `indexUrl` resolves to a raw.githubusercontent.com URL that `indexUrlToSource()` can parse -- verify the mock is actually invoked and the cached master index is populated.
+- [ ] **FB-04**: Add tests for `removeSource()` and `addSource()` success path in `sourceRegistry.test.ts`. These public API methods have zero test coverage for their happy paths. T03-08 requires "master index parsing and merging with user sources" -- the merge-priority (user wins on URL collision) behavior must also be tested.
+- [ ] **FB-05**: Fix the type lie in `toolDetector.ts` line 79: `'unknown' as CategoryType`. Either add `'unknown'` to the `CategoryType` union in `types.ts`, or return a sentinel value that is actually in the union. The current cast defeats type safety.
+
+### Findings
+
+#### FAIL - Spec Adherence: FR-008 / T03-03 (File Descriptions)
+- **Requirement**: FR-008 -- "Each tree item SHALL display: item name, associated tool icon/badge, and a brief description (from frontmatter or first non-heading line of the file)."
+- **Status**: Partial
+- **Detail**: Tree items display item name and tool icon. No description is set on non-installed file items. Installed items show `$(check) installed` as description (status indicator, not file content). The T03-03 acceptance criteria explicitly list "description (from file's first non-heading line, fetched lazily)" and the implementation guidance says "fetch file content for the first line asynchronously; use TreeItem.description".
+- **Evidence**: `src/providers/catalogTree.ts` `createFileTreeItem()` -- `TreeItem.description` is only set for installed items (line ~253), never for non-installed items.
+
+#### FAIL - Test Coverage: T03-08 (Test Gaps)
+- **Requirement**: T03-08 acceptance criteria bullets 2 and 7
+- **Status**: Missing / Partial
+- **Detail**: (a) No test verifies the welcome view context key (`awesome-coding-assistants.noSources`) is set to true when no sources are configured. (b) The "should parse valid master index JSON" test does not verify that `getSources()` returns merged sources -- it only asserts no error logs. The test comment acknowledges "loadMasterIndex will skip" in the test environment, meaning the positive path is untested. (c) `removeSource()` and `addSource()` success path have zero test coverage.
+- **Evidence**: `test/suite/sourceRegistry.test.ts` lines 109-128 (loadMasterIndex valid JSON test), and absence of removeSource/addSource success tests.
+
+#### WARN - Spec Adherence: CategoryType Union Mismatch
+- **Requirement**: Section 4.3 Implementation Contract -- `classifyItem(path): ToolClassification` with `category: CategoryType`
+- **Status**: Deviating
+- **Detail**: `classifyItem()` returns `'unknown' as CategoryType` for unrecognized paths, but `'unknown'` is not a member of the `CategoryType` union in `types.ts`. This is a type-safety escape hatch that could cause runtime issues if downstream code pattern-matches on `CategoryType`.
+- **Evidence**: `src/services/toolDetector.ts` line 79; `src/models/types.ts` lines 7-18.
+
+#### WARN - Spec Adherence: Workflow Pattern False Positives
+- **Requirement**: FR-012 -- Copilot patterns include `workflows/*`
+- **Status**: Compliant (spec design concern)
+- **Detail**: The implementation correctly follows FR-012 by classifying `.github/workflows/*` as Copilot workflows. However, `.github/workflows/` is the standard location for GitHub Actions CI/CD YAML files. Any repo with CI workflows (e.g., `ci.yml`, `release.yml`) will have those files incorrectly appear in the catalog as Copilot "workflow" customizations. This is a spec design issue, not an implementation bug.
+- **Evidence**: `src/services/toolDetector.ts` line 16; `test/suite/toolDetector.test.ts` lines 86-91.
+
+#### WARN - Spec Adherence: T03-05 Installed Icons
+- **Requirement**: T03-05 acceptance criteria -- "resources/icons/installed-light.svg and resources/icons/installed-dark.svg exist"
+- **Status**: Deviating
+- **Detail**: The installed icon SVG files do not exist. The implementation uses `description = '$(check) installed'` text instead. The WP03 plan's own implementation guidance endorses this simpler approach, so it is acceptable but the acceptance criteria checkbox is literally unmet.
+- **Evidence**: `resources/icons/` directory listing -- only 7 files (activity-bar, copilot, claude, ai variants).
+
+#### WARN - Coverage Thresholds: Tooling Reports 0%
+- **Requirement**: Section 11.1 -- minimum 80% line, 90% branch coverage
+- **Status**: Unjudgeable
+- **Detail**: `npm run test:coverage` reports 0% across all files and all metrics. This is a known limitation of `c8` with `@vscode/test-electron` -- the coverage instrumentation cannot trace through the VS Code extension host process boundary. The 143 tests do pass. This is a test infrastructure issue (WP01/WP07 scope) but it means coverage thresholds cannot be verified for WP03.
+- **Evidence**: `npm run test:coverage` output shows 0% Stmts, 0% Branch, 0% Funcs, 0% Lines for all files.
+
+#### WARN - Test Coverage: Vacuous Test
+- **Requirement**: T03-08 -- all tests must be meaningful
+- **Status**: Deviating
+- **Detail**: `sourceRegistry.test.ts` "should return user-configured sources from settings" only asserts `ok(sources.length > 0)`. Since the default source is always returned regardless of implementation correctness, this test can never fail. It provides no signal.
+- **Evidence**: `test/suite/sourceRegistry.test.ts` lines 48-56.
+
+#### PASS - Process Compliance
+- **Requirement**: Spec Compliance Checklist (Self-Review section)
+- **Status**: Present and complete
+- **Detail**: Self-Review section covers Correctness, Spec Compliance, Code Quality, Scope Discipline, Encoding, Documentation -- all items checked. Activity Log has entries.
+
+#### PASS - Spec Adherence: FR-001 (Master Index)
+- **Requirement**: FR-001 -- read master index on startup, silent fallback on error
+- **Status**: Compliant
+- **Evidence**: `src/services/sourceRegistry.ts` `loadMasterIndex()` with try/catch and silent warn logging.
+
+#### PASS - Spec Adherence: FR-002 (Add/Remove Sources)
+- **Requirement**: FR-002 -- add, remove, reorder sources via settings
+- **Status**: Compliant
+- **Evidence**: `addSource()`, `removeSource()` in `sourceRegistry.ts`. Reorder is not explicitly in WP03 scope.
+
+#### PASS - Spec Adherence: FR-003-005 (Public/Private, Validate, Default)
+- **Requirement**: FR-003 (public/private), FR-004 (validate URLs), FR-005 (default source)
+- **Status**: Compliant
+- **Evidence**: `SourceConfig.authTokenKey` support, `validateSource()` delegation, `DEFAULT_SOURCE` constant.
+
+#### PASS - Spec Adherence: FR-006, FR-007, FR-009-011
+- **Requirement**: Activity Bar, tree hierarchy, lazy loading, refresh, installed badge
+- **Status**: Compliant
+- **Evidence**: `package.json` view contributions, `CatalogTreeProvider` with root/category/item hierarchy, tree cache, refresh command with progress, contextValue-based installed indicator.
+
+#### PASS - Spec Adherence: FR-012, FR-015 (Tool Detection, Badges)
+- **Requirement**: Tool detection by path patterns, tool compatibility badges
+- **Status**: Compliant
+- **Evidence**: `classifyItem()` in `toolDetector.ts`, light/dark SVG icons per tool in `resources/icons/`.
+
+#### PASS - Data Model Adherence
+- **Requirement**: Section 7 -- MasterIndex, SourceEntry, SourceConfig, CatalogItem types
+- **Status**: Compliant
+- **Detail**: All required entities present with correct fields. `MasterIndex` has `version` and `sources`. `SourceConfig` has `url`, `name`, `branch?`, `authTokenKey?`. `CatalogItem` discriminated union with `SourceItem`, `CategoryItem`, `CatalogFileItem`.
+- **Evidence**: `src/models/types.ts`.
+
+#### PASS - API / Interface Adherence
+- **Requirement**: Section 4.1-4.3 Implementation Contracts, Section 8.1 Commands, Section 8.2 Settings
+- **Status**: Compliant
+- **Detail**: `SourceRegistry` methods match contract signatures. `classifyItem` matches contract. Tree view context values match spec (`catalogItem.source`, `catalogItem.category`, `catalogItem.item`, `catalogItem.installed`). Commands registered. Settings schema correct.
+- **Evidence**: `src/services/sourceRegistry.ts`, `src/services/toolDetector.ts`, `src/providers/catalogTree.ts`, `package.json`.
+
+#### PASS - Architecture Adherence
+- **Requirement**: Section 9.1-9.4
+- **Status**: Compliant
+- **Detail**: Components match system design. Directory structure matches Section 9.3. Technology stack correct (TypeScript, esbuild, Mocha). No external HTTP library used (Decision 1).
+
+#### PASS - Non-Functional: Security
+- **Requirement**: Section 10.2
+- **Status**: Compliant
+- **Detail**: No credential exposure in code. SSRF protection inherited from GitHubClient (domain allowlist). No execution of downloaded content.
+
+#### PASS - Non-Functional: Performance
+- **Requirement**: Section 10.1
+- **Status**: No anti-patterns found
+- **Detail**: Lazy loading prevents unnecessary fetches. Tree cache avoids re-fetching on re-expand. All I/O is async. No N+1 patterns.
+
+#### PASS - Documentation Accuracy
+- **Requirement**: docs/ files must reflect implementation
+- **Status**: Compliant
+- **Detail**: `api-reference.md` documents SourceRegistry, classifyItem, CatalogTreeProvider with correct signatures. `architecture.md` includes WP03 activation flow. `developer-guide.md` lists all WP03 files. `user-guide.md` describes browsing features. All six doc files exist.
+
+#### PASS - Scope Discipline
+- **Requirement**: No code outside WP03 scope
+- **Status**: Compliant
+- **Detail**: All modified files map to WP03 tasks. No scope creep. Forward-declared types for future WPs (ToolType variants, DetectedTool, InstallResult, etc.) are pre-existing from WP02, not added by WP03.
+
+#### PASS - Encoding (UTF-8)
+- **Requirement**: No em dashes, smart quotes, or curly apostrophes
+- **Status**: Compliant
+- **Detail**: No encoding violations found in any WP03 source or test file.
+
+### Statistics
+| Dimension | Pass | Warn | Fail |
+|-----------|------|------|------|
+| Process Compliance | 1 | 0 | 0 |
+| Spec Adherence | 5 | 3 | 1 |
+| Data Model | 1 | 0 | 0 |
+| API / Interface | 1 | 0 | 0 |
+| Architecture | 1 | 0 | 0 |
+| Test Coverage | 0 | 1 | 1 |
+| Non-Functional | 1 | 0 | 0 |
+| Performance | 1 | 0 | 0 |
+| Documentation | 1 | 0 | 0 |
+| Success Criteria | 0 | 0 | 0 |
+| Coverage Thresholds | 0 | 1 | 0 |
+| Scope Discipline | 1 | 0 | 0 |
+| Encoding (UTF-8) | 1 | 0 | 0 |
+| **Total** | **14** | **5** | **2** |
+
+### Recommended Actions
+
+1. **(FB-01)** Implement lazy description fetching in `CatalogTreeProvider` -- fetch the first non-heading line from file content via `GitHubClient.getFileContent()`, cache results, set `TreeItem.description` asynchronously. Use `onDidChangeTreeData` to refresh individual items after descriptions load.
+2. **(FB-02)** Add a test that verifies `setContext` is called with `awesome-coding-assistants.noSources = true` when `getSources()` returns empty or only the default source.
+3. **(FB-03)** Fix the master index positive-path test: mock `indexUrlToSource` and `getFileContent` to return valid data, then assert `getSources()` includes the merged index sources.
+4. **(FB-04)** Add tests for `removeSource()` (happy path) and `addSource()` success path; add a merge-priority test showing user sources override index sources on URL collision.
+5. **(FB-05)** Add `'unknown'` to `CategoryType` union in `types.ts` and remove the `as CategoryType` cast in `toolDetector.ts`.
