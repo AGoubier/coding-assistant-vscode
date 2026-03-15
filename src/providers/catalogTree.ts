@@ -54,6 +54,12 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   // Cache repo trees per source URL to avoid re-fetching on expand
   private treeCache = new Map<string, GitHubTreeResponse>();
 
+  // Cache file descriptions (first non-heading line) per source:path
+  private descriptionCache = new Map<string, string>();
+
+  // Track in-flight description fetches to avoid duplicates
+  private pendingDescriptions = new Set<string>();
+
   constructor(
     registry: SourceRegistry,
     github: GitHubClient,
@@ -68,6 +74,8 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
 
   refresh(): void {
     this.treeCache.clear();
+    this.descriptionCache.clear();
+    this.pendingDescriptions.clear();
     this._onDidChangeTreeData.fire(undefined);
   }
 
@@ -259,11 +267,87 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       treeItem.description = '$(check) installed';
     } else {
       treeItem.contextValue = 'catalogItem.item';
+      // Set cached description if available (FR-008: brief description)
+      const descKey = `${item.source.url}:${item.path}`;
+      const cachedDesc = this.descriptionCache.get(descKey);
+      if (cachedDesc) {
+        treeItem.description = cachedDesc;
+      } else {
+        // Trigger lazy fetch (non-blocking)
+        this.fetchDescriptionLazy(item);
+      }
     }
 
     treeItem.tooltip = `${item.name} (${item.tool})`;
     treeItem.iconPath = this.getToolIcon(item.tool);
     return treeItem;
+  }
+
+  /**
+   * Lazily fetch the first non-heading line of a file for the tree item description.
+   * Does not block tree rendering. Fires onDidChangeTreeData when ready.
+   * FR-008: brief description from frontmatter or first non-heading line.
+   */
+  private fetchDescriptionLazy(item: CatalogFileItem): void {
+    const descKey = `${item.source.url}:${item.path}`;
+    if (this.pendingDescriptions.has(descKey)) {
+      return;
+    }
+    this.pendingDescriptions.add(descKey);
+
+    this.github.getFileContent(item.source, item.path).then(content => {
+      const description = this.extractDescription(content);
+      if (description) {
+        this.descriptionCache.set(descKey, description);
+        // Fire change for this specific item to update its description
+        this._onDidChangeTreeData.fire(item);
+      }
+    }).catch(err => {
+      this.log.trace(`Failed to fetch description for ${item.path}: ${err}`);
+    }).finally(() => {
+      this.pendingDescriptions.delete(descKey);
+    });
+  }
+
+  /**
+   * Extract the first non-heading, non-empty line from file content.
+   * Skips YAML frontmatter (--- delimited), markdown headings (#), and blank lines.
+   */
+  private extractDescription(content: string): string | undefined {
+    const lines = content.split('\n');
+    let inFrontmatter = false;
+    let frontmatterSeen = false;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      // Handle YAML frontmatter
+      if (trimmed === '---') {
+        if (!frontmatterSeen) {
+          inFrontmatter = true;
+          frontmatterSeen = true;
+          continue;
+        } else if (inFrontmatter) {
+          inFrontmatter = false;
+          continue;
+        }
+      }
+
+      if (inFrontmatter) {
+        continue;
+      }
+
+      // Skip empty lines and headings
+      if (!trimmed || trimmed.startsWith('#')) {
+        continue;
+      }
+
+      // Return first meaningful line, truncated for display
+      const maxLen = 80;
+      return trimmed.length > maxLen ? trimmed.substring(0, maxLen) + '...' : trimmed;
+    }
+
+    return undefined;
   }
 
   private createErrorTreeItem(item: ErrorItem): vscode.TreeItem {

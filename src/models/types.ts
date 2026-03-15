@@ -14,7 +14,8 @@ export type CategoryType =
   | 'modes'
   | 'plugins'
   | 'workflows'
-  | 'bundles';
+  | 'bundles'
+  | 'unknown';
 
 export type ToolType = 'copilot' | 'claude-code' | 'kiro' | 'kilocode' | 'opencode' | 'unknown';
 

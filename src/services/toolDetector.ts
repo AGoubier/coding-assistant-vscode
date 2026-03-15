@@ -2,7 +2,7 @@
 // Spec refs: FR-012 (path-based detection), FR-015 (tool badges)
 // WP03 T03-02: classifyItem wraps classifyPath with 'unknown' fallback
 
-import type { ToolClassification, CategoryType, ToolType } from '../models/types';
+import type { ToolClassification, CategoryType } from '../models/types';
 
 // Copilot file patterns within .github/ directories
 const COPILOT_PATTERNS: { dir: string; category: CategoryType; extensions?: string[] }[] = [
@@ -76,5 +76,5 @@ export function classifyItem(path: string): ToolClassification {
     }
   }
 
-  return { tool: 'unknown' as ToolType, category: 'unknown' as CategoryType };
+  return { tool: 'unknown', category: 'unknown' };
 }

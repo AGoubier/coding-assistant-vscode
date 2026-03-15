@@ -478,4 +478,171 @@ describe('CatalogTreeProvider', () => {
       registry.dispose();
     });
   });
+
+  describe('file descriptions (FR-008)', () => {
+    it('should set description from cached value on non-installed items', () => {
+      const registry = createMockSourceRegistry([]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // Pre-populate description cache via internals
+      const descCache = (provider as unknown as { descriptionCache: Map<string, string> }).descriptionCache;
+      descCache.set('https://github.com/test/repo:.github/agents/coder.agent.md', 'A code review agent');
+
+      const fileItem = {
+        kind: 'item' as const,
+        source: TEST_SOURCE,
+        path: '.github/agents/coder.agent.md',
+        name: 'coder',
+        tool: 'copilot' as const,
+        category: 'agents' as const,
+        installed: false,
+        updateAvailable: false,
+      };
+      const treeItem = provider.getTreeItem(fileItem);
+      assert.strictEqual(treeItem.description, 'A code review agent');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('should trigger lazy fetch when description is not cached', async () => {
+      let fetchedPath: string | undefined;
+      const github = {
+        getRepoTree: async () => SAMPLE_TREE,
+        getFileContent: async (_source: SourceConfig, path: string) => {
+          fetchedPath = path;
+          return '# Agent\n\nThis agent reviews code for quality.';
+        },
+        getLatestCommitSha: async () => 'sha',
+        validateRepo: async () => ({ valid: true }),
+      } as unknown as GitHubClient;
+
+      const registry = createMockSourceRegistry([]);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const fileItem = {
+        kind: 'item' as const,
+        source: TEST_SOURCE,
+        path: '.github/agents/coder.agent.md',
+        name: 'coder',
+        tool: 'copilot' as const,
+        category: 'agents' as const,
+        installed: false,
+        updateAvailable: false,
+      };
+
+      // First call triggers lazy fetch (no description yet)
+      provider.getTreeItem(fileItem);
+
+      // Wait for async fetch to complete
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      assert.strictEqual(fetchedPath, '.github/agents/coder.agent.md');
+
+      // Now description should be cached
+      const descCache = (provider as unknown as { descriptionCache: Map<string, string> }).descriptionCache;
+      assert.strictEqual(
+        descCache.get('https://github.com/test/repo:.github/agents/coder.agent.md'),
+        'This agent reviews code for quality.',
+      );
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('should extract description skipping frontmatter and headings', async () => {
+      const github = {
+        getRepoTree: async () => SAMPLE_TREE,
+        getFileContent: async () => '---\ntitle: Test\n---\n# My Agent\n\nA helpful assistant for TypeScript.',
+        getLatestCommitSha: async () => 'sha',
+        validateRepo: async () => ({ valid: true }),
+      } as unknown as GitHubClient;
+
+      const registry = createMockSourceRegistry([]);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const fileItem = {
+        kind: 'item' as const,
+        source: TEST_SOURCE,
+        path: '.github/agents/helper.agent.md',
+        name: 'helper',
+        tool: 'copilot' as const,
+        category: 'agents' as const,
+        installed: false,
+        updateAvailable: false,
+      };
+
+      provider.getTreeItem(fileItem);
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const descCache = (provider as unknown as { descriptionCache: Map<string, string> }).descriptionCache;
+      assert.strictEqual(
+        descCache.get('https://github.com/test/repo:.github/agents/helper.agent.md'),
+        'A helpful assistant for TypeScript.',
+      );
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('should not set description on installed items', () => {
+      const registry = createMockSourceRegistry([]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const fileItem = {
+        kind: 'item' as const,
+        source: TEST_SOURCE,
+        path: '.github/agents/coder.agent.md',
+        name: 'coder',
+        tool: 'copilot' as const,
+        category: 'agents' as const,
+        installed: true,
+        updateAvailable: false,
+      };
+      const treeItem = provider.getTreeItem(fileItem);
+      assert.strictEqual(treeItem.description, '$(check) installed');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('should not duplicate fetch for same item', async () => {
+      let fetchCount = 0;
+      const github = {
+        getRepoTree: async () => SAMPLE_TREE,
+        getFileContent: async () => {
+          fetchCount++;
+          return '# Agent\n\nDescription line.';
+        },
+        getLatestCommitSha: async () => 'sha',
+        validateRepo: async () => ({ valid: true }),
+      } as unknown as GitHubClient;
+
+      const registry = createMockSourceRegistry([]);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const fileItem = {
+        kind: 'item' as const,
+        source: TEST_SOURCE,
+        path: '.github/agents/coder.agent.md',
+        name: 'coder',
+        tool: 'copilot' as const,
+        category: 'agents' as const,
+        installed: false,
+        updateAvailable: false,
+      };
+
+      // Call getTreeItem twice rapidly
+      provider.getTreeItem(fileItem);
+      provider.getTreeItem(fileItem);
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      assert.strictEqual(fetchCount, 1, 'Should only fetch once for same item');
+
+      provider.dispose();
+      registry.dispose();
+    });
+  });
 });
