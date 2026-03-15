@@ -42,7 +42,7 @@ Awesome Coding Assistants is a VS Code extension that serves as a universal brow
 - **FR-002**: The extension SHALL allow users to add, remove, and reorder source repositories via VS Code settings (`awesome-coding-assistants.sources`). Each source is defined by: `url` (GitHub repo URL), `name` (display label), `branch` (default: `main`), and `authTokenKey` (optional, references a SecretStorage key).
 - **FR-003**: The extension SHALL support both public repos (unauthenticated access via `raw.githubusercontent.com`) and private repos (authenticated via GitHub REST API with a stored personal access token).
 - **FR-004**: The extension SHALL validate source repository URLs on add, confirming they point to accessible GitHub repositories. On failure, the extension SHALL display an error message: "Unable to access repository: {url}. Check the URL and authentication." Error code: `SOURCE_UNREACHABLE`.
-- **FR-005**: The extension SHALL ship with a placeholder default source URL (configurable in settings) that the user will replace with their dedicated index repo. If the default URL is not reachable, the extension SHALL show a welcome message guiding the user to configure their first source.
+- **FR-005**: The extension SHALL ship with a default source URL of `https://github.com/jlacube/awesome-coding-assistants` (configurable in settings). If the default URL is not reachable, the extension SHALL show a welcome message guiding the user to configure their first source.
 
 **Implementation Contract - Source Registry**:
 - `addSource(source: SourceConfig): Promise<void>` - Validates and adds a source to settings.
@@ -419,6 +419,7 @@ Awesome Coding Assistants is a VS Code extension that serves as a universal brow
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
 | `path` | string | required | Path within the source repo |
+| `sourceUrl` | string | optional, default: parent bundle's source | Source repo URL (enables cross-source references) |
 | `tool` | string | required, enum: `copilot`, `claude-code` | Target tool |
 | `category` | string | required | Item category |
 | `required` | boolean | optional, default: true | Whether the item is mandatory |
@@ -447,7 +448,7 @@ Awesome Coding Assistants is a VS Code extension that serves as a universal brow
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | `awesome-coding-assistants.sources` | array of `SourceConfig` | `[]` | Configured source repositories |
-| `awesome-coding-assistants.indexUrl` | string | `""` | URL to master index JSON file |
+| `awesome-coding-assistants.indexUrl` | string | `"https://raw.githubusercontent.com/jlacube/awesome-coding-assistants/main/index.json"` | URL to master index JSON file |
 | `awesome-coding-assistants.cacheExpirationMinutes` | integer | 1440 | Cache expiry (5-43200) |
 | `awesome-coding-assistants.showAllTools` | boolean | false | Show all tools regardless of detection |
 | `awesome-coding-assistants.autoCheckUpdates` | boolean | true | Auto-check updates on activation |
@@ -854,11 +855,11 @@ Teardown: Delete temporary workspace folders after each test.
 
 ## 14. Open Questions
 
-| # | Question | Impact if Unresolved | Owner |
-|---|----------|---------------------|-------|
-| 1 | What is the URL of the dedicated index repository? | Default source will be a placeholder that shows an empty catalog until configured. Extension will function but first-use experience loses discoverability. | User/Org Lead |
-| 2 | Should bundles (P2) support cross-source references (items from source A bundled with items from source B)? | Bundle manifest format may need revision in P2. For now, bundles are scoped to a single source. | Spec Architect (P2) |
-| 3 | Should the extension support `.gitignore`-style exclusion patterns in source repos (to skip certain files from indexing)? | Some large repos may have files that should not be browsable. Low impact for MVP. | Spec Architect (P2) |
+| # | Question | Status | Resolution |
+|---|----------|--------|------------|
+| 1 | What is the URL of the dedicated index repository? | RESOLVED | `https://github.com/jlacube/awesome-coding-assistants` - repo is being prepared; used as the default source URL in settings. |
+| 2 | Should bundles (P2) support cross-source references (items from source A bundled with items from source B)? | RESOLVED | Yes - P2 bundle manifest format SHALL support cross-source `sourceUrl` references per BundleItem. |
+| 3 | Should the extension support `.gitignore`-style exclusion patterns in source repos (to skip certain files from indexing)? | DEFERRED to P2 | Low priority; FR-012 path pattern matching is sufficient for MVP. Edge case: repos with mixed content may show non-customization files. An `.acaignore` mechanism can be added in P2 without breaking changes. |
 
 ---
 
@@ -958,3 +959,4 @@ Teardown: Delete temporary workspace folders after each test.
 | Version | Date | Author | Summary of Changes |
 |---------|------|--------|--------------------|
 | 1.0 | 2025-07-17 | Spec Architect | Initial specification. Self-review corrections: added path traversal validation (FR-027), added manifest corruption handling (edge case), added SSRF protection to security section, replaced all instances of "should" with "SHALL", added error codes for all failure paths, added cache expiration scenario to BDD tests. |
+| 1.1 | 2026-03-15 | Planner | Resolved open questions: default source URL set to jlacube/awesome-coding-assistants, P2 bundles confirmed to support cross-source references (sourceUrl field added to BundleItem), .gitignore exclusions deferred to P2. |
