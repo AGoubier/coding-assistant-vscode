@@ -286,13 +286,15 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   // --- TreeItem creation ---
 
   private createSourceTreeItem(item: SourceItem): vscode.TreeItem {
+    const label = item.source.name || item.source.url;
     const treeItem = new vscode.TreeItem(
-      item.source.name || item.source.url,
+      label,
       vscode.TreeItemCollapsibleState.Collapsed,
     );
     treeItem.contextValue = 'catalogItem.source';
     treeItem.tooltip = item.source.url;
     treeItem.iconPath = new vscode.ThemeIcon('repo');
+    treeItem.accessibilityInformation = { label: `Source repository: ${label}` };
     return treeItem;
   }
 
@@ -305,6 +307,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     treeItem.contextValue = 'catalogItem.category';
     treeItem.tooltip = `${label} (${item.tool})`;
     treeItem.iconPath = this.getCategoryIcon(item.category);
+    treeItem.accessibilityInformation = { label: `Category: ${label}, tool: ${item.tool}` };
     return treeItem;
   }
 
@@ -339,6 +342,8 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     if (!item.updateAvailable) {
       treeItem.iconPath = this.getToolIcon(item.tool);
     }
+    const status = item.updateAvailable ? ', update available' : item.installed ? ', installed' : '';
+    treeItem.accessibilityInformation = { label: `${item.name}, ${item.tool}${status}` };
     return treeItem;
   }
 
@@ -416,6 +421,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     );
     treeItem.iconPath = new vscode.ThemeIcon('error');
     treeItem.tooltip = 'Click refresh to retry';
+    treeItem.accessibilityInformation = { label: `Error: ${item.message}` };
     return treeItem;
   }
 
