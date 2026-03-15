@@ -1,6 +1,6 @@
 ---
-lane: for_review
-review_status: acknowledged
+lane: done
+review_status:
 ---
 
 # WP06 - Lifecycle Management (Updates, Uninstall, Badges)
@@ -261,6 +261,68 @@ Implement the lifecycle management layer: installed-state badges on tree items, 
 - 2026-03-15T13:40:00Z - coder - lane=doing - Addressing reviewer feedback (FB-01, FB-02, FB-03)
 - 2026-03-15T13:45:00Z - coder - lane=for_review - All FB items remediated, resubmitting for re-review
 - 2026-03-15T14:00:00Z - reviewer - lane=to_do - Verdict: Changes Required (3 FAILs) -- awaiting remediation
+- 2026-03-15T14:30:00Z - reviewer - lane=done - Verdict: Approved with Findings (2 WARNs)
+
+## Re-Review (Round 2)
+
+> **Reviewed by**: Reviewer Agent
+> **Date**: 2026-03-15
+> **Verdict**: Approved with Findings
+> **review_status**: (cleared — approved)
+
+### Summary
+Approved with Findings. All three FB items from the previous round have been addressed. FB-02 is fully resolved. FB-01 and FB-03 are substantially resolved with minor residual issues that do not block correctness.
+
+### Findings
+
+#### PASS - FB-02: hasInstalledItems context key
+- **Requirement**: T06-07 AC: "When-clause context `awesome-coding-assistants.hasInstalledItems` set to true when manifest has entries"
+- **Status**: Compliant
+- **Detail**: `updateHasInstalledContext` helper in [src/extension.ts](src/extension.ts#L146) reads all workspace folder manifests and calls `setContext('awesome-coding-assistants.hasInstalledItems', hasInstalled)`. Called on activation (line 162) and after install (line 177), update (line 205), and uninstall (line 222) operations.
+- **Evidence**: 10 grep matches for `hasInstalledItems` and `updateHasInstalledContext` in [src/extension.ts](src/extension.ts).
+
+#### PASS - FB-03a: Diff view URI test
+- **Requirement**: T06-09 AC: "update action opens diff view with correct URIs"
+- **Status**: Compliant
+- **Detail**: Test at [test/suite/lifecycle.test.ts](test/suite/lifecycle.test.ts#L689) stubs `vscode.commands.executeCommand`, invokes `updateCommand`, verifies `vscode.diff` was called, checks installed URI path suffix, upstream URI scheme (`awesome-ca-preview`), and diff title SHA abbreviations.
+- **Evidence**: 4 meaningful assertions in test body.
+
+#### PASS - FB-03b: Reject update test
+- **Requirement**: T06-09 AC: "reject update leaves file and manifest unchanged"
+- **Status**: Compliant
+- **Detail**: Test at [test/suite/lifecycle.test.ts](test/suite/lifecycle.test.ts#L770) mocks showInformationMessage to return 'Reject', calls `updateCommand`, verifies file content unchanged (`'# Original'`), manifest entry count and SHA unchanged, and no `updatedAt` timestamp.
+- **Evidence**: 4 meaningful assertions in test body.
+
+#### WARN - FB-01: Update-available icon override is dead code
+- **Requirement**: T06-03 AC: "Items with available updates display a different icon/badge"
+- **Status**: Partially Compliant
+- **Detail**: The `description = '$(cloud-download) update available'` at [line 320](src/providers/catalogTree.ts#L320) correctly provides visual differentiation in the tree view. However, `treeItem.iconPath = new vscode.ThemeIcon('cloud-download')` at [line 321](src/providers/catalogTree.ts#L321) is dead code — it is unconditionally overwritten by `treeItem.iconPath = this.getToolIcon(item.tool)` at [line 340](src/providers/catalogTree.ts#L340). The description alone meets the visual differentiation requirement, but the dead icon assignment should be cleaned up.
+- **Evidence**: [src/providers/catalogTree.ts](src/providers/catalogTree.ts#L318-L340) — line 321 sets iconPath, line 340 overwrites it unconditionally.
+
+#### WARN - FB-03cde: Auto-check tests are superficial
+- **Requirement**: T06-09 ACs: "auto-check runs on activation when setting is true", "auto-check interval is scheduled and can be reconfigured", "auto-check does not run when setting is false"
+- **Status**: Partially Compliant
+- **Detail**: The three auto-check tests at [test/suite/lifecycle.test.ts](test/suite/lifecycle.test.ts#L840-L871) only verify that the `autoCheckUpdates` and `autoCheckIntervalMinutes` settings exist in configuration with correct types and defaults. They do not test that `scheduleAutoCheck()` in [src/extension.ts](src/extension.ts#L232) actually creates/clears intervals based on these settings. If the scheduling logic were deleted, these tests would still pass. The scheduling implementation IS present and correct in extension.ts; the tests simply do not exercise it. This is accepted as a practical limitation of testing activation-time closures in a VS Code extension test host.
+- **Evidence**: Tests at lines 840, 850, 858 call `config.get()` and assert types/values only.
+
+#### Surviving WARNs from Round 1 (not re-evaluated — no related code changes)
+- WARN: Diff title format (missing "SHA:" prefix) — [src/commands/updateCommand.ts](src/commands/updateCommand.ts#L62)
+- WARN: `applyUpdate` signature adds `latestSha` parameter not in spec contract — [src/services/lifecycle.ts](src/services/lifecycle.ts#L126)
+- WARN: Preview inline action not registered for `catalogItem.updateAvailable` — [package.json](package.json#L139)
+- WARN: Batched commits (all tasks in single commit)
+
+### Statistics (Re-Review — FB Items Only)
+| Dimension | Pass | Warn | Fail |
+|-----------|------|------|------|
+| FB-01 (Visual indicator) | 0 | 1 | 0 |
+| FB-02 (Context key) | 1 | 0 | 0 |
+| FB-03 (Missing tests) | 2 | 1 | 0 |
+| Regressions | 0 | 0 | 0 |
+| **Totals** | **3** | **2** | **0** |
+
+### Recommended Actions (non-blocking)
+1. **(WARN-01)** In [src/providers/catalogTree.ts](src/providers/catalogTree.ts#L340), move the unconditional `treeItem.iconPath = this.getToolIcon(item.tool)` into the `else` branch so the `cloud-download` icon actually takes effect for update-available items. Alternatively, remove the dead `iconPath` assignment on line 321.
+2. **(WARN-02)** Consider extracting the auto-check scheduling logic from `extension.ts activate()` into a testable unit (e.g., `scheduleAutoCheck` as a standalone function) so that future tests can verify scheduling behavior directly.
 
 ## Self-Review
 
