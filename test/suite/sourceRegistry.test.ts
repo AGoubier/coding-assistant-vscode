@@ -238,6 +238,8 @@ describe('SourceRegistry', () => {
         'Should log that source was added',
       );
 
+      // Clean up: remove the added source to prevent leaking to other tests
+      await registry.removeSource(newSource.url);
       registry.dispose();
     });
 

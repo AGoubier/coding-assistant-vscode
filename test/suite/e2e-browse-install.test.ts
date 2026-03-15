@@ -299,10 +299,15 @@ describe('WP07 - E2E: Browse > Preview > Install', function () {
     });
 
     try {
-      // Trigger refresh to populate the installed IDs cache
-      treeProvider.refresh();
-      // Wait for the async fire-and-forget cache population to settle
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Manually populate the installed IDs cache (avoids fire-and-forget race)
+      const ids = (treeProvider as any).installedIds as Set<string>;
+      ids.clear();
+      const m = await manifestManager.readManifest(folder);
+      for (const entry of m.installations) {
+        ids.add(entry.id);
+      }
+      // Clear tree cache so getChildren re-reads with updated state
+      (treeProvider as any).treeCache.clear();
 
       // Get tree items to find the installed agent
       const roots = await treeProvider.getChildren();

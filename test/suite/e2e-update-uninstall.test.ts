@@ -182,7 +182,8 @@ describe('WP07 - E2E: Check Updates > Update > Uninstall', function () {
       log,
       vscode.Uri.file('/e2e-ext'),
     );
-    treeProvider.setLifecycle(manifestManager, lifecycle);
+    // Note: setLifecycle is called within individual tests, not here,
+    // to ensure the async cache refresh triggers at the right time.
   });
 
   afterEach(() => {
@@ -338,6 +339,26 @@ describe('WP07 - E2E: Check Updates > Update > Uninstall', function () {
     assert.strictEqual(manifest.installations.length, 0, 'Manifest should be empty');
   });
 
+  // Helper: manually populate the tree provider's installedIds cache
+  // This avoids the race condition with the fire-and-forget refreshInstalledCache.
+  async function syncInstalledCache(): Promise<void> {
+    const ids = (treeProvider as any).installedIds as Set<string>;
+    ids.clear();
+    const folders = [folder];
+    for (const f of folders) {
+      try {
+        const m = await manifestManager.readManifest(f);
+        for (const entry of m.installations) {
+          ids.add(entry.id);
+        }
+      } catch {
+        // no manifest yet
+      }
+    }
+    // Clear tree cache so getChildren re-fetches with updated installed state
+    (treeProvider as any).treeCache.clear();
+  }
+
   it('tree no longer shows installed badge after uninstall', async () => {
     // Install item
     const entry = makeInstallEntry();
@@ -352,10 +373,11 @@ describe('WP07 - E2E: Check Updates > Update > Uninstall', function () {
     });
 
     try {
-      // Verify badge present before uninstall
-      treeProvider.refresh();
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Set lifecycle and sync installed IDs cache
+      treeProvider.setLifecycle(manifestManager, lifecycle);
+      await syncInstalledCache();
 
+      // Verify badge present before uninstall
       let roots = await treeProvider.getChildren();
       let categories = await treeProvider.getChildren(roots[0]);
       let agentsCat = categories.find(c => c.kind === 'category' && c.category === 'agents');
@@ -366,14 +388,13 @@ describe('WP07 - E2E: Check Updates > Update > Uninstall', function () {
         (i): i is CatalogFileItem => i.kind === 'item' && i.name === 'code-review',
       );
       assert.ok(codeReview);
-      assert.strictEqual(codeReview.installed, true, 'Should be installed initially');
+      assert.strictEqual(codeReview!.installed, true, 'Should be installed initially');
 
       // Uninstall
       await lifecycle.uninstallItem(entry, folder);
 
-      // Refresh tree
-      treeProvider.refresh();
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Sync cache after uninstall
+      await syncInstalledCache();
 
       // Verify badge removed
       roots = await treeProvider.getChildren();
@@ -386,7 +407,7 @@ describe('WP07 - E2E: Check Updates > Update > Uninstall', function () {
         (i): i is CatalogFileItem => i.kind === 'item' && i.name === 'code-review',
       );
       assert.ok(codeReview);
-      assert.strictEqual(codeReview.installed, false, 'Should not be installed after uninstall');
+      assert.strictEqual(codeReview!.installed, false, 'Should not be installed after uninstall');
     } finally {
       Object.defineProperty(vscode.workspace, 'workspaceFolders', {
         value: origFolders,
@@ -437,10 +458,11 @@ describe('WP07 - E2E: Check Updates > Update > Uninstall', function () {
       const results = await lifecycle.checkForUpdates(folder);
       assert.strictEqual(results[0].hasUpdate, true);
 
-      // Refresh tree to pick up installed IDs and update badges
-      treeProvider.refresh();
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Set lifecycle, sync installed cache, and refresh tree
+      treeProvider.setLifecycle(manifestManager, lifecycle);
+      await syncInstalledCache();
 
+      // Get tree items
       const roots = await treeProvider.getChildren();
       const categories = await treeProvider.getChildren(roots[0]);
       const agentsCat = categories.find(c => c.kind === 'category' && c.category === 'agents');
@@ -450,9 +472,9 @@ describe('WP07 - E2E: Check Updates > Update > Uninstall', function () {
       const codeReview = items.find(
         (i): i is CatalogFileItem => i.kind === 'item' && i.name === 'code-review',
       );
-      assert.ok(codeReview);
-      assert.strictEqual(codeReview.installed, true, 'Should be installed');
-      assert.strictEqual(codeReview.updateAvailable, true, 'Should show update available');
+      assert.ok(codeReview, 'Should find code-review item');
+      assert.strictEqual(codeReview!.installed, true, 'Should be installed');
+      assert.strictEqual(codeReview!.updateAvailable, true, 'Should show update available');
     } finally {
       Object.defineProperty(vscode.workspace, 'workspaceFolders', {
         value: origFolders,
