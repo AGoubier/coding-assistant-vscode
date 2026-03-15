@@ -1,11 +1,11 @@
 ---
-lane: doing
+lane: for_review
 ---
 
 # WP03 - Source Registry and Tree View
 
 > **Spec**: `specs/001-awesome-coding-assistants.spec.md`
-> **Status**: In Progress
+> **Status**: Complete
 > **Priority**: P1
 > **Goal**: Users can configure source repositories and browse their contents in a hierarchical tree view (Source > Category > Item) with tool badges and descriptions.
 > **Independent Test**: Configure a source repo in settings, open the sidebar, expand the source node, see category nodes, expand a category, see customization items with Copilot/Claude Code badges. With no sources: see the welcome message.
@@ -231,6 +231,7 @@ Implement the SourceRegistry service (reads/validates configured sources from se
 - 2026-03-15T00:00:00Z - planner - lane=planned - Work package created
 - 2025-07-19T10:00:00Z - coder - lane=doing - Starting WP03 implementation
 - 2025-07-19T11:00:00Z - coder - lane=doing - All tasks implemented, 143 tests passing
+- 2025-07-19T11:05:00Z - coder - lane=for_review - All tasks complete, submitted for review
 
 ## Self-Review
 
