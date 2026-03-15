@@ -1,6 +1,6 @@
 ---
-lane: for_review
-review_status: acknowledged
+lane: done
+review_status:
 ---
 
 # WP02 - Infrastructure Services
@@ -306,6 +306,7 @@ Implement the three core infrastructure services (GitHubClient, CacheManager, Au
 - 2025-07-19T12:00:00Z - reviewer - lane=to_do - Verdict: Changes Required (2 FAILs) -- awaiting remediation
 - 2026-03-15T12:00:00Z - coder - lane=doing - Addressing reviewer feedback (FB-01, FB-02)
 - 2026-03-15T12:05:00Z - coder - lane=for_review - All feedback addressed, submitted for re-review
+- 2026-03-15T12:10:00Z - reviewer - lane=done - Verdict: Approved with Findings (2 WARNs)
 
 ## Review
 
@@ -453,3 +454,35 @@ Changes Required. Two FAILs found: (1) `UpdateCheckResult` is missing the `folde
 1. Add `folder: import('vscode').WorkspaceFolder` to `UpdateCheckResult` interface. See FB-01.
 2. Add optional `prefillName` parameter to `addTokenCommand` and forward command arguments in `extension.ts`. See FB-02.
 3. After fixes, run `npm test` to verify no regressions.
+
+## Re-Review (Round 2)
+
+> **Reviewed by**: Reviewer Agent
+> **Date**: 2026-03-15
+> **Verdict**: Approved with Findings
+> **Scope**: FB-01, FB-02 from round 1 + regression check on modified files
+
+### Summary
+
+All round-1 FAILs resolved. No regressions introduced. Two original WARNs persist (GitHub Auth fallback untested, classifyPath/classifyItem duplication). Approved for pipeline continuation.
+
+### FB-01 Resolution: RESOLVED
+- `UpdateCheckResult` in `src/models/types.ts` now includes `folder: WorkspaceFolder` field.
+- `import type { WorkspaceFolder } from 'vscode'` added at top of file.
+- Interface now has 4 fields: `entry`, `hasUpdate`, `latestSha`, `folder` — matches T02-01 acceptance criteria exactly.
+
+### FB-02 Resolution: RESOLVED
+- `addTokenCommand` in `src/commands/tokenCommands.ts` now accepts `prefillName?: string` parameter.
+- InputBox options include `value: prefillName` for pre-filling.
+- Command registration in `src/extension.ts` updated to `(arg?: string) => addTokenCommand(authManager, arg)` — forwards command arguments.
+- Matches T02-07 acceptance criteria for FR-038 notification flow.
+
+### Regression Check
+- `npm run build`: passes
+- `npm run lint`: 0 errors, 2 warnings (unchanged from round 1)
+- `npm test`: 155 passing, 0 failing
+- No other files modified beyond the scoped changes.
+
+### Surviving WARNs (from Round 1)
+- **WARN - GitHub Auth Provider Fallback Not Tested**: `vscode.authentication.getSession` branch remains untested. No functional impact for MVP — fallback code is simple and defensive.
+- **WARN - classifyPath/classifyItem Duplication**: Two independent classification implementations remain. Tracked for potential consolidation in a future WP.

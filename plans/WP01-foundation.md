@@ -1,6 +1,6 @@
 ---
-lane: for_review
-review_status: acknowledged
+lane: done
+review_status:
 ---
 
 # WP01 - Foundation and Project Scaffolding
@@ -241,6 +241,7 @@ Set up the complete development environment for the Awesome Coding Assistants VS
 - 2025-07-19T12:00:00Z - reviewer - lane=to_do - Verdict: Changes Required (2 FAILs) -- awaiting remediation
 - 2026-03-15T12:00:00Z - coder - lane=doing - Addressing reviewer feedback (FB-01, FB-02)
 - 2026-03-15T12:05:00Z - coder - lane=for_review - All feedback addressed, submitted for re-review
+- 2026-03-15T12:10:00Z - reviewer - lane=done - Verdict: Approved with Findings (2 WARNs)
 
 ## Review
 
@@ -376,3 +377,35 @@ Changes Required. Two FAILs found: (1) `npm run test:coverage` reports 0% covera
 1. Fix coverage tooling so `npm run test:coverage` either produces real coverage data or does not fail the build. See FB-01 for options.
 2. Fix the missing `extension-icon.png` reference. See FB-02.
 3. After fixes, CI should pass green on all 3 matrix platforms.
+
+## Re-Review (Round 2)
+
+> **Reviewed by**: Reviewer Agent
+> **Date**: 2026-03-15
+> **Verdict**: Approved with Findings
+> **Scope**: FB-01, FB-02 from round 1 + regression check on modified files
+
+### Summary
+
+All round-1 FAILs resolved. No regressions introduced. Two original WARNs persist (TypeScript/ESLint compatibility, missing marketplace icon now moot). Approved for pipeline continuation.
+
+### FB-01 Resolution: RESOLVED
+- `.c8rc.json` now has `"check-coverage": false` — `npm run test:coverage` exits with code 0.
+- CI workflow (`.github/workflows/ci.yml`) no longer runs `test:coverage` — removed the 4 steps that were guaranteed to fail.
+- `npm test` remains the sole CI test step and passes (155 tests, 0 failures).
+- Approach chosen: option (c) from the original feedback — disable gating and rely on comprehensive unit tests.
+
+### FB-02 Resolution: RESOLVED
+- `"icon"` field removed from `package.json` — no reference to non-existent file.
+- Build, lint, and tests all pass.
+
+### Regression Check
+- `npm run build`: passes
+- `npm run lint`: 0 errors, 2 warnings (unchanged from round 1)
+- `npm test`: 155 passing, 0 failing
+- `npm run test:coverage`: exits with code 0
+- No other files modified beyond the scoped changes.
+
+### Surviving WARNs (from Round 1)
+- **WARN - Missing Marketplace Icon**: Now moot — the `icon` field was removed entirely.
+- **WARN - TypeScript/ESLint Compatibility**: TS 5.9.3 exceeds plugin's declared range. No functional impact. Tracked.
