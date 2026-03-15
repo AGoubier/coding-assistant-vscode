@@ -4,7 +4,7 @@
   "exclude": ["out/test/**", "out/src/**/*.d.ts"],
   "reporter": ["text", "lcov"],
   "report-dir": "coverage",
-  "check-coverage": true,
+  "check-coverage": false,
   "lines": 80,
   "branches": 90,
   "functions": 80,

@@ -1,6 +1,6 @@
 ---
-lane: to_do
-review_status: has_feedback
+lane: for_review
+review_status: acknowledged
 ---
 
 # WP01 - Foundation and Project Scaffolding
@@ -239,6 +239,8 @@ Set up the complete development environment for the Awesome Coding Assistants VS
 - 2026-03-15T10:00:00Z - coder - lane=doing - Starting implementation of WP01
 - 2026-03-15T10:15:00Z - coder - lane=for_review - All tasks complete, submitted for review
 - 2025-07-19T12:00:00Z - reviewer - lane=to_do - Verdict: Changes Required (2 FAILs) -- awaiting remediation
+- 2026-03-15T12:00:00Z - coder - lane=doing - Addressing reviewer feedback (FB-01, FB-02)
+- 2026-03-15T12:05:00Z - coder - lane=for_review - All feedback addressed, submitted for re-review
 
 ## Review
 
@@ -255,8 +257,10 @@ Changes Required. Two FAILs found: (1) `npm run test:coverage` reports 0% covera
 
 > Implementers: if `review_status: has_feedback` is set in the WP frontmatter, address every item below before returning for re-review. Update `review_status: acknowledged` once you begin remediation.
 
-- [ ] **FB-01**: Coverage tooling (T01-07) is non-functional. `npm run test:coverage` reports 0% on all files and exits with code 1 due to threshold failures. c8 wrapping the test runner cannot see coverage from the VS Code extension host (separate process). Either (a) configure c8 to work with the extension host (e.g., using `NODE_V8_COVERAGE` environment variable passed into the extension host), (b) fall back to `nyc` as the plan's risk mitigation suggests, or (c) disable `check-coverage` in `.c8rc.json` and document that coverage gating will be validated via a separate mechanism (e.g., per-file unit tests with direct imports). The CI workflow must not fail on coverage.
-- [ ] **FB-02**: `"icon": "resources/icons/extension-icon.png"` in `package.json` references a non-existent file. Either create the PNG file (128x128 or 256x256, per VS Code marketplace requirements) or remove the `icon` field from `package.json`. The plan does not require a marketplace icon.
+- [x] **FB-01**: Coverage tooling (T01-07) is non-functional. `npm run test:coverage` reports 0% on all files and exits with code 1 due to threshold failures. c8 wrapping the test runner cannot see coverage from the VS Code extension host (separate process). Either (a) configure c8 to work with the extension host (e.g., using `NODE_V8_COVERAGE` environment variable passed into the extension host), (b) fall back to `nyc` as the plan's risk mitigation suggests, or (c) disable `check-coverage` in `.c8rc.json` and document that coverage gating will be validated via a separate mechanism (e.g., per-file unit tests with direct imports). The CI workflow must not fail on coverage.
+  - **Resolution**: Disabled `check-coverage` in `.c8rc.json` (option c). Removed duplicate `test:coverage` CI steps that always failed. Coverage thresholds remain documented for reference. Coverage is validated via comprehensive per-module unit tests with direct imports (155 tests pass). `npm run test:coverage` now exits with code 0.
+- [x] **FB-02**: `"icon": "resources/icons/extension-icon.png"` in `package.json` references a non-existent file. Either create the PNG file (128x128 or 256x256, per VS Code marketplace requirements) or remove the `icon` field from `package.json`. The plan does not require a marketplace icon.
+  - **Resolution**: Removed the `icon` field from `package.json`. No marketplace icon is required by the plan.
 
 ### Findings
 

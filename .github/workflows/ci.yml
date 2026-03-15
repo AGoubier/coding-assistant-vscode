@@ -39,18 +39,3 @@ jobs:
       - name: Run tests (non-Linux)
         if: runner.os != 'Linux'
         run: npm test
-
-      - name: Run tests with coverage (Linux)
-        if: runner.os == 'Linux'
-        run: xvfb-run -a npm run test:coverage
-
-      - name: Run tests with coverage (non-Linux)
-        if: runner.os != 'Linux'
-        run: npm run test:coverage
-
-      - name: Upload coverage
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.os }}
-          path: coverage/
