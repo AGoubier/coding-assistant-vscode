@@ -76,6 +76,10 @@ awesome-coding-assistants/
     runTest.ts           # Test launcher
     helpers/
       mocks.ts           # Shared test mock helpers
+      e2e.ts             # E2E test helpers (fixtures, fetch mocking, temp workspace)
+    fixtures/
+      api/               # Mock GitHub API responses (tree.json, commits.json)
+      contents/           # Sample file contents for E2E tests
     suite/
       index.ts           # Mocha test runner configuration
       extension.test.ts  # Extension activation tests
@@ -90,6 +94,13 @@ awesome-coding-assistants/
       previewProvider.test.ts # Preview provider and command tests (WP04)
       installer.test.ts    # Installer, manifest, and install command tests (WP05)
       lifecycle.test.ts    # Lifecycle manager, update, uninstall tests (WP06)
+      e2e-browse-install.test.ts  # E2E: browse > preview > install journey (WP07)
+      e2e-update-uninstall.test.ts # E2E: update > uninstall journey (WP07)
+      integration-github.test.ts  # Integration: GitHubClient + CacheManager + AuthManager (WP07)
+      integration-source.test.ts  # Integration: SourceRegistry + GitHubClient (WP07)
+      performance.test.ts  # Performance tests: NFR thresholds (WP07)
+      security.test.ts     # Security tests: path traversal, HTTPS, credentials (WP07)
+      accessibility.test.ts # Accessibility: labels, tooltips, command palette (WP07)
   dist/                  # Bundled extension output (esbuild)
   out/                   # TypeScript compiled output (for tests)
   resources/
@@ -108,13 +119,28 @@ awesome-coding-assistants/
 
 - **Framework**: Mocha + @vscode/test-electron
 - **Test UI**: BDD (describe/it)
-- **Coverage**: c8 with thresholds (80% lines, 90% branches)
+- **Coverage**: c8 with custom Inspector-based collection + v8-to-istanbul. Thresholds: 80% lines, 80% branches, 80% functions, 80% statements.
 - **Test runner**: `test/runTest.ts` launches a VS Code Extension Development Host
 - Tests run inside a real VS Code instance for full API access
+
+### Test Categories
+
+| Category | Files | Purpose |
+|----------|-------|---------|
+| Unit | `*.test.ts` (service/provider) | Individual component tests |
+| E2E | `e2e-*.test.ts` | Full user journey tests with mocked HTTP |
+| Integration | `integration-*.test.ts` | Cross-component integration |
+| Performance | `performance.test.ts` | NFR threshold validation |
+| Security | `security.test.ts` | Path traversal, HTTPS, credential protection |
+| Accessibility | `accessibility.test.ts` | Accessible labels, tooltips, command palette |
 
 ### Debug Tests in VS Code
 
 Use the "Extension Tests" launch configuration in `.vscode/launch.json`.
+
+### Accessibility Requirements
+
+All tree view items must have `accessibilityInformation.label` set for screen readers. All icons must have `tooltip` as text equivalent. All commands must be accessible via the Command Palette.
 
 ## Coding Conventions
 

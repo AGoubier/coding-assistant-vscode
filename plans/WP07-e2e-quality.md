@@ -1,11 +1,11 @@
 ---
-lane: doing
+lane: for_review
 ---
 
 # WP07 - End-to-End Tests and Quality Gate
 
 > **Spec**: `specs/001-awesome-coding-assistants.spec.md`
-> **Status**: In Progress
+> **Status**: Complete
 > **Priority**: P1
 > **Goal**: Validate the full Browse > Preview > Install > Check Updates > Update > Uninstall journey in the VS Code extension test host, enforce coverage thresholds, and verify security requirements.
 > **Independent Test**: Run `npm test` and see all E2E tests pass inside the VS Code extension host. Run `npm run test:coverage` and see 80% line / 90% branch thresholds met. Run security test suite and see all path traversal and credential exposure tests pass.
@@ -249,3 +249,4 @@ Deliver the capstone quality assurance layer: end-to-end tests that exercise the
 
 - 2026-03-15T00:00:00Z - planner - lane=planned - Work package created
 - 2026-03-15T14:00:00Z - coder - lane=doing - Starting WP07 implementation
+- 2026-03-15T15:10:00Z - coder - lane=for_review - All tasks complete, submitted for review

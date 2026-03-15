@@ -13,7 +13,7 @@
 | [WP04](WP04-preview.md) | Preview | P1 | Complete | WP01, WP02, WP03 | Yes (with WP05) |
 | [WP05](WP05-installation.md) | Installation and Manifest | P1 | Complete | WP01, WP02, WP03 | Yes (with WP04) |
 | [WP06](WP06-lifecycle.md) | Lifecycle Management | P1 | Complete | WP01-WP05 | No |
-| [WP07](WP07-e2e-quality.md) | E2E Tests and Quality Gate | P1 | In Progress | WP01-WP06 | No |
+| [WP07](WP07-e2e-quality.md) | E2E Tests and Quality Gate | P1 | Complete | WP01-WP06 | No |
 | [WP08](WP08-tool-detection.md) | Smart Tool Detection | P2 | Not Started | WP01, WP02, WP03 | Yes |
 | [WP09](WP09-bundles.md) | Org Practice Bundles | P2 | Not Started | WP01, WP02, WP03, WP05 | Yes |
 | [WP10](WP10-search.md) | Search and Filter | P2 | Not Started | WP01, WP02, WP03 | Yes |
