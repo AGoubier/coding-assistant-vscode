@@ -1,0 +1,231 @@
+---
+lane: planned
+---
+
+# WP06 - Lifecycle Management (Updates, Uninstall, Badges)
+
+> **Spec**: `specs/001-awesome-coding-assistants.spec.md`
+> **Status**: Not Started
+> **Priority**: P1
+> **Goal**: Users can see "installed" and "update available" badges on tree items, check for upstream updates, view diffs, accept/reject updates, and uninstall items - completing the full lifecycle loop.
+> **Independent Test**: Install an item via WP05. Simulate an upstream change (mock API returns different SHA), run "Check for Updates" command, verify the update badge appears. Click "Update" and verify a diff view opens. Click "Accept Update" to apply. Click "Uninstall" to remove the item and verify the manifest entry and file are both deleted.
+> **Depends on**: WP01, WP02, WP03, WP05
+> **Parallelisable**: No (requires WP05 manifest and install flow)
+> **Prompt**: `plans/WP06-lifecycle.md`
+
+## Objective
+
+Implement the lifecycle management layer: installed-state badges on tree items, update detection via SHA comparison, diff-based update review, update application, and uninstallation. This WP delivers US-05 (Track and Update Installed Items) and completes the core lifecycle loop that is a key differentiator from competing extensions.
+
+## Spec References
+
+- Section 4.6 Lifecycle Management (FR-028 through FR-034)
+- Section 5 US-05 (Track and Update Installed Items)
+- Section 6.2 Install Flow (steps 6-8 - SHA recording)
+- Section 7.4-7.5 Data Models (Manifest, InstallationEntry)
+- Section 8.1 Commands: `awesome-coding-assistants.checkUpdates`, `awesome-coding-assistants.update`, `awesome-coding-assistants.uninstall`
+- Section 8.4 Error Codes: `INSTALL_FAILED` (for update failures)
+- Section 10.1 NFR-003 (update check under 5 seconds for 50 items)
+- Section 11.2 BDD: Lifecycle Management feature (3 scenarios)
+- Section 11.3 Integration: Installer + FileSystem
+
+## Tasks
+
+### T06-01 - LifecycleManager service scaffold
+
+- **Description**: Create `src/services/lifecycle.ts` with the LifecycleManager class. This service reads manifests, checks for updates, and orchestrates update/uninstall flows. Implements the spec's Implementation Contract - Lifecycle.
+- **Spec refs**: FR-028 (manifest), Section 9.1 (LifecycleManager component)
+- **Parallel**: No
+- **Acceptance criteria**:
+  - [ ] `LifecycleManager` class created with constructor taking `GitHubClient`, `CacheManager`, and manifest reader/writer from WP05
+  - [ ] Class implements the spec's contract methods: `checkForUpdates`, `applyUpdate`, `uninstallItem`
+  - [ ] Class is registered in the DI/services layer in `extension.ts`
+  - [ ] All public methods are typed with proper return types per spec contracts
+- **Test requirements**: unit (constructor, DI)
+- **Depends on**: WP05 T05-06 (manifest read/write), WP02 (GitHubClient, CacheManager)
+- **Implementation Guidance**:
+  - Follow the same service pattern as GitHubClient and CacheManager (constructor injection, disposable)
+  - The LifecycleManager does NOT own the manifest - it delegates to the manifest functions created in WP05 T05-06
+  - Spec contract: `checkForUpdates(folder?: WorkspaceFolder): Promise<UpdateCheckResult[]>`
+  - Spec contract: `applyUpdate(entry: ManifestEntry, folder: WorkspaceFolder): Promise<void>`
+  - Spec contract: `uninstallItem(entry: ManifestEntry, folder: WorkspaceFolder): Promise<void>`
+
+### T06-02 - Update check logic (SHA comparison)
+
+- **Description**: Implement `checkForUpdates` that reads the manifest, fetches the latest commit SHA for each tracked item from GitHub, and returns which items have updates.
+- **Spec refs**: FR-029 (SHA comparison), FR-034 (ETag caching for update checks), NFR-003 (under 5 seconds for 50 items)
+- **Parallel**: No (depends on T06-01)
+- **Acceptance criteria**:
+  - [ ] `checkForUpdates(folder?: WorkspaceFolder): Promise<UpdateCheckResult[]>` reads manifest entries
+  - [ ] For each entry, calls `GitHubClient.getLatestCommitSha(owner, repo, path)` using `GET /repos/{owner}/{repo}/commits?path={file_path}&per_page=1`
+  - [ ] Compares `entry.installedSha` with `latestSha` - if different, `hasUpdate = true`
+  - [ ] If folder is undefined, checks ALL workspace folders (iterates `vscode.workspace.workspaceFolders`)
+  - [ ] Uses ETag caching: sends `If-None-Match` header; on 304, no update flagged (same SHA cached)
+  - [ ] Returns `UpdateCheckResult[]` where `UpdateCheckResult = { entry: InstallationEntry, hasUpdate: boolean, latestSha: string, folder: WorkspaceFolder }`
+  - [ ] Errors on individual items do not abort the entire check - logs warning, skips item, continues
+  - [ ] Parallel requests with concurrency limit of 5 to avoid rate limiting
+  - [ ] Performance: completes within 5 seconds for 50 items (mock scenario)
+- **Test requirements**: unit (mock GitHubClient, various SHA scenarios), performance (50-item check under 5s)
+- **Depends on**: T06-01, WP02 (GitHubClient.getLatestCommitSha)
+- **Implementation Guidance**:
+  - GitHub API: `GET /repos/{owner}/{repo}/commits?path={file_path}&per_page=1` returns an array; latest SHA is `response[0].sha`
+  - Implement a simple concurrency limiter: use a semaphore pattern with Promise.all and a pool of 5
+  - ETag is handled at the CacheManager level - just call GitHubClient which delegates to CacheManager
+  - For per-item error handling: `try { ... } catch (e) { results.push({ entry, hasUpdate: false, latestSha: entry.installedSha, error: e }); }`
+
+### T06-03 - Installed badge on tree items
+
+- **Description**: Modify the CatalogTreeProvider (from WP03) to cross-reference the manifest and show an "installed" decoration on tree items that are tracked in the manifest.
+- **Spec refs**: FR-030 (update indicator badge), FR-011 (installed badge), US-05 Scenario 1
+- **Parallel**: Yes (can work in parallel with T06-02)
+- **Acceptance criteria**:
+  - [ ] When rendering tree items, CatalogTreeProvider reads the manifest for the active workspace folder
+  - [ ] Items matching a manifest entry (by source URL + item path) get `contextValue = 'catalogItem.installed'`
+  - [ ] Installed items display a visual indicator: description suffix "(installed)" or a checkmark icon
+  - [ ] Items with available updates display `contextValue = 'catalogItem.updateAvailable'` and a different icon/badge
+  - [ ] The tree refreshes after install/uninstall/update operations to reflect current state
+  - [ ] No manifest = no badges (graceful degradation for workspaces without manifest)
+- **Test requirements**: unit (mock manifest data, verify tree item properties)
+- **Depends on**: WP03 (CatalogTreeProvider), WP05 T05-06 (manifest read)
+- **Implementation Guidance**:
+  - In `CatalogTreeProvider.getTreeItem()`, after constructing the base TreeItem, check `manifest.isInstalled(source, itemPath)`
+  - Set `treeItem.description = '(installed)'` for installed items
+  - Use `treeItem.iconPath = new vscode.ThemeIcon('check')` for installed, `new vscode.ThemeIcon('cloud-download')` for update available
+  - Cache the manifest data in memory (refresh on install/uninstall events) to avoid reading the file for every tree item
+  - Register for a custom event `onDidChangeManifest` to trigger tree refresh
+
+### T06-04 - Check for Updates command
+
+- **Description**: Register the `awesome-coding-assistants.checkUpdates` command that triggers update detection across all workspace folders and updates the tree badges.
+- **Spec refs**: FR-032 (checkUpdates command), US-05 Scenario 2, BDD: Detect available updates
+- **Parallel**: No (depends on T06-02, T06-03)
+- **Acceptance criteria**:
+  - [ ] Command `awesome-coding-assistants.checkUpdates` registered in `package.json` and `extension.ts`
+  - [ ] Shows progress notification: "Checking for updates..." with progress bar
+  - [ ] Calls `LifecycleManager.checkForUpdates()` (no folder argument = all folders)
+  - [ ] On completion, shows information message: "Found {N} updates" or "All items are up to date"
+  - [ ] Updates the tree provider's internal state to reflect which items have updates -> triggers tree refresh
+  - [ ] If no items are installed (empty manifest), shows "No installed items to check"
+  - [ ] Errors are caught and shown as warning notifications (not error - the command still "succeeds")
+- **Test requirements**: unit (mock lifecycle, verify command flow), BDD
+- **Depends on**: T06-02, T06-03
+- **Implementation Guidance**:
+  - Command handler in `src/commands/checkUpdates.ts`
+  - Use `vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Checking for updates...', cancellable: true })`
+  - On cancellation, abort remaining API requests
+  - Store the update results in a service-level cache so the tree provider can reference them without re-fetching
+
+### T06-05 - Update action with diff view
+
+- **Description**: Implement the "Update" inline action on items with available updates. Opens a diff view showing installed content vs upstream content, with Accept/Reject options.
+- **Spec refs**: FR-031 (Update action with diff), US-05 Scenario 3, BDD: Apply an update
+- **Parallel**: No (depends on T06-04)
+- **Acceptance criteria**:
+  - [ ] Inline action "Update" appears on tree items with `contextValue = 'catalogItem.updateAvailable'`
+  - [ ] Action opens VS Code diff editor: `vscode.commands.executeCommand('vscode.diff', installedUri, upstreamUri, title)`
+  - [ ] The installed file is read from the workspace filesystem
+  - [ ] The upstream content is fetched via GitHubClient and displayed using the `awesome-ca-preview` virtual document scheme (from WP04)
+  - [ ] Diff title format: `{filename}: Installed (SHA:{short}) vs Upstream (SHA:{short})`
+  - [ ] After viewing diff, user can click "Accept Update" button (shown in editor toolbar or notification)
+  - [ ] "Accept Update" writes the upstream content to the installed path and updates the manifest SHA + timestamp
+  - [ ] "Reject Update" discards the upstream content and dismisses the diff (no changes)
+  - [ ] Command `awesome-coding-assistants.update` registered in `package.json`
+- **Test requirements**: unit (mock diff command, verify args), BDD
+- **Depends on**: T06-04, WP04 (preview virtual document)
+- **Implementation Guidance**:
+  - Reuse the `PreviewContentProvider` from WP04 to show upstream content in the diff
+  - For "Accept Update" UX: use `vscode.window.showInformationMessage('Apply this update?', 'Accept', 'Reject')` after opening the diff, or register an editor action
+  - After accepting: call `Installer.installFile()` to overwrite, then update manifest entry SHA and timestamp
+  - Short SHA: `sha.substring(0, 7)`
+
+### T06-06 - Uninstall action
+
+- **Description**: Implement the "Uninstall" inline action that deletes installed file(s) and removes the manifest entry.
+- **Spec refs**: FR-033 (Uninstall action), US-05 Scenario 4, BDD: Uninstall a customization
+- **Parallel**: Yes (can work in parallel with T06-05)
+- **Acceptance criteria**:
+  - [ ] Inline action "Uninstall" appears on tree items with `contextValue` containing 'installed'
+  - [ ] Shows confirmation dialog: "Are you sure you want to uninstall {name}? This will delete the file(s) from your workspace."
+  - [ ] On confirm: deletes the file(s) at the target path(s) using `vscode.workspace.fs.delete(uri)`
+  - [ ] For directory items: recursively deletes the directory using `vscode.workspace.fs.delete(uri, { recursive: true })`
+  - [ ] Removes the manifest entry via `removeInstallation(folder, entryId)`
+  - [ ] Refreshes the tree to remove the installed badge
+  - [ ] If the file has already been manually deleted, only removes the manifest entry (no error)
+  - [ ] Shows notification: "Uninstalled {name}"
+  - [ ] Command `awesome-coding-assistants.uninstall` registered in `package.json`
+- **Test requirements**: unit (mock fs.delete, verify manifest removal), BDD
+- **Depends on**: WP05 T05-06 (manifest removal), WP03 (tree refresh)
+- **Implementation Guidance**:
+  - Command handler in `src/commands/uninstall.ts`
+  - Confirmation: `vscode.window.showWarningMessage(msg, { modal: true }, 'Uninstall')`
+  - For file deletion, handle `FileNotFound` gracefully: `try { await vscode.workspace.fs.delete(uri); } catch { /* file already gone */ }`
+  - After uninstall, fire the `onDidChangeManifest` event to trigger tree refresh
+
+### T06-07 - Menu contributions (package.json)
+
+- **Description**: Add all lifecycle-related commands, menus, and when-clause contexts to `package.json` so that Update, Uninstall, and Check for Updates appear in the correct locations.
+- **Spec refs**: Section 8.1 (commands list), Section 8.3 (menus)
+- **Parallel**: Yes (can be done early)
+- **Acceptance criteria**:
+  - [ ] `awesome-coding-assistants.checkUpdates` command in `contributes.commands` with title "Check for Updates" and icon `$(sync)`
+  - [ ] `awesome-coding-assistants.update` command with title "Update" and icon `$(cloud-download)`
+  - [ ] `awesome-coding-assistants.uninstall` command with title "Uninstall" and icon `$(trash)`
+  - [ ] `view/item/context` menu: "Update" visible when `viewItem == catalogItem.updateAvailable`
+  - [ ] `view/item/context` menu: "Uninstall" visible when `viewItem =~ /catalogItem\\.installed|catalogItem\\.updateAvailable/`
+  - [ ] `view/title` menu: "Check for Updates" in the view title bar
+  - [ ] When-clause context `awesome-coding-assistants.hasInstalledItems` set to true when manifest has entries
+- **Test requirements**: none (declarative JSON, validated by VS Code)
+- **Depends on**: WP01 (package.json base)
+- **Implementation Guidance**:
+  - `when` clause syntax for regex: `viewItem =~ /pattern/` (VS Code supports regex in when clauses)
+  - Group lifecycle actions in menu: `"group": "lifecycle"` with appropriate sort order
+  - Set context: `vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.hasInstalledItems', true)`
+
+### T06-08 - Unit and integration tests for lifecycle
+
+- **Description**: Write comprehensive tests covering all lifecycle scenarios from US-05 and the BDD Lifecycle Management feature.
+- **Spec refs**: Section 11.2 BDD (Lifecycle Management feature - 3 scenarios), US-05 Scenarios 1-4
+- **Parallel**: No (depends on all T06 tasks)
+- **Acceptance criteria**:
+  - [ ] Test: installed item shows "installed" badge in tree (US-05 Scenario 1, BDD)
+  - [ ] Test: SHA mismatch detected as update available (US-05 Scenario 2, BDD: Detect available updates)
+  - [ ] Test: update action opens diff view with correct URIs (US-05 Scenario 3, BDD: Apply an update)
+  - [ ] Test: accept update writes new content and updates manifest SHA
+  - [ ] Test: reject update leaves file and manifest unchanged
+  - [ ] Test: uninstall deletes file and removes manifest entry (US-05 Scenario 4, BDD: Uninstall a customization)
+  - [ ] Test: uninstall when file already deleted only cleans up manifest
+  - [ ] Test: check updates with no installed items shows appropriate message
+  - [ ] Test: check updates with mixed results (some updated, some not)
+  - [ ] Test: per-item error does not abort entire update check
+  - [ ] Integration: full lifecycle roundtrip (install -> check updates -> apply update -> uninstall) with mock GitHubClient
+  - [ ] All tests pass with `npm test`
+- **Test requirements**: This IS the test deliverable
+- **Depends on**: T06-01 through T06-07
+- **Implementation Guidance**:
+  - For SHA mismatch testing: create manifest with `installedSha: 'abc123'`, mock GitHubClient to return `latestSha: 'def456'`
+  - For diff view testing: verify `vscode.commands.executeCommand` was called with `'vscode.diff'` and correct URI arguments
+  - For uninstall testing: verify both `workspace.fs.delete` and `removeInstallation` were called
+  - Integration roundtrip test in a temp directory: install a file, modify the mock SHA, check updates, apply, verify file updated, uninstall, verify file gone
+
+## Implementation Notes
+
+- The LifecycleManager is a coordinator - it delegates to GitHubClient for API calls, manifest functions for persistence, and Installer for file operations
+- Update check performance is critical (NFR-003): use parallel requests with concurrency limit, ETag caching, and abort on cancellation
+- The tree provider needs an efficient way to check installed state - cache manifest data in memory, not disk reads per tree item
+- The `awesome-ca-preview` virtual document scheme from WP04 is reused for showing upstream content in diff views
+
+## Parallel Opportunities
+
+- T06-03 (badges) and T06-02 (update check) can be worked in parallel
+- T06-05 (update action) and T06-06 (uninstall) can be worked in parallel after T06-04
+- T06-07 (menu contributions) can be done early, independently of logic implementation
+
+## Risks & Mitigations
+
+- **API rate limiting during update checks**: Many installed items means many API calls. Mitigation: ETag caching (FR-034), concurrency limit, and the 24-hour cache expiration means most checks hit cache.
+- **Manifest out of sync with filesystem**: User may manually delete installed files. Mitigation: graceful handling in uninstall (already-deleted files), and consider a "Verify Installations" command for future WP.
+- **Large diff for updated files**: Some customization files could be large. Mitigation: VS Code diff editor handles this natively; no special mitigation needed.
+
+## Activity Log
+
+- 2026-03-15T00:00:00Z - planner - lane=planned - Work package created
