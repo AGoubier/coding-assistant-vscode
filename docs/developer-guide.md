@@ -51,6 +51,7 @@ awesome-coding-assistants/
       tokenCommands.ts   # addToken, removeToken implementations
       cacheCommands.ts   # clearCache implementation
       previewCommand.ts  # preview command handler (WP04)
+      installCommand.ts  # install command handler with conflict resolution (WP05)
     providers/           # TreeDataProvider, TextDocumentContentProvider
       catalogTree.ts     # CatalogTreeProvider (WP03) - main catalog tree view
       previewProvider.ts # PreviewProvider (WP04) - read-only virtual documents
@@ -58,6 +59,8 @@ awesome-coding-assistants/
       authManager.ts     # SecretStorage token management
       cacheManager.ts    # API response caching with ETags
       githubClient.ts    # GitHub REST API client
+      installer.ts       # File/directory installer with path validation (WP05)
+      manifestManager.ts # Manifest CRUD for installation tracking (WP05)
       sourceRegistry.ts  # Source config management and master index
       toolDetector.ts    # File path to tool/category classification
     models/              # TypeScript interfaces and types
@@ -81,6 +84,7 @@ awesome-coding-assistants/
       sourceRegistry.test.ts # Source registry tests (WP03)
       catalogTree.test.ts    # Catalog tree provider tests (WP03)
       previewProvider.test.ts # Preview provider and command tests (WP04)
+      installer.test.ts    # Installer, manifest, and install command tests (WP05)
   dist/                  # Bundled extension output (esbuild)
   out/                   # TypeScript compiled output (for tests)
   resources/

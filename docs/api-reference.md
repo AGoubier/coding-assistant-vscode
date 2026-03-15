@@ -18,6 +18,7 @@
 All commands are currently registered as stubs except:
 - **refresh**: Invalidates all caches, reloads master index, and refreshes the catalog tree
 - **preview**: Opens the selected catalog item's content in a read-only editor tab via the `awesome-ca-preview` URI scheme
+- **install**: Downloads item to workspace with conflict resolution, multi-root support, and manifest tracking
 - **addToken**: Prompts for token name and value, stores in SecretStorage
 - **removeToken**: Shows QuickPick of stored tokens, deletes selected
 - **clearCache**: Purges all cached API responses
@@ -109,3 +110,69 @@ awesome-ca-preview:{filename}?source={encodedSourceUrl}&branch={branch}&path={en
 ### Error Handling
 
 On fetch failure, the provider throws `PreviewFetchFailedError` (code: `PREVIEW_FETCH_FAILED`) with user message "Failed to fetch preview: {detail}". The preview command shows this as an error notification.
+
+## Installation Services
+
+### ManifestManager
+
+Manages the `.vscode/awesome-ca-manifest.json` file for tracking installed customizations. Each workspace folder has its own manifest.
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `readManifest` | `(folder: WorkspaceFolder) => Promise<Manifest>` | Reads and parses manifest; returns empty manifest if file missing |
+| `writeManifest` | `(folder: WorkspaceFolder, manifest: Manifest) => Promise<void>` | Serializes and writes manifest (2-space JSON indent) |
+| `addInstallation` | `(folder: WorkspaceFolder, entry: InstallationEntry) => Promise<void>` | Adds/replaces an installation entry (idempotent by ID) |
+| `removeInstallation` | `(folder: WorkspaceFolder, id: string) => Promise<void>` | Removes an installation entry by ID |
+| `getInstallation` | `(folder: WorkspaceFolder, id: string) => Promise<InstallationEntry \| undefined>` | Looks up an installation entry by ID |
+| `isInstalled` | `(folder: WorkspaceFolder, sourceUrl: string, itemPath: string) => Promise<boolean>` | Checks if an item is tracked in the manifest |
+
+**Manifest format** (`.vscode/awesome-ca-manifest.json`):
+```json
+{
+  "version": "1.0",
+  "installations": [
+    {
+      "id": "https://github.com/owner/repo#.github/agents/code-review.agent.md",
+      "sourceUrl": "https://github.com/owner/repo",
+      "sourceBranch": "main",
+      "itemPath": ".github/agents/code-review.agent.md",
+      "targetPaths": [".github/agents/code-review.agent.md"],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "abc123",
+      "installedAt": "2025-07-19T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Corruption handling**: If the manifest JSON is invalid, ManifestManager backs up the file to `.bak`, creates a fresh manifest, logs a `ManifestCorruptError`, and notifies the user.
+
+### Installer
+
+Handles file and directory downloads from source repos to workspace directories.
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `installFile` | `(source, sourcePath, targetUri, targetRelativePath) => Promise<void>` | Downloads and writes a single file; validates path, creates directories |
+| `installDirectory` | `(source, sourceDir, targetDirUri, targetDirRelative, repoTree, token, progress) => Promise<string[]>` | Recursively installs all files in a directory; shows progress |
+| `fileExists` | `(uri: Uri) => Promise<boolean>` | Checks if a file exists at the given URI |
+| `selectTargetFolder` | `() => Promise<WorkspaceFolder \| undefined>` | Prompts for workspace folder in multi-root; auto-selects in single-root |
+
+**Path validation**: All target paths are validated with `validatePath()` before any filesystem operation. Invalid paths throw `InvalidPathError`.
+
+### Install Command Flow
+
+The `awesome-coding-assistants.install` command orchestrates:
+1. Select target workspace folder (auto-select or QuickPick for multi-root)
+2. Compute target path from tool/category mapping
+3. Check for existing file and resolve conflicts (Overwrite/Keep/Show Diff)
+4. Download content via GitHubClient and write to workspace
+5. Fetch latest commit SHA for version tracking
+6. Record installation in manifest
+7. Refresh catalog tree to show installed badge
+8. Show success notification
+
+**CLAUDE.md special case**: When installing a CLAUDE.md file, user is prompted to choose between project root (`CLAUDE.md`) and `.claude/CLAUDE.md`.
+
+**Error codes**: `INSTALL_FAILED` (write failure), `INVALID_PATH` (path traversal detected).

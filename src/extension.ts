@@ -6,8 +6,11 @@ import { SourceRegistry } from './services/sourceRegistry';
 import { CatalogTreeProvider } from './providers/catalogTree';
 import { PreviewProvider, PREVIEW_SCHEME } from './providers/previewProvider';
 import { previewCommand } from './commands/previewCommand';
+import { installCommand } from './commands/installCommand';
 import { addTokenCommand, removeTokenCommand } from './commands/tokenCommands';
 import { clearCacheCommand } from './commands/cacheCommands';
+import { Installer } from './services/installer';
+import { ManifestManager } from './services/manifestManager';
 import type { CatalogFileItem, SourceConfig } from './models/types';
 
 let outputChannel: vscode.LogOutputChannel;
@@ -125,9 +128,31 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
   );
 
+  // Initialize installer and manifest manager (WP05)
+  const installer = new Installer(githubClient, outputChannel);
+  const manifestManager = new ManifestManager(outputChannel);
+
+  // Install command (FR-020, T05-07)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('awesome-coding-assistants.install', (item?: CatalogFileItem) => {
+      if (!item || item.kind !== 'item') {
+        outputChannel.info('Install command invoked without a valid catalog item');
+        return;
+      }
+      return installCommand(
+        item,
+        installer,
+        githubClient,
+        manifestManager,
+        outputChannel,
+        () => catalogTreeProvider.refresh(),
+        (source) => catalogTreeProvider.getOrFetchTreePublic(source),
+      );
+    }),
+  );
+
   // Stub commands for features not yet implemented
   const stubCommands: string[] = [
-    'awesome-coding-assistants.install',
     'awesome-coding-assistants.update',
     'awesome-coding-assistants.uninstall',
     'awesome-coding-assistants.checkUpdates',

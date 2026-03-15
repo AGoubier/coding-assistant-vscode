@@ -1,11 +1,11 @@
 ---
-lane: planned
+lane: for_review
 ---
 
 # WP05 - Installation and Manifest
 
 > **Spec**: `specs/001-awesome-coding-assistants.spec.md`
-> **Status**: Not Started
+> **Status**: Complete
 > **Priority**: P1
 > **Goal**: Users can install customizations to the correct workspace directory with one click, with conflict resolution, multi-root support, and manifest tracking.
 > **Independent Test**: Click Install on a Copilot agent item, verify `.github/agents/{file}` is created. Click Install on a Claude Code rules item, verify `.claude/rules/{file}` is created. Install with an existing file and verify the conflict prompt appears. Check `.vscode/awesome-ca-manifest.json` records the installation.
@@ -229,3 +229,56 @@ Implement the installation pipeline: download files from source repos, compute c
 ## Activity Log
 
 - 2026-03-15T00:00:00Z - planner - lane=planned - Work package created
+- 2026-03-15T13:00:00Z - coder - lane=doing - Starting WP05 implementation
+- 2026-03-15T13:09:00Z - coder - lane=for_review - All tasks complete, submitted for review
+
+## Self-Review
+
+### Spec Compliance
+- [x] FR-020: Install inline action implemented via install command
+- [x] FR-021: Target path mapping for all 10 tool/category combos (via getTargetPath in pathUtils)
+- [x] FR-022: Auto-create directories before file write
+- [x] FR-023: Conflict resolution with Overwrite/Keep/Show Diff
+- [x] FR-024: Multi-root workspace folder selection (auto for single, QuickPick for multi)
+- [x] FR-025: Recursive directory download for skills/plugins
+- [x] FR-026: Installation recorded in manifest with commit SHA and timestamp
+- [x] FR-027: Path traversal validation before all filesystem operations
+- [x] FR-028: Manifest per workspace folder at .vscode/awesome-ca-manifest.json
+
+### Correctness
+- [x] All 228 tests pass (including 33 new tests for WP05)
+- [x] Path mappings verified for all tool/category combinations
+- [x] Manifest CRUD operations tested (read, write, add, remove, get, isInstalled)
+- [x] Corrupt manifest handled with backup and fresh creation
+- [x] CLAUDE.md special case prompts user for location choice
+- [x] Conflict resolution tested for all three choices
+
+### Code Quality
+- [x] No unused code or debug artifacts
+- [x] No hardcoded values - all paths use pathUtils constants
+- [x] Path traversal validation prevents security issues
+- [x] No secrets in code
+- [x] Dependency injection for filesystem operations enables testability
+
+### Scope Discipline
+- [x] Only implemented what spec requires
+- [x] No unasked-for abstractions added
+
+### Encoding
+- [x] No em dashes, smart quotes, or curly apostrophes
+
+### Documentation
+- [x] docs/architecture.md updated with Installer, ManifestManager, installCommand
+- [x] docs/api-reference.md updated with ManifestManager API, Installer API, install command flow
+- [x] docs/developer-guide.md updated with new files in project structure
+- [x] docs/user-guide.md updated with full Installing Customizations section
+- [x] docs/configuration-guide.md reviewed - no changes needed (no new config options)
+- [x] docs/deployment-guide.md reviewed - no changes needed (no deployment changes)
+
+### Files Created/Modified
+- Created: src/services/manifestManager.ts
+- Created: src/services/installer.ts
+- Created: src/commands/installCommand.ts
+- Modified: src/extension.ts (wiring install command and services)
+- Created: test/suite/installer.test.ts
+- Updated: docs/architecture.md, docs/api-reference.md, docs/developer-guide.md, docs/user-guide.md

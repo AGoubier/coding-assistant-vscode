@@ -23,7 +23,8 @@ Features are being implemented incrementally. Current status:
 - [x] Refresh command to reload all sources
 - [x] Master index support for discovering source repositories
 - [x] Item preview (read-only editor tab with file content)
-- [ ] Install, update, uninstall
+- [x] Install customizations with conflict resolution and manifest tracking
+- [ ] Update and uninstall
 - [ ] Update notifications
 - [ ] Search and filter
 - [ ] Import/export
@@ -87,6 +88,66 @@ If a preview fetch fails (network error, authentication issue), an error notific
 ### Caching
 
 Preview content is cached in memory for the current session. Use the Refresh command to clear the preview cache and re-fetch content.
+
+## Installing Customizations
+
+Install customizations directly to your workspace with one click.
+
+### How to Install
+
+1. In the catalog tree view, find the item you want to install
+2. Click the **download icon** that appears on hover next to the item name (or right-click and select "Install")
+3. The item is downloaded and placed in the correct workspace directory
+
+### Target Directories
+
+Items are installed to the correct tool-specific directory automatically:
+
+| Tool | Category | Target Directory |
+|------|----------|------------------|
+| Copilot | Agents | `.github/agents/` |
+| Copilot | Instructions | `.github/instructions/` |
+| Copilot | Skills | `.github/skills/` |
+| Copilot | Prompts | `.github/prompts/` |
+| Copilot | Hooks | `.github/hooks/` |
+| Copilot | Chat Modes | `.github/chatmodes/` |
+| Claude Code | Agents | `.claude/agents/` |
+| Claude Code | Rules | `.claude/rules/` |
+| Claude Code | Commands | `.claude/commands/` |
+
+**CLAUDE.md special case**: When installing a CLAUDE.md file, you are prompted to choose between placing it at the project root (`CLAUDE.md`) or inside the `.claude/` directory (`.claude/CLAUDE.md`).
+
+### Multi-Root Workspaces
+
+If you have multiple workspace folders open, you will be prompted to select which folder to install to. Single-folder workspaces auto-select without prompting.
+
+### Conflict Resolution
+
+If a file already exists at the target location, you are prompted with three choices:
+
+- **Overwrite** - Replace the existing file with the new version
+- **Keep Existing** - Skip the file; no changes are made
+- **Show Diff** - Open a side-by-side diff of the existing vs incoming file, then choose to overwrite or keep
+
+Pressing Escape cancels and keeps the existing file.
+
+### Directory Items (Skills)
+
+Some items (like Copilot skills and plugins) consist of multiple files in a directory. These are installed recursively, preserving the directory structure. A progress notification shows the installation status.
+
+### Installation Tracking
+
+Every installation is recorded in `.vscode/awesome-ca-manifest.json` in your workspace. This manifest tracks:
+- Source repository and branch
+- Installed file paths
+- Commit SHA at time of installation
+- Installation timestamp
+
+This manifest enables future update detection and uninstall functionality.
+
+### Security
+
+All file paths are validated before writing to prevent path traversal attacks. If an invalid path is detected, the installation is blocked with a security warning.
 
 ## Commands
 

@@ -10,7 +10,10 @@ The extension runs entirely within the VS Code extension host process. It makes 
 Extension Host (src/extension.ts)
   |
   +-- Commands (src/commands/)
-  |     Command handler functions for all 10 registered commands
+  |     +-- installCommand - orchestrates install flow (folder select, conflict, download, manifest)
+  |     +-- previewCommand - opens item content in read-only editor
+  |     +-- tokenCommands - addToken, removeToken handlers
+  |     +-- cacheCommands - clearCache handler
   |
   +-- Providers (src/providers/)
   |     +-- CatalogTreeProvider - TreeDataProvider for the catalog view
@@ -20,7 +23,8 @@ Extension Host (src/extension.ts)
   |     +-- SourceRegistry - reads settings/index, validates sources
   |     +-- GitHubClient - HTTP client for GitHub API and raw content
   |     +-- CacheManager - in-memory and persistent caching
-  |     +-- Installer - file download, path computation, conflict detection
+  |     +-- Installer - file/directory download, target path computation, conflict detection, multi-root folder selection
+  |     +-- ManifestManager - CRUD for .vscode/awesome-ca-manifest.json (installation tracking)
   |     +-- LifecycleManager - update tracking and checking
   |     +-- AuthManager - SecretStorage token management
   |     +-- ToolDetector - workspace tool detection
@@ -52,8 +56,9 @@ Extension Host (src/extension.ts)
 3. GitHubClient fetches repository trees and file contents via GitHub API
 4. CacheManager caches responses using ETags and expiration times
 5. CatalogTreeProvider renders the catalog tree view from fetched data
-6. Installer writes files to workspace directories on install/update
-7. LifecycleManager tracks installed items and checks for updates
+6. On install: Installer validates paths, downloads content via GitHubClient, writes files to workspace, handles conflicts via QuickPick
+7. ManifestManager records each installation in `.vscode/awesome-ca-manifest.json` with commit SHA, timestamp, and target paths
+8. LifecycleManager tracks installed items and checks for updates (future)
 
 ## Extension Activation
 
@@ -70,7 +75,9 @@ The extension activates lazily. On activation:
 10. Wires refresh command to invalidate caches (including preview cache) and reload the catalog tree
 11. Registers PreviewProvider as TextDocumentContentProvider for the `awesome-ca-preview` scheme
 12. Wires preview command to open catalog items in read-only editor via PreviewProvider
-13. Registers stub commands for features not yet implemented (install, update, uninstall)
+13. Initializes Installer and ManifestManager services
+14. Wires install command to orchestrate full installation flow (folder selection, path computation, conflict resolution, file download, manifest update, tree refresh)
+15. Registers stub commands for features not yet implemented (update, uninstall, checkUpdates, showAllTools)
 
 ## Security
 
