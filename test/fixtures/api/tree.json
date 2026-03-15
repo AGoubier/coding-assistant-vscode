@@ -1,0 +1,81 @@
+{
+  "sha": "abc123def456789012345678901234567890abcd",
+  "url": "https://api.github.com/repos/test/repo/git/trees/abc123",
+  "tree": [
+    {
+      "path": ".github",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "dir1sha"
+    },
+    {
+      "path": ".github/copilot-instructions.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob1sha",
+      "size": 256
+    },
+    {
+      "path": ".github/agents",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "dir2sha"
+    },
+    {
+      "path": ".github/agents/code-review.agent.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob2sha",
+      "size": 512
+    },
+    {
+      "path": ".github/agents/test-writer.agent.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob3sha",
+      "size": 384
+    },
+    {
+      "path": ".github/prompts/refactor.prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob4sha",
+      "size": 128
+    },
+    {
+      "path": ".github/skills/analysis",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "dir3sha"
+    },
+    {
+      "path": ".github/skills/analysis/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob5sha",
+      "size": 200
+    },
+    {
+      "path": ".github/skills/analysis/prompts/main.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob6sha",
+      "size": 150
+    },
+    {
+      "path": ".clauderules",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob7sha",
+      "size": 300
+    },
+    {
+      "path": "AGENTS.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob8sha",
+      "size": 400
+    }
+  ],
+  "truncated": false
+}
