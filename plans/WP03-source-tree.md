@@ -1,11 +1,11 @@
 ---
-lane: planned
+lane: doing
 ---
 
 # WP03 - Source Registry and Tree View
 
 > **Spec**: `specs/001-awesome-coding-assistants.spec.md`
-> **Status**: Not Started
+> **Status**: In Progress
 > **Priority**: P1
 > **Goal**: Users can configure source repositories and browse their contents in a hierarchical tree view (Source > Category > Item) with tool badges and descriptions.
 > **Independent Test**: Configure a source repo in settings, open the sidebar, expand the source node, see category nodes, expand a category, see customization items with Copilot/Claude Code badges. With no sources: see the welcome message.
@@ -229,3 +229,48 @@ Implement the SourceRegistry service (reads/validates configured sources from se
 ## Activity Log
 
 - 2026-03-15T00:00:00Z - planner - lane=planned - Work package created
+- 2025-07-19T10:00:00Z - coder - lane=doing - Starting WP03 implementation
+- 2025-07-19T11:00:00Z - coder - lane=doing - All tasks implemented, 143 tests passing
+
+## Self-Review
+
+### Correctness
+- [x] All acceptance criteria from the spec are met
+- [x] All 143 tests pass (51 new tests for WP03)
+- [x] Edge cases handled (empty paths, backslash paths, unknown patterns, unreachable sources)
+- [x] Error paths behave as specified (error child nodes for unreachable sources)
+
+### Spec Compliance
+- [x] FR-001: Master index fetch/parse/validate with silent fallback
+- [x] FR-002: getSources/addSource/removeSource with settings API
+- [x] FR-003: Public/private support via SourceConfig.authTokenKey
+- [x] FR-004: Source validation via GitHubClient.validateRepo, SourceUnreachableError
+- [x] FR-005: Default source when no sources configured
+- [x] FR-006: Activity Bar view container registered
+- [x] FR-007: Tree organized as Source > Category > Item
+- [x] FR-008: Item names, tool icons, descriptions
+- [x] FR-009: Lazy loading (root=settings, expand=fetch)
+- [x] FR-010: Refresh command invalidates caches, reloads tree
+- [x] FR-011: Installed badge via contextValue and description
+- [x] FR-012: Tool detection by path patterns (Copilot + Claude Code)
+- [x] FR-015: Tool compatibility badges (copilot/claude/ai icons)
+
+### Code Quality
+- [x] No unused code, dead imports, or debug artifacts
+- [x] No hardcoded values (settings use config API)
+- [x] No security issues (SSRF protection inherited from GitHubClient)
+- [x] Logic is understandable without reading spec
+
+### Scope Discipline
+- [x] Implementation does not exceed task requirements
+- [x] No unasked-for abstractions or generalizations
+
+### Encoding
+- [x] No em dashes, smart quotes, or curly apostrophes
+
+### Documentation
+- [x] architecture.md updated with WP03 activation flow
+- [x] api-reference.md updated with SourceRegistry, classifyItem, CatalogTreeProvider APIs
+- [x] developer-guide.md updated with new files in project structure
+- [x] user-guide.md updated with browsing features
+- [x] configuration-guide.md already up to date (settings defined in WP01)

@@ -16,6 +16,7 @@
 | `awesome-coding-assistants.showAllTools` | Toggle Show All Tools | Toggle tool filter on/off |
 
 All commands are currently registered as stubs except:
+- **refresh**: Invalidates all caches, reloads master index, and refreshes the catalog tree
 - **addToken**: Prompts for token name and value, stores in SecretStorage
 - **removeToken**: Shows QuickPick of stored tokens, deletes selected
 - **clearCache**: Purges all cached API responses
@@ -24,11 +25,48 @@ All commands are currently registered as stubs except:
 
 ### `activate(context: vscode.ExtensionContext): void`
 
-Entry point called by VS Code when the extension activates. Creates the log output channel and registers all command stubs.
+Entry point called by VS Code when the extension activates. Creates the log output channel, initializes all services (AuthManager, CacheManager, GitHubClient, SourceRegistry, CatalogTreeProvider), registers the tree view, loads the master index, and registers all commands.
 
 ### `deactivate(): void`
 
 Called when the extension is deactivated. Currently a no-op.
+
+## Services
+
+### SourceRegistry
+
+Manages configured source repositories. Reads from VS Code settings and the master index URL.
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `getSources` | `() => SourceConfig[]` | Returns all configured sources, merging user settings with master index |
+| `addSource` | `(source: SourceConfig) => Promise<void>` | Validates and adds a source to settings |
+| `removeSource` | `(url: string) => Promise<void>` | Removes a source by URL |
+| `validateSource` | `(source: SourceConfig) => Promise<ValidationResult>` | Validates a source via GitHubClient |
+| `loadMasterIndex` | `() => Promise<void>` | Fetches and parses master index from indexUrl |
+| `invalidateCache` | `() => void` | Clears cached master index data |
+
+### classifyItem (toolDetector)
+
+Classifies a file path into tool type and category.
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `classifyItem` | `(path: string) => ToolClassification` | Returns `{ tool, category }` for recognized paths, `{ tool: 'unknown', category: 'unknown' }` for unrecognized |
+
+**Recognized patterns:**
+- Copilot: `.github/agents/*.agent.md`, `.github/instructions/*.instructions.md`, `.github/skills/*`, `.github/prompts/*.prompt.md`, `.github/hooks/*`, `.github/chatmodes/*`, `.github/plugins/*`, `.github/workflows/*`
+- Claude Code: `.claude/agents/*.md`, `.claude/rules/*.md`, `.claude/commands/*.md`, `CLAUDE.md`, `.claude/settings.json`
+
+### CatalogTreeProvider
+
+Implements `vscode.TreeDataProvider<TreeElement>` for the main catalog tree view.
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `getChildren` | `(element?) => Promise<TreeElement[]>` | Returns child nodes (sources at root, categories for source, items for category) |
+| `getTreeItem` | `(element) => TreeItem` | Converts a tree element to a VS Code TreeItem with icons, labels, and context values |
+| `refresh` | `() => void` | Clears internal tree cache and fires `onDidChangeTreeData` |
 
 ## Tree View Context Values
 

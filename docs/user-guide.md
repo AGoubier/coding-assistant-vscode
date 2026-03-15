@@ -17,12 +17,42 @@ If no sources are configured, the welcome view will guide you to configure a sou
 Features are being implemented incrementally. Current status:
 
 - [x] Extension activation with Activity Bar view
-- [ ] Source repository configuration and browsing
+- [x] Source repository configuration and browsing (catalog tree view)
+- [x] Tool classification (Copilot/Claude Code badges on tree items)
+- [x] Welcome view when no sources configured
+- [x] Refresh command to reload all sources
+- [x] Master index support for discovering source repositories
 - [ ] Item preview, install, update, uninstall
-- [ ] Tool detection (Copilot, Claude Code, etc.)
 - [ ] Update notifications
 - [ ] Search and filter
 - [ ] Import/export
+
+## Browsing Customizations
+
+### Catalog Tree View
+
+The catalog tree view displays customizations in a hierarchy:
+
+1. **Source nodes** - Each configured repository appears as a top-level node
+2. **Category nodes** - Expanding a source shows categories (Agents, Instructions, Skills, Prompts, Hooks, Commands, Rules, Modes, Plugins, Workflows)
+3. **Item nodes** - Expanding a category shows individual customization items
+
+Items display tool badges:
+- **Copilot icon** - Items for GitHub Copilot (`.github/agents/`, `.github/instructions/`, etc.)
+- **Claude icon** - Items for Claude Code (`.claude/agents/`, `.claude/rules/`, etc.)
+- **AI icon** - Items with unknown tool affiliation
+
+### Default Source
+
+When no sources are configured, the extension uses the default source: `https://github.com/jlacube/awesome-coding-assistants`
+
+### Master Index
+
+The extension can read a master index JSON file from a configurable URL to discover additional sources. Configure the URL in `awesome-coding-assistants.indexUrl`.
+
+### Refreshing
+
+Click the refresh icon in the view title bar (or run "Awesome Coding Assistants: Refresh Sources" from the command palette) to invalidate all caches and reload the catalog tree with fresh data from GitHub.
 
 ## Commands
 

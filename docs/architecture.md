@@ -60,9 +60,15 @@ Extension Host (src/extension.ts)
 The extension activates lazily. On activation:
 1. Creates a LogOutputChannel for structured logging
 2. Initializes AuthManager, CacheManager, and GitHubClient services
-3. Wires token management commands (addToken, removeToken) to AuthManager
-4. Wires cache management command (clearCache) to CacheManager
-5. Registers stub commands for features not yet implemented
+3. Initializes SourceRegistry (reads configured sources, listens for config changes)
+4. Initializes CatalogTreeProvider (lazy-loading tree view for browsing customizations)
+5. Registers the tree view via `createTreeView` for programmatic access
+6. Sets `awesome-coding-assistants.noSources` context key for the welcome view
+7. Loads master index from configurable URL (silently falls back on failure)
+8. Wires token management commands (addToken, removeToken) to AuthManager
+9. Wires cache management command (clearCache) to CacheManager
+10. Wires refresh command to invalidate caches and reload the catalog tree
+11. Registers stub commands for features not yet implemented (preview, install, update, uninstall)
 
 ## Security
 

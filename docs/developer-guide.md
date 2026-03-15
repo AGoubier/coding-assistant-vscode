@@ -51,10 +51,13 @@ awesome-coding-assistants/
       tokenCommands.ts   # addToken, removeToken implementations
       cacheCommands.ts   # clearCache implementation
     providers/           # TreeDataProvider, TextDocumentContentProvider
+      catalogTree.ts     # CatalogTreeProvider (WP03) - main catalog tree view
     services/            # Business logic
       authManager.ts     # SecretStorage token management
       cacheManager.ts    # API response caching with ETags
       githubClient.ts    # GitHub REST API client
+      sourceRegistry.ts  # Source config management and master index
+      toolDetector.ts    # File path to tool/category classification
     models/              # TypeScript interfaces and types
       types.ts           # All shared type definitions
       errors.ts          # Custom error classes (8 error codes)
@@ -62,13 +65,23 @@ awesome-coding-assistants/
       pathUtils.ts       # Path validation, target mapping, URL parsing
   test/
     runTest.ts           # Test launcher
+    helpers/
+      mocks.ts           # Shared test mock helpers
     suite/
       index.ts           # Mocha test runner configuration
       extension.test.ts  # Extension activation tests
+      authManager.test.ts
+      cacheManager.test.ts
+      errors.test.ts
+      githubClient.test.ts
+      pathUtils.test.ts
+      toolDetector.test.ts   # Tool classification tests (WP03)
+      sourceRegistry.test.ts # Source registry tests (WP03)
+      catalogTree.test.ts    # Catalog tree provider tests (WP03)
   dist/                  # Bundled extension output (esbuild)
   out/                   # TypeScript compiled output (for tests)
   resources/
-    icons/               # Extension icons (activity bar, etc.)
+    icons/               # Extension icons (activity bar, tool badges)
 ```
 
 ## Build System
