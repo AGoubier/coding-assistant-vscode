@@ -79,7 +79,7 @@ describe('Workspace Tool Detection (WP08)', () => {
       // We test the function signature and return type
       const folders = vscode.workspace.workspaceFolders;
       if (!folders || folders.length === 0) {
-        // If no workspace folder, the function should return empty
+        // No workspace folder available in this test environment - skip gracefully
         return;
       }
       const result = await detectWorkspaceTools(folders[0]);
@@ -129,6 +129,18 @@ describe('Workspace Tool Detection (WP08)', () => {
 
     it('should classify .CLAUDE/settings.json case-insensitively', () => {
       const result = classifyItem('.CLAUDE/settings.json');
+      assert.strictEqual(result.tool, 'claude-code');
+      assert.strictEqual(result.category, 'rules');
+    });
+
+    it('should classify claude.md (lowercase) at root as claude-code (FB-01)', () => {
+      const result = classifyItem('claude.md');
+      assert.strictEqual(result.tool, 'claude-code');
+      assert.strictEqual(result.category, 'rules');
+    });
+
+    it('should classify Claude.md (mixed case) at root as claude-code (FB-01)', () => {
+      const result = classifyItem('Claude.md');
       assert.strictEqual(result.tool, 'claude-code');
       assert.strictEqual(result.category, 'rules');
     });
@@ -323,6 +335,41 @@ describe('Workspace Tool Detection (WP08)', () => {
 
       provider.dispose();
       registry.dispose();
+    });
+
+    it('showAllTools=true shows all items even when only copilot detected (FB-04)', async () => {
+      const log = createMockLogOutputChannel();
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // Set detected tools to copilot only
+      (provider as any).detectedTools = new Set(['copilot']);
+      (provider as any).detectedToolsInitialized = true;
+
+      // Set showAllTools to true
+      const config = vscode.workspace.getConfiguration('awesome-coding-assistants');
+      await config.update('showAllTools', true, vscode.ConfigurationTarget.Global);
+
+      try {
+        provider.refresh();
+        const roots = await provider.getChildren(undefined);
+        const categories = await provider.getChildren(roots[0]);
+
+        let totalItems = 0;
+        for (const cat of categories) {
+          const files = await provider.getChildren(cat as CategoryItem);
+          totalItems += files.length;
+        }
+
+        // All 5 items should be visible when showAllTools=true
+        assert.strictEqual(totalItems, 5, 'All items should be shown when showAllTools=true');
+      } finally {
+        // Restore default
+        await config.update('showAllTools', false, vscode.ConfigurationTarget.Global);
+        provider.dispose();
+        registry.dispose();
+      }
     });
   });
 

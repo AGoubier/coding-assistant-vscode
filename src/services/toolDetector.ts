@@ -49,8 +49,8 @@ export function classifyItem(path: string): ToolClassification {
     }
   }
 
-  // Claude Code CLAUDE.md at root
-  if (normalized === 'CLAUDE.md') {
+  // Claude Code CLAUDE.md at root (case-insensitive per T08-02 AC)
+  if (normalized.toLowerCase() === 'claude.md') {
     return { tool: 'claude-code', category: 'rules' };
   }
 
@@ -132,7 +132,9 @@ export async function detectWorkspaceTools(folder: vscode.WorkspaceFolder): Prom
   if (hasClaudeDir || hasClaudeMd) {
     results.push({ tool: 'claude-code', confidence: 'high' });
   } else {
-    // Claude Code low confidence: .claude/settings.json without the directory
+    // Claude Code low confidence: .claude/settings.json without the directory.
+    // Note: On real filesystems .claude/settings.json implies .claude/ exists (triggering high
+    // confidence above). This branch is defensive/spec-aligned for edge cases (e.g., virtual FS).
     const hasClaudeSettings = await pathExists(vscode.Uri.joinPath(root, '.claude', 'settings.json'));
     if (hasClaudeSettings) {
       results.push({ tool: 'claude-code', confidence: 'low' });
