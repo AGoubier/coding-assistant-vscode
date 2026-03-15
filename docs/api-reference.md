@@ -17,6 +17,7 @@
 
 All commands are currently registered as stubs except:
 - **refresh**: Invalidates all caches, reloads master index, and refreshes the catalog tree
+- **preview**: Opens the selected catalog item's content in a read-only editor tab via the `awesome-ca-preview` URI scheme
 - **addToken**: Prompts for token name and value, stores in SecretStorage
 - **removeToken**: Shows QuickPick of stored tokens, deletes selected
 - **clearCache**: Purges all cached API responses
@@ -79,3 +80,32 @@ File item descriptions are fetched lazily via `GitHubClient.getFileContent()` on
 | `catalogItem.item` | An installable item (not installed) |
 | `catalogItem.installed` | An installed item |
 | `catalogItem.updateAvailable` | An installed item with an update available |
+
+## Preview Provider
+
+### PreviewProvider
+
+Implements `vscode.TextDocumentContentProvider` for the `awesome-ca-preview` URI scheme. Serves remote file content as read-only virtual documents.
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `provideTextDocumentContent` | `(uri: Uri) => Promise<string>` | Decodes source/branch/path from URI query, fetches content via GitHubClient, caches result |
+| `clearCache` | `() => void` | Clears the in-memory content cache (called on Refresh) |
+
+### URI Format
+
+```
+awesome-ca-preview:{filename}?source={encodedSourceUrl}&branch={branch}&path={encodedPath}
+```
+
+### Utility Functions
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `buildPreviewUri` | `(source: SourceConfig, path: string, filename: string) => Uri` | Constructs a preview URI from source config and file path |
+| `decodePreviewUri` | `(uri: Uri) => { sourceUrl, branch, path }` | Decodes source URL, branch, and path from a preview URI |
+| `resolvePrimaryFile` | `(directoryPath: string, allPaths: string[]) => string \| undefined` | Resolves the primary file for directory items (SKILL.md > README.md > first .md) |
+
+### Error Handling
+
+On fetch failure, the provider throws `PreviewFetchFailedError` (code: `PREVIEW_FETCH_FAILED`) with user message "Failed to fetch preview: {detail}". The preview command shows this as an error notification.

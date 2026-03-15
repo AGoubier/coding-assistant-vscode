@@ -50,8 +50,10 @@ awesome-coding-assistants/
     commands/            # Command handler functions
       tokenCommands.ts   # addToken, removeToken implementations
       cacheCommands.ts   # clearCache implementation
+      previewCommand.ts  # preview command handler (WP04)
     providers/           # TreeDataProvider, TextDocumentContentProvider
       catalogTree.ts     # CatalogTreeProvider (WP03) - main catalog tree view
+      previewProvider.ts # PreviewProvider (WP04) - read-only virtual documents
     services/            # Business logic
       authManager.ts     # SecretStorage token management
       cacheManager.ts    # API response caching with ETags
@@ -78,6 +80,7 @@ awesome-coding-assistants/
       toolDetector.test.ts   # Tool classification tests (WP03)
       sourceRegistry.test.ts # Source registry tests (WP03)
       catalogTree.test.ts    # Catalog tree provider tests (WP03)
+      previewProvider.test.ts # Preview provider and command tests (WP04)
   dist/                  # Bundled extension output (esbuild)
   out/                   # TypeScript compiled output (for tests)
   resources/

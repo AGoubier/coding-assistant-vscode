@@ -22,7 +22,8 @@ Features are being implemented incrementally. Current status:
 - [x] Welcome view when no sources configured
 - [x] Refresh command to reload all sources
 - [x] Master index support for discovering source repositories
-- [ ] Item preview, install, update, uninstall
+- [x] Item preview (read-only editor tab with file content)
+- [ ] Install, update, uninstall
 - [ ] Update notifications
 - [ ] Search and filter
 - [ ] Import/export
@@ -55,6 +56,37 @@ The extension can read a master index JSON file from a configurable URL to disco
 ### Refreshing
 
 Click the refresh icon in the view title bar (or run "Awesome Coding Assistants: Refresh Sources" from the command palette) to invalidate all caches and reload the catalog tree with fresh data from GitHub.
+
+## Previewing Items
+
+Before installing a customization, you can preview its content in a read-only editor tab.
+
+### How to Preview
+
+1. In the catalog tree view, find the item you want to preview
+2. Click the **eye icon** that appears on hover next to the item name
+3. A read-only editor tab opens showing the file's content
+
+### Preview for Directory Items
+
+For items that represent directories (e.g., Copilot skills), the preview automatically displays the primary file:
+- **SKILL.md** (for Copilot skill directories)
+- **README.md** (if no SKILL.md exists)
+- The first `.md` file alphabetically (as a fallback)
+
+If no previewable file is found, a message indicates this.
+
+### Private Repository Preview
+
+For items in private repositories, preview works if you have a valid GitHub token stored. Use "Add GitHub Token" to configure authentication.
+
+### Error Handling
+
+If a preview fetch fails (network error, authentication issue), an error notification appears: "Failed to fetch preview: {error details}".
+
+### Caching
+
+Preview content is cached in memory for the current session. Use the Refresh command to clear the preview cache and re-fetch content.
 
 ## Commands
 

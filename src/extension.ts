@@ -4,8 +4,11 @@ import { CacheManager } from './services/cacheManager';
 import { GitHubClient } from './services/githubClient';
 import { SourceRegistry } from './services/sourceRegistry';
 import { CatalogTreeProvider } from './providers/catalogTree';
+import { PreviewProvider, PREVIEW_SCHEME } from './providers/previewProvider';
+import { previewCommand } from './commands/previewCommand';
 import { addTokenCommand, removeTokenCommand } from './commands/tokenCommands';
 import { clearCacheCommand } from './commands/cacheCommands';
+import type { CatalogFileItem, SourceConfig } from './models/types';
 
 let outputChannel: vscode.LogOutputChannel;
 
@@ -84,6 +87,7 @@ export function activate(context: vscode.ExtensionContext): void {
         async () => {
           await cacheManager.invalidate();
           sourceRegistry.invalidateCache();
+          previewProvider.clearCache();
           await sourceRegistry.loadMasterIndex();
           catalogTreeProvider.refresh();
           updateNoSourcesContext();
@@ -92,9 +96,37 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
   );
 
+  // Build a source lookup map for PreviewProvider
+  const getSourceMap = (): Map<string, SourceConfig> => {
+    const sources = sourceRegistry.getSources();
+    const map = new Map<string, SourceConfig>();
+    for (const s of sources) {
+      map.set(s.url, s);
+    }
+    return map;
+  };
+
+  // Register PreviewProvider (FR-019: TextDocumentContentProvider with scheme awesome-ca-preview)
+  const previewProvider = new PreviewProvider(githubClient, outputChannel, getSourceMap);
+  context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider(PREVIEW_SCHEME, previewProvider),
+  );
+
+  // Preview command (FR-016, T04-04)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('awesome-coding-assistants.preview', (item?: CatalogFileItem) => {
+      if (!item || item.kind !== 'item') {
+        outputChannel.info('Preview command invoked without a valid catalog item');
+        return;
+      }
+      return previewCommand(item, githubClient, outputChannel, (source) =>
+        catalogTreeProvider.getOrFetchTreePublic(source),
+      );
+    }),
+  );
+
   // Stub commands for features not yet implemented
   const stubCommands: string[] = [
-    'awesome-coding-assistants.preview',
     'awesome-coding-assistants.install',
     'awesome-coding-assistants.update',
     'awesome-coding-assistants.uninstall',

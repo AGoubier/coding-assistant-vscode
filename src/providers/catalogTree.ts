@@ -193,6 +193,13 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   }
 
   /**
+   * Public accessor for the tree cache - used by preview command to resolve directory items.
+   */
+  async getOrFetchTreePublic(source: SourceConfig): Promise<GitHubTreeResponse> {
+    return this.getOrFetchTree(source);
+  }
+
+  /**
    * Group tree entries by category, filtering to only recognized customization files.
    */
   private groupByCategory(entries: GitHubTreeEntry[]): Map<string, GitHubTreeEntry[]> {

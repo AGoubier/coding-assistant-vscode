@@ -10,7 +10,7 @@
 | [WP01](WP01-foundation.md) | Foundation and Project Scaffolding | P0 | Complete | none | - |
 | [WP02](WP02-infrastructure.md) | Infrastructure Services | P0 | Complete | WP01 | No |
 | [WP03](WP03-source-tree.md) | Source Registry and Tree View | P1 | Complete | WP01, WP02 | No |
-| [WP04](WP04-preview.md) | Preview | P1 | Not Started | WP01, WP02, WP03 | Yes (with WP05) |
+| [WP04](WP04-preview.md) | Preview | P1 | Complete | WP01, WP02, WP03 | Yes (with WP05) |
 | [WP05](WP05-installation.md) | Installation and Manifest | P1 | Not Started | WP01, WP02, WP03 | Yes (with WP04) |
 | [WP06](WP06-lifecycle.md) | Lifecycle Management | P1 | Not Started | WP01-WP05 | No |
 | [WP07](WP07-e2e-quality.md) | E2E Tests and Quality Gate | P1 | Not Started | WP01-WP06 | No |

@@ -67,8 +67,10 @@ The extension activates lazily. On activation:
 7. Loads master index from configurable URL (silently falls back on failure)
 8. Wires token management commands (addToken, removeToken) to AuthManager
 9. Wires cache management command (clearCache) to CacheManager
-10. Wires refresh command to invalidate caches and reload the catalog tree
-11. Registers stub commands for features not yet implemented (preview, install, update, uninstall)
+10. Wires refresh command to invalidate caches (including preview cache) and reload the catalog tree
+11. Registers PreviewProvider as TextDocumentContentProvider for the `awesome-ca-preview` scheme
+12. Wires preview command to open catalog items in read-only editor via PreviewProvider
+13. Registers stub commands for features not yet implemented (install, update, uninstall)
 
 ## Security
 
