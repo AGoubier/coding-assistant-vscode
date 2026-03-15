@@ -59,8 +59,10 @@ Extension Host (src/extension.ts)
 
 The extension activates lazily. On activation:
 1. Creates a LogOutputChannel for structured logging
-2. Registers all 10 command stubs
-3. (Future) Initializes services and tree view provider
+2. Initializes AuthManager, CacheManager, and GitHubClient services
+3. Wires token management commands (addToken, removeToken) to AuthManager
+4. Wires cache management command (clearCache) to CacheManager
+5. Registers stub commands for features not yet implemented
 
 ## Security
 

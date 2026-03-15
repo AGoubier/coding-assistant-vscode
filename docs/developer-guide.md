@@ -48,10 +48,18 @@ awesome-coding-assistants/
   src/
     extension.ts         # Extension entry point (activate/deactivate)
     commands/            # Command handler functions
+      tokenCommands.ts   # addToken, removeToken implementations
+      cacheCommands.ts   # clearCache implementation
     providers/           # TreeDataProvider, TextDocumentContentProvider
-    services/            # Business logic (GitHub client, caching, etc.)
+    services/            # Business logic
+      authManager.ts     # SecretStorage token management
+      cacheManager.ts    # API response caching with ETags
+      githubClient.ts    # GitHub REST API client
     models/              # TypeScript interfaces and types
+      types.ts           # All shared type definitions
+      errors.ts          # Custom error classes (8 error codes)
     utils/               # Utility functions
+      pathUtils.ts       # Path validation, target mapping, URL parsing
   test/
     runTest.ts           # Test launcher
     suite/

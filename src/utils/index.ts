@@ -1,1 +1,1 @@
-// Utility functions - to be implemented in WP02+
+export * from './pathUtils';

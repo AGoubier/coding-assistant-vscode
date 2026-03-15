@@ -1,1 +1,2 @@
-// Shared TypeScript interfaces and types - to be implemented in WP02
+export * from './types';
+export * from './errors';

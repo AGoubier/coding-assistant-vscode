@@ -1,1 +1,2 @@
-// Command handlers - to be implemented in WP02-WP06
+export { addTokenCommand, removeTokenCommand } from './tokenCommands';
+export { clearCacheCommand } from './cacheCommands';

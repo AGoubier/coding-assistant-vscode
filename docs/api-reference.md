@@ -15,7 +15,10 @@
 | `awesome-coding-assistants.clearCache` | Clear Cache | Purge all cached data |
 | `awesome-coding-assistants.showAllTools` | Toggle Show All Tools | Toggle tool filter on/off |
 
-All commands are currently registered as stubs. They will be implemented in subsequent work packages.
+All commands are currently registered as stubs except:
+- **addToken**: Prompts for token name and value, stores in SecretStorage
+- **removeToken**: Shows QuickPick of stored tokens, deletes selected
+- **clearCache**: Purges all cached API responses
 
 ## Extension API
 

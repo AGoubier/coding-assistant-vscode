@@ -1,1 +1,3 @@
-// Service layer - to be implemented in WP02-WP06
+export { AuthManager } from './authManager';
+export { CacheManager } from './cacheManager';
+export { GitHubClient } from './githubClient';
