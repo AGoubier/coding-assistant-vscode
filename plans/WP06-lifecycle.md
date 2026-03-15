@@ -1,6 +1,6 @@
 ---
-lane: to_do
-review_status: has_feedback
+lane: for_review
+review_status: acknowledged
 ---
 
 # WP06 - Lifecycle Management (Updates, Uninstall, Badges)
@@ -257,6 +257,9 @@ Implement the lifecycle management layer: installed-state badges on tree items, 
 - 2026-03-15T00:00:00Z - planner - lane=planned - Work package created
 - 2026-03-15T13:15:00Z - coder - lane=doing - Starting WP06 implementation
 - 2026-03-15T13:30:00Z - coder - lane=for_review - All tasks complete, submitted for review
+- 2026-03-15T13:35:00Z - reviewer - lane=to_do - Review verdict: Changes Required (FB-01, FB-02, FB-03)
+- 2026-03-15T13:40:00Z - coder - lane=doing - Addressing reviewer feedback (FB-01, FB-02, FB-03)
+- 2026-03-15T13:45:00Z - coder - lane=for_review - All FB items remediated, resubmitting for re-review
 - 2026-03-15T14:00:00Z - reviewer - lane=to_do - Verdict: Changes Required (3 FAILs) -- awaiting remediation
 
 ## Self-Review
