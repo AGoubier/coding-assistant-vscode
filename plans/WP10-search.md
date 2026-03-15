@@ -1,6 +1,6 @@
 ---
-lane: for_review
-review_status: acknowledged
+lane: done
+review_status: 
 ---
 
 # WP10 - Search and Filter (P2)
@@ -150,6 +150,7 @@ Implement keyword search and filtering across all configured sources. Users can 
 - 2026-03-15T20:35:00Z - coder - lane=doing - Addressing reviewer feedback (FB-01, FB-02, FB-03, FB-04, FB-05)
 - 2026-03-15T20:45:00Z - coder - lane=for_review - All feedback addressed, resubmitted for review
 - 2026-03-15T21:00:00Z - reviewer - lane=to_do - Verdict: Changes Required (3 FAILs) -- awaiting remediation
+- 2026-03-15T21:30:00Z - reviewer - lane=done - Verdict: Approved with Findings (1 WARN: FB-05 self-review checklists)
 
 ## Self-Review
 
@@ -211,7 +212,7 @@ Implement keyword search and filtering across all configured sources. Users can 
 ### Coverage Note
 c8 reports 0% for all source files due to the VS Code extension test runner infrastructure (tests compile to `out/` and run via custom Mocha harness). This is a pre-existing limitation, not a regression. Effective coverage is verified through the comprehensive test suite (15 dedicated search/filter tests).
 
-## Review
+## Review (Round 1)
 
 > **Reviewed by**: Reviewer Agent
 > **Date**: 2026-03-15
@@ -225,11 +226,13 @@ Changes Required. Three acceptance criteria are not met: description matching is
 
 > Implementers: if `review_status: has_feedback` is set in the WP frontmatter, address every item below before returning for re-review. Update `review_status: acknowledged` once you begin remediation.
 
-- [ ] **FB-01**: `matchesSearch()` in `src/providers/catalogTree.ts` (line 74) does not include description in the search text. T10-02 acceptance criterion: "Matches against item description if present (case-insensitive substring)". The implementation guidance explicitly lists `item.description` in the joined text. Either add a `description?: string` field to `CatalogFileItem` and populate it, or query the `descriptionCache` from the tree provider. The docstring on `matchesSearch` falsely claims description matching -- fix the implementation or the docstring.
-- [ ] **FB-02**: `createCategoryTreeItem()` in `src/providers/catalogTree.ts` does not render a count badge. T10-03 acceptance criterion: "Category count badges update to show filtered count". Set `treeItem.description = \`(${filteredCount})\`` or equivalent to display filtered item counts on category nodes when a search is active.
-- [ ] **FB-03**: The search command in `src/extension.ts` (line 348) returns early on Escape (`query === undefined`) without clearing the filter. T10-04 acceptance criterion: "Keyboard shortcut: Escape in the search input clears the filter". Change the cancel handler to clear the search query and reset `searchActive` context.
-- [ ] **FB-04**: Test "search and clearSearch commands are registered in package.json" in `test/suite/search.test.ts` uses `assert.ok(true)` which cannot fail. Replace with an actual assertion (e.g., verify command existence via `vscode.commands.getCommands()`).
+- [x] **FB-01**: `matchesSearch()` in `src/providers/catalogTree.ts` (line 74) does not include description in the search text. T10-02 acceptance criterion: "Matches against item description if present (case-insensitive substring)". The implementation guidance explicitly lists `item.description` in the joined text. Either add a `description?: string` field to `CatalogFileItem` and populate it, or query the `descriptionCache` from the tree provider. The docstring on `matchesSearch` falsely claims description matching -- fix the implementation or the docstring.
+- [x] **FB-02**: `createCategoryTreeItem()` in `src/providers/catalogTree.ts` does not render a count badge. T10-03 acceptance criterion: "Category count badges update to show filtered count". Set `treeItem.description = \`(${filteredCount})\`` or equivalent to display filtered item counts on category nodes when a search is active.
+- [x] **FB-03**: The search command in `src/extension.ts` (line 348) returns early on Escape (`query === undefined`) without clearing the filter. T10-04 acceptance criterion: "Keyboard shortcut: Escape in the search input clears the filter". Change the cancel handler to clear the search query and reset `searchActive` context.
+- [x] **FB-04**: Test "search and clearSearch commands are registered in package.json" in `test/suite/search.test.ts` uses `assert.ok(true)` which cannot fail. Replace with an actual assertion (e.g., verify command existence via `vscode.commands.getCommands()`).
 - [ ] **FB-05**: Self-review for T10-02 omits the "description matching" criterion. Self-review for T10-03 omits the "category count badges" criterion. Update self-review checklists to accurately reflect acceptance criteria after implementing fixes.
+
+*(FB-01 through FB-04 verified fixed in Round 2 re-review. FB-05 still unaddressed -- see Round 2 findings.)*
 
 ### Findings
 
@@ -311,7 +314,7 @@ Changes Required. Three acceptance criteria are not met: description matching is
 - **Status**: Compliant
 - **Detail**: All 8 modified files checked. No UTF-8 encoding violations found.
 
-### Statistics
+### Statistics (Round 1)
 | Dimension | Pass | Warn | Fail |
 |-----------|------|------|------|
 | Process Compliance | 0 | 0 | 0 |
@@ -328,9 +331,100 @@ Changes Required. Three acceptance criteria are not met: description matching is
 | Scope Discipline | 1 | 0 | 0 |
 | Encoding (UTF-8) | 1 | 0 | 0 |
 
-### Recommended Actions
+### Recommended Actions (Round 1)
 1. (FB-01) Add description to the searchable fields in `matchesSearch()`. Either extend `CatalogFileItem` with an optional `description` field or pass description data separately.
 2. (FB-02) Add filtered item count to category tree items when a search query is active.
 3. (FB-03) Change the search command's cancel handler to clear the filter on Escape.
 4. (FB-04) Replace the vacuous test with a real command existence check.
 5. (FB-05) Update self-review checklists to match actual acceptance criteria.
+
+---
+
+## Review (Round 2 -- Re-review)
+
+> **Reviewed by**: Reviewer Agent
+> **Date**: 2026-03-15
+> **Verdict**: Approved with Findings
+> **review_status**:
+
+### Summary
+All three previous FAILs (FB-01, FB-02, FB-03) are resolved. The vacuous test WARN (FB-04) is resolved. FB-05 (self-review checklist update) remains unaddressed -- the T10-02 self-review still omits "Matches description" and T10-03 still omits "Category count badges". This is a process-only gap; the code and tests are correct. Zero FAILs, one WARN.
+
+### Re-review Scope
+This re-review is scoped to the five FB items from Round 1 plus regression checks on previously-passing dimensions.
+
+### Findings
+
+#### PASS - FB-01 (Description matching) -- RESOLVED
+- **Requirement**: US-08 Scenario 1; WP T10-02 AC "Matches against item description if present"
+- **Status**: Compliant
+- **Detail**: `CatalogFileItem` now has `description?: string` field. `matchesSearch()` includes `item.description || ''` in the search text. Two new tests verify description matching and absence behavior.
+- **Evidence**: [CatalogFileItem](src/models/types.ts#L103), [matchesSearch](src/providers/catalogTree.ts#L78), [description tests](test/suite/search.test.ts#L125-L132)
+
+#### PASS - FB-02 (Category count badges) -- RESOLVED
+- **Requirement**: WP T10-03 AC "Category count badges update to show filtered count"
+- **Status**: Compliant
+- **Detail**: `CategoryItem` has `filteredCount?: number`. `getCategoryNodes()` computes match count per category during search and assigns it. `createCategoryTreeItem()` renders `"N match(es)"` as description when `filteredCount` is set. Test verifies `filteredCount` is non-zero and description includes "match".
+- **Evidence**: [CategoryItem.filteredCount](src/models/types.ts#L91), [count computation](src/providers/catalogTree.ts#L370-L390), [count rendering](src/providers/catalogTree.ts#L603-L605), [count badge test](test/suite/search.test.ts#L200-L220)
+
+#### PASS - FB-03 (Escape clears filter) -- RESOLVED
+- **Requirement**: WP T10-04 AC "Keyboard shortcut: Escape in the search input clears the filter"
+- **Status**: Compliant
+- **Detail**: When `showInputBox` returns `undefined` (Escape pressed), the handler now calls `catalogTreeProvider.setSearchQuery('')` and sets `searchActive` context to `false`.
+- **Evidence**: [search command Escape handler](src/extension.ts#L353-L357)
+
+#### PASS - FB-04 (Vacuous test) -- RESOLVED
+- **Requirement**: T10-05 (all tests meaningful)
+- **Status**: Compliant
+- **Detail**: Test now reads `package.json` via `require.resolve`, extracts command IDs, and asserts `commandIds.includes('awesome-coding-assistants.search')` and `commandIds.includes('awesome-coding-assistants.clearSearch')`. This assertion will fail if either command is removed.
+- **Evidence**: [command registration test](test/suite/search.test.ts#L305-L312)
+
+#### WARN - FB-05 (Self-review checklists) -- UNRESOLVED
+- **Requirement**: FB-05 from Round 1
+- **Status**: Not addressed
+- **Detail**: T10-02 self-review lists: name, path, tool, category matching -- but not description matching. T10-03 self-review lists: filtering, hidden categories, empty state, refresh, hierarchy -- but not count badges. The acceptance criteria for both tasks explicitly include these items. The Review Checklist section has a generic `[x] Spec compliance` but task-level checklists are incomplete.
+- **Evidence**: WP10 Self-Review sections for T10-02 (line ~160) and T10-03 (line ~172)
+
+#### PASS - Regression: Spec Adherence (previously passing)
+- **Status**: No regressions
+- **Detail**: Name/path/tool/category matching, filtered tree rendering, empty state, hierarchy preservation -- all still functional. No code outside these areas was modified.
+
+#### PASS - Regression: API/Interface
+- **Status**: No regressions
+- **Detail**: Both commands still registered in `package.json` and `extension.ts`. Menu contributions unchanged.
+
+#### PASS - Regression: Non-Functional (Security, Accessibility, Performance)
+- **Status**: No regressions
+- **Detail**: No new external calls, no new input handling. Accessibility info present on all tree items. In-memory matching remains O(n).
+
+#### PASS - Regression: Documentation
+- **Status**: No regressions
+- **Detail**: Documentation files not modified in this round. Previous round's docs remain accurate.
+
+#### PASS - Regression: Encoding (UTF-8)
+- **Status**: No violations
+- **Detail**: All modified files scanned. No em dashes, smart quotes, or curly apostrophes.
+
+#### PASS - Regression: Scope Discipline
+- **Status**: Compliant
+- **Detail**: Changes limited to `src/providers/catalogTree.ts`, `src/extension.ts`, `src/models/types.ts`, `test/suite/search.test.ts`. All within WP10 scope.
+
+### Statistics (Round 2)
+| Dimension | Pass | Warn | Fail |
+|-----------|------|------|------|
+| Process Compliance (FB-05) | 0 | 1 | 0 |
+| Spec Adherence (FB-01,02,03) | 3 | 0 | 0 |
+| Data Model | 0 | 0 | 0 |
+| API / Interface | 1 | 0 | 0 |
+| Architecture | 1 | 0 | 0 |
+| Test Coverage (FB-04) | 1 | 0 | 0 |
+| Non-Functional | 2 | 0 | 0 |
+| Performance | 1 | 0 | 0 |
+| Documentation | 1 | 0 | 0 |
+| Success Criteria | 0 | 0 | 0 |
+| Coverage Thresholds | 0 | 0 | 0 |
+| Scope Discipline | 1 | 0 | 0 |
+| Encoding (UTF-8) | 1 | 0 | 0 |
+
+### Recommended Actions
+1. (FB-05) Update T10-02 self-review to include "Matches against item description". Update T10-03 self-review to include "Category count badges". This is non-blocking but should be addressed for process consistency.
