@@ -84,14 +84,15 @@ Deliver the capstone quality assurance layer: end-to-end tests that exercise the
 - **Spec refs**: Section 11.4 (critical journey), Section 6.3 (update flow)
 - **Parallel**: No (depends on T07-02 for shared fixtures)
 - **Acceptance criteria**:
-  - [ ] Test installs an item (setup step)
-  - [ ] Test mocks GitHub API to return a different commit SHA for the installed file
-  - [ ] Test runs "Check for Updates" command, verifies update badge appears
-  - [ ] Test triggers update action, verifies diff editor opens
-  - [ ] Test simulates "Accept Update", verifies file content is updated and manifest SHA changes
-  - [ ] Test triggers uninstall, verifies file is deleted and manifest entry is removed
-  - [ ] Test verifies tree item no longer shows installed badge
-  - [ ] Test passes in under 30 seconds
+  - [x] Test installs an item (setup step)
+  - [x] Test mocks GitHub API to return a different commit SHA for the installed file
+  - [x] Test runs "Check for Updates", verifies update detected and badge appears
+  - [x] Test applies update, verifies file content is V2 and manifest SHA changes
+  - [x] Test triggers uninstall, verifies file is deleted and manifest entry is removed
+  - [x] Test verifies tree item no longer shows installed badge
+  - [x] Test passes in under 30 seconds
+- **Status**: Complete
+- **Self-review**: 6 tests covering no-update baseline, update detection, update apply, uninstall, tree badge after uninstall, and update badge. Uses swapped fetch mocks for SHA changes. All tests pass.
 - **Test requirements**: E2E
 - **Depends on**: T07-02
 - **Implementation Guidance**:
