@@ -294,17 +294,34 @@ export function activate(context: vscode.ExtensionContext): void {
   // Cleanup interval on deactivation
   context.subscriptions.push({ dispose: () => { if (autoCheckInterval) { clearInterval(autoCheckInterval); } } });
 
-  // Stub commands for features not yet implemented
-  const stubCommands: string[] = [
-    'awesome-coding-assistants.showAllTools',
-  ];
+  // Show All Tools toggle command (FR-014, T08-04)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('awesome-coding-assistants.showAllTools', async () => {
+      const config = vscode.workspace.getConfiguration('awesome-coding-assistants');
+      const current = config.get<boolean>('showAllTools', false);
+      await config.update('showAllTools', !current, vscode.ConfigurationTarget.Workspace);
+      catalogTreeProvider.refresh();
+      vscode.window.showInformationMessage(
+        current ? 'Filtering by detected tools' : 'Showing all tools',
+      );
+    }),
+  );
 
-  for (const commandId of stubCommands) {
-    const disposable = vscode.commands.registerCommand(commandId, () => {
-      outputChannel.info(`Command ${commandId} not yet implemented`);
-    });
-    context.subscriptions.push(disposable);
-  }
+  // Listen to showAllTools setting changes to refresh the tree
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('awesome-coding-assistants.showAllTools')) {
+        catalogTreeProvider.refresh();
+      }
+    }),
+  );
+
+  // Listen to workspace folder changes to refresh tool detection
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      catalogTreeProvider.refresh();
+    }),
+  );
 
   outputChannel.info('All commands registered');
 }

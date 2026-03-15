@@ -86,7 +86,9 @@ The extension activates lazily. On activation:
 16. Wires update command to show diff and apply updates
 17. Wires uninstall command to delete files and clean up manifest
 18. Schedules automatic update checks on activation (configurable interval)
-19. Registers stub commands for features not yet implemented (showAllTools)
+19. Registers showAllTools toggle command to switch between filtered and full catalog views
+20. Runs workspace tool detection on tree load (scans for `.github/agents/`, `CLAUDE.md`, etc.) and caches results per folder
+21. Listens for workspace folder changes and configuration changes to refresh tool detection and filtering
 
 ## Security
 

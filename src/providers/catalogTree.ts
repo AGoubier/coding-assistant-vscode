@@ -14,10 +14,11 @@ import type {
   GitHubTreeEntry,
   CategoryType,
   ToolType,
+  DetectedTool,
 } from '../models/types';
 import { GitHubClient } from '../services/githubClient';
 import { SourceRegistry } from '../services/sourceRegistry';
-import { classifyItem } from '../services/toolDetector';
+import { classifyItem, detectWorkspaceTools } from '../services/toolDetector';
 import type { ManifestManager } from '../services/manifestManager';
 import type { LifecycleManager } from '../services/lifecycle';
 
@@ -69,6 +70,10 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   // Track in-flight description fetches to avoid duplicates
   private pendingDescriptions = new Set<string>();
 
+  // Cached detected workspace tools for filtering (FR-013, FR-014)
+  private detectedTools: Set<string> = new Set();
+  private detectedToolsInitialized = false;
+
   constructor(
     registry: SourceRegistry,
     github: GitHubClient,
@@ -93,6 +98,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     this.treeCache.clear();
     this.descriptionCache.clear();
     this.pendingDescriptions.clear();
+    this.detectedToolsInitialized = false;
     this.refreshInstalledCache();
     this._onDidChangeTreeData.fire(undefined);
   }
@@ -122,6 +128,50 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       // Re-fire to update any tree items that were rendered before cache was ready
       this._onDidChangeTreeData.fire(undefined);
     });
+  }
+
+  /**
+   * Refresh the detected workspace tools cache.
+   * FR-013: auto-detect which AI tools are in the workspace.
+   */
+  private async ensureDetectedTools(): Promise<void> {
+    if (this.detectedToolsInitialized) {
+      return;
+    }
+    this.detectedToolsInitialized = true;
+    this.detectedTools.clear();
+
+    const folders = vscode.workspace.workspaceFolders ?? [];
+    for (const folder of folders) {
+      try {
+        const tools = await detectWorkspaceTools(folder);
+        for (const t of tools) {
+          this.detectedTools.add(t.tool);
+        }
+      } catch {
+        // If detection fails, we simply don't filter
+      }
+    }
+  }
+
+  /**
+   * Check if a tool should be shown based on current filter settings.
+   * FR-014: default to detected tools unless showAllTools is true or no tools detected.
+   */
+  private shouldShowTool(tool: ToolType): boolean {
+    const showAll = vscode.workspace.getConfiguration('awesome-coding-assistants').get<boolean>('showAllTools', false);
+    if (showAll) {
+      return true;
+    }
+    // If no tools detected, show everything
+    if (this.detectedTools.size === 0) {
+      return true;
+    }
+    // Unknown tool items always show (they might be relevant to any tool)
+    if (tool === 'unknown') {
+      return true;
+    }
+    return this.detectedTools.has(tool);
   }
 
   getTreeItem(element: TreeElement): vscode.TreeItem {
@@ -171,6 +221,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
 
   private async getCategoryNodes(sourceItem: SourceItem): Promise<TreeElement[]> {
     try {
+      await this.ensureDetectedTools();
       const tree = await this.getOrFetchTree(sourceItem.source);
       const entryMap = this.groupByCategory(tree.tree);
 
@@ -180,6 +231,14 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
         if (entries.length > 0) {
           // Determine primary tool for this category from first entry
           const firstClassification = classifyItem(entries[0].path);
+
+          // FR-014: filter categories by detected tools
+          // Check if any entry in this category matches detected tools
+          const hasVisibleEntries = entries.some(e => this.shouldShowTool(classifyItem(e.path).tool));
+          if (!hasVisibleEntries) {
+            continue;
+          }
+
           categories.push({
             kind: 'category',
             source: sourceItem.source,
@@ -206,23 +265,25 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       const entryMap = this.groupByCategory(tree.tree);
       const entries = entryMap.get(categoryItem.category) || [];
 
-      return entries.map(entry => {
-        const classification = classifyItem(entry.path);
-        const name = this.extractItemName(entry.path);
-        const entryId = `${categoryItem.source.url}#${entry.path}`;
-        const isInstalled = this.installedIds.has(entryId);
-        const hasUpdate = isInstalled && (this.lifecycleMgr?.hasUpdate(entryId) ?? false);
-        return {
-          kind: 'item' as const,
-          source: categoryItem.source,
-          path: entry.path,
-          name,
-          tool: classification.tool,
-          category: classification.category,
-          installed: isInstalled,
-          updateAvailable: hasUpdate,
-        };
-      });
+      return entries
+        .map(entry => {
+          const classification = classifyItem(entry.path);
+          const name = this.extractItemName(entry.path);
+          const entryId = `${categoryItem.source.url}#${entry.path}`;
+          const isInstalled = this.installedIds.has(entryId);
+          const hasUpdate = isInstalled && (this.lifecycleMgr?.hasUpdate(entryId) ?? false);
+          return {
+            kind: 'item' as const,
+            source: categoryItem.source,
+            path: entry.path,
+            name,
+            tool: classification.tool,
+            category: classification.category,
+            installed: isInstalled,
+            updateAvailable: hasUpdate,
+          };
+        })
+        .filter(item => this.shouldShowTool(item.tool));
     } catch (err) {
       this.log.error(`Failed to load category ${categoryItem.category}: ${err}`);
       return [];

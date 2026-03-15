@@ -66,7 +66,7 @@ awesome-coding-assistants/
       lifecycle.ts       # LifecycleManager: update detection, apply, uninstall (WP06)
       manifestManager.ts # Manifest CRUD for installation tracking (WP05)
       sourceRegistry.ts  # Source config management and master index
-      toolDetector.ts    # File path to tool/category classification
+      toolDetector.ts    # File path to tool/category classification + workspace scanning (WP08)
     models/              # TypeScript interfaces and types
       types.ts           # All shared type definitions
       errors.ts          # Custom error classes (8 error codes)
@@ -101,6 +101,7 @@ awesome-coding-assistants/
       performance.test.ts  # Performance tests: NFR thresholds (WP07)
       security.test.ts     # Security tests: path traversal, HTTPS, credentials (WP07)
       accessibility.test.ts # Accessibility: labels, tooltips, command palette (WP07)
+      workspaceDetection.test.ts # Workspace tool detection, filtering, toggle, badges (WP08)
   dist/                  # Bundled extension output (esbuild)
   out/                   # TypeScript compiled output (for tests)
   resources/

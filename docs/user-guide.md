@@ -29,6 +29,7 @@ Features are being implemented incrementally. Current status:
 - [x] Update with diff view (accept/reject)
 - [x] Uninstall with confirmation
 - [x] Auto-check for updates on activation
+- [x] Smart tool detection (auto-filter catalog by workspace tools)
 - [ ] Search and filter
 - [ ] Import/export
 
@@ -187,6 +188,39 @@ Configure via settings:
 4. The tree view refreshes to remove the installed badge
 
 If you have already manually deleted the file, uninstall will still clean up the manifest entry.
+
+## Smart Tool Detection
+
+The extension automatically detects which AI coding tools are configured in your workspace and filters the catalog to show only relevant items.
+
+### How It Works
+
+When you open the catalog, the extension scans your workspace for tool-specific marker files:
+
+| Tool | Detected When |
+|------|--------------|
+| GitHub Copilot | `.github/agents/` directory or `.github/copilot-instructions.md` exists |
+| Claude Code | `.claude/` directory or `CLAUDE.md` at workspace root exists |
+
+If tool markers are found, the catalog tree only displays items compatible with the detected tools. Categories with no matching items are hidden.
+
+### Show All Tools
+
+To see all available items regardless of workspace detection:
+
+1. Click the **filter icon** in the Catalog view title bar, or run "Toggle Show All Tools" from the Command Palette
+2. A notification confirms: "Showing all tools"
+3. Click again to re-enable filtering: "Filtering by detected tools"
+
+The toggle persists as a workspace-level setting (`awesome-coding-assistants.showAllTools`).
+
+### No Tools Detected
+
+When no AI tool markers are found in the workspace, the catalog shows all items by default (no filtering is applied).
+
+### Workspace Changes
+
+The extension automatically refreshes tool detection when workspace folders are added or removed.
 
 ## Commands
 

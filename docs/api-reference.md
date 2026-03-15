@@ -15,7 +15,7 @@
 | `awesome-coding-assistants.clearCache` | Clear Cache | Purge all cached data |
 | `awesome-coding-assistants.showAllTools` | Toggle Show All Tools | Toggle tool filter on/off |
 
-All commands are currently registered as stubs except:
+All commands are fully implemented:
 - **refresh**: Invalidates all caches, reloads master index, and refreshes the catalog tree
 - **preview**: Opens the selected catalog item's content in a read-only editor tab via the `awesome-ca-preview` URI scheme
 - **install**: Downloads item to workspace with conflict resolution, multi-root support, and manifest tracking
@@ -25,6 +25,7 @@ All commands are currently registered as stubs except:
 - **addToken**: Prompts for token name and value, stores in SecretStorage
 - **removeToken**: Shows QuickPick of stored tokens, deletes selected
 - **clearCache**: Purges all cached API responses
+- **showAllTools**: Toggles `showAllTools` workspace setting, refreshes catalog tree, shows confirmation message
 
 ## Extension API
 
@@ -51,17 +52,29 @@ Manages configured source repositories. Reads from VS Code settings and the mast
 | `loadMasterIndex` | `() => Promise<void>` | Fetches and parses master index from indexUrl |
 | `invalidateCache` | `() => void` | Clears cached master index data |
 
-### classifyItem (toolDetector)
+### ToolDetector (toolDetector)
 
-Classifies a file path into tool type and category.
+Classifies file paths into tool type and category, and detects which AI tools are configured in a workspace folder.
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `classifyItem` | `(path: string) => ToolClassification` | Returns `{ tool, category }` for recognized paths, `{ tool: 'unknown', category: 'unknown' }` for unrecognized |
+| `classifyItem` | `(path: string) => ToolClassification` | Returns `{ tool, category }` for recognized paths, `{ tool: 'unknown', category: 'unknown' }` for unrecognized. Case-insensitive path matching. |
+| `detectWorkspaceTools` | `(folder: WorkspaceFolder) => Promise<DetectedTool[]>` | Scans workspace folder for tool marker files/directories. Returns array of `{ tool, confidence }`. |
 
-**Recognized patterns:**
+**classifyItem recognized patterns:**
 - Copilot: `.github/agents/*.agent.md`, `.github/instructions/*.instructions.md`, `.github/skills/*`, `.github/prompts/*.prompt.md`, `.github/hooks/*`, `.github/chatmodes/*`, `.github/plugins/*`, `.github/workflows/*`
 - Claude Code: `.claude/agents/*.md`, `.claude/rules/*.md`, `.claude/commands/*.md`, `CLAUDE.md`, `.claude/settings.json`
+
+**detectWorkspaceTools markers:**
+
+| Tool | Confidence | Marker |
+|------|-----------|--------|
+| Copilot | high | `.github/agents/` directory OR `.github/copilot-instructions.md` |
+| Copilot | low | `.github/instructions/`, `.github/prompts/`, `.github/hooks/`, or `.github/skills/` directories |
+| Claude Code | high | `.claude/` directory OR `CLAUDE.md` at workspace root |
+| Claude Code | low | `.claude/settings.json` without `.claude/` directory |
+
+Returns an empty array if no tool markers are found.
 
 ### CatalogTreeProvider
 
