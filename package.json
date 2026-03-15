@@ -4,7 +4,7 @@
   "description": "Universal browser, installer, and lifecycle manager for AI coding assistant customizations across multiple tools.",
   "version": "0.1.0",
   "publisher": "jlacube",
-  "icon": "resources/icon.svg",
+  "icon": "resources/icon.png",
   "license": "MIT",
   "repository": {
     "type": "git",
