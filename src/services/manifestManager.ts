@@ -11,13 +11,14 @@ const MANIFEST_FILE = 'awesome-ca-manifest.json';
 const MANIFEST_PATH = `${MANIFEST_DIR}/${MANIFEST_FILE}`;
 const BACKUP_EXT = '.bak';
 
-/** Subset of vscode.FileSystem needed by ManifestManager, injectable for testing. */
+/** Subset of vscode.FileSystem needed by ManifestManager and LifecycleManager, injectable for testing. */
 export interface VscFs {
   readFile(uri: vscode.Uri): Thenable<Uint8Array>;
   writeFile(uri: vscode.Uri, content: Uint8Array): Thenable<void>;
   createDirectory(uri: vscode.Uri): Thenable<void>;
   stat(uri: vscode.Uri): Thenable<vscode.FileStat>;
   rename(source: vscode.Uri, target: vscode.Uri, options?: { overwrite?: boolean }): Thenable<void>;
+  delete(uri: vscode.Uri, options?: { recursive?: boolean; useTrash?: boolean }): Thenable<void>;
 }
 
 function emptyManifest(): Manifest {

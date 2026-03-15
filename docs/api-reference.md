@@ -19,6 +19,9 @@ All commands are currently registered as stubs except:
 - **refresh**: Invalidates all caches, reloads master index, and refreshes the catalog tree
 - **preview**: Opens the selected catalog item's content in a read-only editor tab via the `awesome-ca-preview` URI scheme
 - **install**: Downloads item to workspace with conflict resolution, multi-root support, and manifest tracking
+- **checkUpdates**: Checks all installed items for upstream updates via SHA comparison, updates tree badges
+- **update**: Opens diff view of installed vs upstream content, applies update on accept
+- **uninstall**: Confirms, deletes installed file(s), removes manifest entry, refreshes tree
 - **addToken**: Prompts for token name and value, stores in SecretStorage
 - **removeToken**: Shows QuickPick of stored tokens, deletes selected
 - **clearCache**: Purges all cached API responses
@@ -176,3 +179,48 @@ The `awesome-coding-assistants.install` command orchestrates:
 **CLAUDE.md special case**: When installing a CLAUDE.md file, user is prompted to choose between project root (`CLAUDE.md`) and `.claude/CLAUDE.md`.
 
 **Error codes**: `INSTALL_FAILED` (write failure), `INVALID_PATH` (path traversal detected).
+
+## Lifecycle Services
+
+### LifecycleManager
+
+Orchestrates update detection, update application, and uninstallation. Delegates to GitHubClient for API calls, ManifestManager for persistence, and Installer for file operations.
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `checkForUpdates` | `(folder?: WorkspaceFolder, token?: CancellationToken) => Promise<UpdateCheckResult[]>` | Reads manifest entries, fetches latest commit SHA for each, returns which items have updates |
+| `applyUpdate` | `(entry: InstallationEntry, folder: WorkspaceFolder, latestSha: string) => Promise<void>` | Re-downloads file(s), updates manifest entry with new SHA and timestamp |
+| `uninstallItem` | `(entry: InstallationEntry, folder: WorkspaceFolder) => Promise<void>` | Deletes file(s) from workspace and removes manifest entry |
+| `hasUpdate` | `(entryId: string) => boolean` | Returns true if the entry has a cached update available |
+| `getUpdateResult` | `(entryId: string) => UpdateCheckResult \| undefined` | Returns the cached update result for a given entry |
+| `clearUpdateCache` | `() => void` | Clears all cached update results |
+
+**UpdateCheckResult type**:
+```typescript
+{
+  entry: InstallationEntry;
+  hasUpdate: boolean;
+  latestSha: string;
+  folder: WorkspaceFolder;
+}
+```
+
+**Concurrency**: Update checks run with a concurrency limit of 10 parallel requests to avoid rate limiting. Per-item errors do not abort the entire check.
+
+**Auto-check**: When `autoCheckUpdates` is enabled (default: true), the extension runs an update check 5 seconds after activation and then at the configured interval (`autoCheckIntervalMinutes`, default: 60 min).
+
+### Update Command Flow
+
+1. Find the installation entry and workspace folder for the selected item
+2. Get the cached update result with the latest SHA
+3. Open VS Code diff editor: installed file vs upstream content (via preview scheme)
+4. Prompt user to Accept or Reject the update
+5. On accept: re-download file, update manifest SHA and timestamp, refresh tree
+
+### Uninstall Command Flow
+
+1. Find the installation entry and workspace folder
+2. Show confirmation dialog (modal warning)
+3. Delete file(s) at target path(s) using `workspace.fs.delete` (graceful if already deleted)
+4. Remove manifest entry
+5. Refresh tree to remove installed badge

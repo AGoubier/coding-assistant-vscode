@@ -11,6 +11,9 @@ Extension Host (src/extension.ts)
   |
   +-- Commands (src/commands/)
   |     +-- installCommand - orchestrates install flow (folder select, conflict, download, manifest)
+  |     +-- checkUpdatesCommand - triggers update detection across all workspace folders
+  |     +-- updateCommand - shows diff view and applies update on accept
+  |     +-- uninstallCommand - confirms and deletes files, removes manifest entry
   |     +-- previewCommand - opens item content in read-only editor
   |     +-- tokenCommands - addToken, removeToken handlers
   |     +-- cacheCommands - clearCache handler
@@ -25,7 +28,7 @@ Extension Host (src/extension.ts)
   |     +-- CacheManager - in-memory and persistent caching
   |     +-- Installer - file/directory download, target path computation, conflict detection, multi-root folder selection
   |     +-- ManifestManager - CRUD for .vscode/awesome-ca-manifest.json (installation tracking)
-  |     +-- LifecycleManager - update tracking and checking
+  |     +-- LifecycleManager - update detection (SHA comparison), update application, uninstall orchestration
   |     +-- AuthManager - SecretStorage token management
   |     +-- ToolDetector - workspace tool detection
   |
@@ -58,7 +61,9 @@ Extension Host (src/extension.ts)
 5. CatalogTreeProvider renders the catalog tree view from fetched data
 6. On install: Installer validates paths, downloads content via GitHubClient, writes files to workspace, handles conflicts via QuickPick
 7. ManifestManager records each installation in `.vscode/awesome-ca-manifest.json` with commit SHA, timestamp, and target paths
-8. LifecycleManager tracks installed items and checks for updates (future)
+8. LifecycleManager checks for upstream updates by comparing manifest SHAs with latest GitHub commit SHAs (concurrency limit of 10)
+9. On update: diff view shows installed vs upstream; on accept, Installer re-downloads and ManifestManager updates SHA
+10. On uninstall: files are deleted and manifest entry is removed
 
 ## Extension Activation
 
@@ -77,7 +82,11 @@ The extension activates lazily. On activation:
 12. Wires preview command to open catalog items in read-only editor via PreviewProvider
 13. Initializes Installer and ManifestManager services
 14. Wires install command to orchestrate full installation flow (folder selection, path computation, conflict resolution, file download, manifest update, tree refresh)
-15. Registers stub commands for features not yet implemented (update, uninstall, checkUpdates, showAllTools)
+15. Wires checkUpdates command to detect upstream changes across all workspace folders
+16. Wires update command to show diff and apply updates
+17. Wires uninstall command to delete files and clean up manifest
+18. Schedules automatic update checks on activation (configurable interval)
+19. Registers stub commands for features not yet implemented (showAllTools)
 
 ## Security
 

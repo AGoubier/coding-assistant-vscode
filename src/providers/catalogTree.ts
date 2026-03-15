@@ -18,6 +18,8 @@ import type {
 import { GitHubClient } from '../services/githubClient';
 import { SourceRegistry } from '../services/sourceRegistry';
 import { classifyItem } from '../services/toolDetector';
+import type { ManifestManager } from '../services/manifestManager';
+import type { LifecycleManager } from '../services/lifecycle';
 
 // Category display labels for tree nodes
 const CATEGORY_LABELS: Record<string, string> = {
@@ -51,6 +53,13 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   private readonly log: vscode.LogOutputChannel;
   private readonly extensionUri: vscode.Uri;
 
+  // Optional lifecycle dependencies (injected after construction for WP06)
+  private manifestMgr?: ManifestManager;
+  private lifecycleMgr?: LifecycleManager;
+
+  // Cached set of installed item IDs (sourceUrl#path) for fast tree rendering
+  private installedIds = new Set<string>();
+
   // Cache repo trees per source URL to avoid re-fetching on expand
   private treeCache = new Map<string, GitHubTreeResponse>();
 
@@ -72,11 +81,47 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     this.extensionUri = extensionUri;
   }
 
+  /**
+   * Inject manifest and lifecycle managers for installed/update badge support.
+   */
+  setLifecycle(manifest: ManifestManager, lifecycle: LifecycleManager): void {
+    this.manifestMgr = manifest;
+    this.lifecycleMgr = lifecycle;
+  }
+
   refresh(): void {
     this.treeCache.clear();
     this.descriptionCache.clear();
     this.pendingDescriptions.clear();
+    this.refreshInstalledCache();
     this._onDidChangeTreeData.fire(undefined);
+  }
+
+  /**
+   * Reload the in-memory cache of installed item IDs from the manifest.
+   */
+  private refreshInstalledCache(): void {
+    if (!this.manifestMgr) {
+      return;
+    }
+    const folders = vscode.workspace.workspaceFolders ?? [];
+    this.installedIds.clear();
+    // Fire-and-forget async read; if manifest is unavailable we just have no badges
+    Promise.all(
+      folders.map(async (f) => {
+        try {
+          const m = await this.manifestMgr!.readManifest(f);
+          for (const entry of m.installations) {
+            this.installedIds.add(entry.id);
+          }
+        } catch {
+          // ignore
+        }
+      }),
+    ).then(() => {
+      // Re-fire to update any tree items that were rendered before cache was ready
+      this._onDidChangeTreeData.fire(undefined);
+    });
   }
 
   getTreeItem(element: TreeElement): vscode.TreeItem {
@@ -164,6 +209,9 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       return entries.map(entry => {
         const classification = classifyItem(entry.path);
         const name = this.extractItemName(entry.path);
+        const entryId = `${categoryItem.source.url}#${entry.path}`;
+        const isInstalled = this.installedIds.has(entryId);
+        const hasUpdate = isInstalled && (this.lifecycleMgr?.hasUpdate(entryId) ?? false);
         return {
           kind: 'item' as const,
           source: categoryItem.source,
@@ -171,8 +219,8 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
           name,
           tool: classification.tool,
           category: classification.category,
-          installed: false, // Will be populated by WP05 manifest lookup
-          updateAvailable: false, // Will be populated by WP06 update check
+          installed: isInstalled,
+          updateAvailable: hasUpdate,
         };
       });
     } catch (err) {

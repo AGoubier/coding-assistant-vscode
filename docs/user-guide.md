@@ -24,8 +24,11 @@ Features are being implemented incrementally. Current status:
 - [x] Master index support for discovering source repositories
 - [x] Item preview (read-only editor tab with file content)
 - [x] Install customizations with conflict resolution and manifest tracking
-- [ ] Update and uninstall
-- [ ] Update notifications
+- [x] Installed/update-available badges on tree items
+- [x] Check for updates (SHA comparison with upstream)
+- [x] Update with diff view (accept/reject)
+- [x] Uninstall with confirmation
+- [x] Auto-check for updates on activation
 - [ ] Search and filter
 - [ ] Import/export
 
@@ -148,6 +151,42 @@ This manifest enables future update detection and uninstall functionality.
 ### Security
 
 All file paths are validated before writing to prevent path traversal attacks. If an invalid path is detected, the installation is blocked with a security warning.
+
+## Updating Customizations
+
+The extension tracks the version (commit SHA) of each installed customization and can detect when upstream changes are available.
+
+### Checking for Updates
+
+1. Click the **sync icon** in the Catalog view title bar, or run "Check for Updates" from the Command Palette
+2. The extension compares each installed item's recorded SHA with the latest commit SHA from GitHub
+3. Items with available updates show an **update badge** in the tree view
+
+### Auto-Check
+
+By default, the extension automatically checks for updates:
+- 5 seconds after activation (to not block startup)
+- At a configurable interval (default: every 60 minutes)
+
+Configure via settings:
+- `awesome-coding-assistants.autoCheckUpdates` (default: `true`) - enable/disable auto-check
+- `awesome-coding-assistants.autoCheckIntervalMinutes` (default: `60`, range: 5-1440)
+
+### Applying an Update
+
+1. Click the **download icon** on an item with an update badge
+2. A diff view opens showing your installed version vs the upstream version
+3. Choose **Accept Update** to apply the new version, or **Reject** to keep your current file
+4. On accept, the file is overwritten and the manifest is updated with the new version
+
+## Uninstalling Customizations
+
+1. Right-click an installed item in the tree view and select **Uninstall**
+2. Confirm the deletion in the modal dialog
+3. The file(s) are deleted from your workspace and the manifest entry is removed
+4. The tree view refreshes to remove the installed badge
+
+If you have already manually deleted the file, uninstall will still clean up the manifest entry.
 
 ## Commands
 

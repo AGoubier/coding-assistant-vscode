@@ -7,10 +7,14 @@ import { CatalogTreeProvider } from './providers/catalogTree';
 import { PreviewProvider, PREVIEW_SCHEME } from './providers/previewProvider';
 import { previewCommand } from './commands/previewCommand';
 import { installCommand } from './commands/installCommand';
+import { checkUpdatesCommand } from './commands/checkUpdatesCommand';
+import { updateCommand } from './commands/updateCommand';
+import { uninstallCommand } from './commands/uninstallCommand';
 import { addTokenCommand, removeTokenCommand } from './commands/tokenCommands';
 import { clearCacheCommand } from './commands/cacheCommands';
 import { Installer } from './services/installer';
 import { ManifestManager } from './services/manifestManager';
+import { LifecycleManager } from './services/lifecycle';
 import type { CatalogFileItem, SourceConfig } from './models/types';
 
 let outputChannel: vscode.LogOutputChannel;
@@ -128,9 +132,15 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
   );
 
-  // Initialize installer and manifest manager (WP05)
+  // Initialize installer, manifest manager, and lifecycle manager (WP05, WP06)
   const installer = new Installer(githubClient, outputChannel);
   const manifestManager = new ManifestManager(outputChannel);
+  const lifecycleManager = new LifecycleManager(
+    githubClient, manifestManager, installer, outputChannel,
+  );
+
+  // Inject lifecycle dependencies into tree provider for installed/update badges
+  catalogTreeProvider.setLifecycle(manifestManager, lifecycleManager);
 
   // Install command (FR-020, T05-07)
   context.subscriptions.push(
@@ -151,11 +161,122 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
   );
 
+  // Check for Updates command (FR-032, T06-04)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('awesome-coding-assistants.checkUpdates', () =>
+      checkUpdatesCommand(
+        lifecycleManager,
+        () => catalogTreeProvider.refresh(),
+        outputChannel,
+      ),
+    ),
+  );
+
+  // Update command (FR-031, T06-05)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('awesome-coding-assistants.update', (item?: CatalogFileItem) => {
+      if (!item || item.kind !== 'item') {
+        outputChannel.info('Update command invoked without a valid catalog item');
+        return;
+      }
+      return updateCommand(
+        item,
+        lifecycleManager,
+        manifestManager,
+        () => catalogTreeProvider.refresh(),
+        outputChannel,
+      );
+    }),
+  );
+
+  // Uninstall command (FR-033, T06-06)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('awesome-coding-assistants.uninstall', (item?: CatalogFileItem) => {
+      if (!item || item.kind !== 'item') {
+        outputChannel.info('Uninstall command invoked without a valid catalog item');
+        return;
+      }
+      return uninstallCommand(
+        item,
+        lifecycleManager,
+        manifestManager,
+        () => catalogTreeProvider.refresh(),
+        outputChannel,
+      );
+    }),
+  );
+
+  // Auto-check updates on activation (T06-08)
+  const config = vscode.workspace.getConfiguration('awesome-coding-assistants');
+  let autoCheckInterval: ReturnType<typeof setInterval> | undefined;
+
+  const scheduleAutoCheck = (): void => {
+    if (autoCheckInterval) {
+      clearInterval(autoCheckInterval);
+      autoCheckInterval = undefined;
+    }
+
+    const cfg = vscode.workspace.getConfiguration('awesome-coding-assistants');
+    const autoCheck = cfg.get<boolean>('autoCheckUpdates', true);
+    if (!autoCheck) {
+      return;
+    }
+
+    const intervalMin = cfg.get<number>('autoCheckIntervalMinutes', 60);
+    const intervalMs = Math.max(5, Math.min(1440, intervalMin)) * 60 * 1000;
+
+    autoCheckInterval = setInterval(async () => {
+      try {
+        const results = await lifecycleManager.checkForUpdates();
+        const updateCount = results.filter(r => r.hasUpdate).length;
+        if (updateCount > 0) {
+          catalogTreeProvider.refresh();
+          vscode.window.showInformationMessage(
+            `${updateCount} update${updateCount > 1 ? 's' : ''} available.`,
+          );
+        }
+      } catch (err) {
+        outputChannel.warn(`Auto update check failed: ${err}`);
+      }
+    }, intervalMs);
+  };
+
+  // Initial auto-check with 5-second delay to not block startup
+  if (config.get<boolean>('autoCheckUpdates', true)) {
+    const initialDelay = setTimeout(async () => {
+      try {
+        const results = await lifecycleManager.checkForUpdates();
+        const updateCount = results.filter(r => r.hasUpdate).length;
+        if (updateCount > 0) {
+          catalogTreeProvider.refresh();
+          vscode.window.showInformationMessage(
+            `${updateCount} update${updateCount > 1 ? 's' : ''} available.`,
+          );
+        }
+      } catch (err) {
+        outputChannel.warn(`Initial update check failed: ${err}`);
+      }
+    }, 5000);
+    context.subscriptions.push({ dispose: () => clearTimeout(initialDelay) });
+  }
+
+  scheduleAutoCheck();
+
+  // Re-schedule on config change
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('awesome-coding-assistants.autoCheckUpdates') ||
+          e.affectsConfiguration('awesome-coding-assistants.autoCheckIntervalMinutes')) {
+        scheduleAutoCheck();
+      }
+    }),
+  );
+
+  // Cleanup interval on deactivation
+  context.subscriptions.push({ dispose: () => { if (autoCheckInterval) { clearInterval(autoCheckInterval); } } });
+
   // Stub commands for features not yet implemented
   const stubCommands: string[] = [
-    'awesome-coding-assistants.update',
-    'awesome-coding-assistants.uninstall',
-    'awesome-coding-assistants.checkUpdates',
     'awesome-coding-assistants.showAllTools',
   ];
 

@@ -105,6 +105,9 @@ class MockFsStore {
           self.files.delete(self.normKey(source.path));
         }
       },
+      delete: async (uri: vscode.Uri) => {
+        self.files.delete(self.normKey(uri.path));
+      },
     };
   }
 }
@@ -865,17 +868,15 @@ describe('WP05 - Installation and Manifest', () => {
         index: 0,
       };
 
-      // Simulate user cancelling conflict resolution (returns undefined)
+      // Simulate selectTargetFolder returning undefined (user cancelled)
       const mockInstaller = {
-        selectTargetFolder: async () => mockFolder,
+        selectTargetFolder: async () => undefined,
         installFile: async () => {},
-        fileExists: async () => true, // File exists
+        fileExists: async () => false,
       } as any;
 
       const manifest = new ManifestManager(makeMockLog(), mockFs);
 
-      // The install flow will try to resolve the conflict but since we can't mock QuickPick,
-      // we test that graceful handling works
       await installCommand(
         item,
         mockInstaller,
@@ -885,6 +886,10 @@ describe('WP05 - Installation and Manifest', () => {
         () => {},
         async () => ({ sha: 'abc', url: '', tree: [], truncated: false }),
       );
+
+      // Manifest should be empty since install was cancelled
+      const m = await manifest.readManifest(mockFolder);
+      assert.strictEqual(m.installations.length, 0);
     });
   });
 
