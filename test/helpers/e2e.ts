@@ -8,7 +8,7 @@ import type { SourceConfig } from '../../src/models/types.js';
 
 // --- Fixture loading ---
 
-const FIXTURES_DIR = path.resolve(__dirname, '../../test/fixtures');
+const FIXTURES_DIR = path.resolve(__dirname, '../../../test/fixtures');
 
 export function loadFixture(relativePath: string): string {
   return fs.readFileSync(path.join(FIXTURES_DIR, relativePath), 'utf-8');
