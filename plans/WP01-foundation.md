@@ -1,5 +1,6 @@
 ---
-lane: for_review
+lane: to_do
+review_status: has_feedback
 ---
 
 # WP01 - Foundation and Project Scaffolding
@@ -237,3 +238,137 @@ Set up the complete development environment for the Awesome Coding Assistants VS
 - 2026-03-15T00:00:00Z - planner - lane=planned - Work package created
 - 2026-03-15T10:00:00Z - coder - lane=doing - Starting implementation of WP01
 - 2026-03-15T10:15:00Z - coder - lane=for_review - All tasks complete, submitted for review
+- 2025-07-19T12:00:00Z - reviewer - lane=to_do - Verdict: Changes Required (2 FAILs) -- awaiting remediation
+
+## Review
+
+> **Reviewed by**: Reviewer Agent
+> **Date**: 2025-07-19
+> **Verdict**: Changes Required
+> **review_status**: has_feedback
+
+### Summary
+
+Changes Required. Two FAILs found: (1) `npm run test:coverage` reports 0% coverage across all files because c8 cannot instrument code running inside VS Code's extension host process — the coverage tooling is non-functional and the CI pipeline will fail on every push; (2) `package.json` declares `"icon": "resources/icons/extension-icon.png"` but the file does not exist, causing `vsce package` to fail.
+
+### Review Feedback
+
+> Implementers: if `review_status: has_feedback` is set in the WP frontmatter, address every item below before returning for re-review. Update `review_status: acknowledged` once you begin remediation.
+
+- [ ] **FB-01**: Coverage tooling (T01-07) is non-functional. `npm run test:coverage` reports 0% on all files and exits with code 1 due to threshold failures. c8 wrapping the test runner cannot see coverage from the VS Code extension host (separate process). Either (a) configure c8 to work with the extension host (e.g., using `NODE_V8_COVERAGE` environment variable passed into the extension host), (b) fall back to `nyc` as the plan's risk mitigation suggests, or (c) disable `check-coverage` in `.c8rc.json` and document that coverage gating will be validated via a separate mechanism (e.g., per-file unit tests with direct imports). The CI workflow must not fail on coverage.
+- [ ] **FB-02**: `"icon": "resources/icons/extension-icon.png"` in `package.json` references a non-existent file. Either create the PNG file (128x128 or 256x256, per VS Code marketplace requirements) or remove the `icon` field from `package.json`. The plan does not require a marketplace icon.
+
+### Findings
+
+#### FAIL - Coverage Thresholds (T01-07)
+- **Requirement**: T01-07 acceptance criteria — "npm run test:coverage runs tests and produces coverage report", "Coverage thresholds are enforced: build fails if thresholds are not met"
+- **Status**: Deviating
+- **Detail**: `npm run test:coverage` exits with code 1. All files show 0% lines/branches/functions/statements. c8 instruments the Node.js process that runs `test/runTest.ts`, but the actual extension code executes inside a separate VS Code extension host process that c8 cannot see. The `.c8rc.json` has `check-coverage: true` with 80%/90% thresholds, so every run fails. The plan acknowledged this risk ("c8 + VS Code test host compatibility") and offered a fallback to nyc, but no fallback was implemented.
+- **Evidence**: `npm run test:coverage` output shows 0% across all 16 source files, followed by 4 ERROR lines for threshold failures.
+
+#### FAIL - CI Pipeline Will Fail (T01-05 / T01-07)
+- **Requirement**: T01-05 acceptance criteria — CI workflow steps succeed
+- **Status**: Deviating
+- **Detail**: `.github/workflows/ci.yml` lines 42-49 run `npm run test:coverage` without `continue-on-error`. Since coverage always reports 0%, CI will fail on every push/PR across all 3 matrix OS runners. The `npm test` step passes but is followed by the failing `test:coverage` step.
+- **Evidence**: `.github/workflows/ci.yml` lines 42-49; local `npm run test:coverage` exit code 1.
+
+#### WARN - Missing Marketplace Icon Asset
+- **Requirement**: Scope discipline — declared assets must exist
+- **Status**: Deviating
+- **Detail**: `package.json` line 27 declares `"icon": "resources/icons/extension-icon.png"` but this file does not exist in `resources/icons/`. Only 7 SVG files exist. No WP01 task requires a marketplace icon. `vsce package` will fail with a missing icon error.
+- **Evidence**: `package.json#L27`; `resources/icons/` contains only `.svg` files.
+
+#### WARN - TypeScript / ESLint Compatibility
+- **Requirement**: T01-03 — ESLint configuration
+- **Status**: Compliant with caveat
+- **Detail**: TypeScript 5.9.3 exceeds `@typescript-eslint`'s declared support range (`<5.6.0`). No functional lint issues observed currently, but future breakage is possible. Acknowledged in WP01 known issues.
+- **Evidence**: `npm run lint` TypeScript version warning.
+
+#### PASS - Spec Adherence (Commands)
+- **Requirement**: Section 8.1 — all 10 commands
+- **Status**: Compliant
+- **Detail**: All 10 commands declared in `contributes.commands` with correct IDs, titles, and categories. All registered in `extension.ts` (4 real, 6 stubs for future WPs).
+- **Evidence**: `package.json` contributes.commands; `src/extension.ts` lines 62–113.
+
+#### PASS - Spec Adherence (Settings)
+- **Requirement**: Section 8.2 — all 6 settings
+- **Status**: Compliant
+- **Detail**: All 6 settings declared with correct types, defaults, descriptions, and validation ranges (`cacheExpirationMinutes` min:5/max:43200, `autoCheckIntervalMinutes` min:5/max:1440).
+- **Evidence**: `package.json` contributes.configuration.
+
+#### PASS - Architecture Adherence
+- **Requirement**: Section 9.2 (tech stack), 9.3 (directory structure)
+- **Status**: Compliant
+- **Detail**: TypeScript 5.x, esbuild, ESLint with @typescript-eslint, Mocha + @vscode/test-electron, GitHub Actions. Directory structure matches spec 9.3 exactly. `tsconfig.json` strict mode, ES2022 target, Node16 module.
+- **Evidence**: All config files verified.
+
+#### PASS - Build / Lint / Test
+- **Requirement**: T01-01 through T01-06 — buildable, lintable, testable
+- **Status**: Compliant
+- **Detail**: `npm run build` succeeds (esbuild produces `dist/extension.js`). `npm run lint` passes (0 errors, 2 acceptable warnings in test files). `npm test` passes (155 tests, 0 failures).
+- **Evidence**: Terminal output.
+
+#### PASS - View Container and Tree View
+- **Requirement**: FR-006, FR-007 — Activity Bar view container and catalog tree view
+- **Status**: Compliant
+- **Detail**: `viewsContainers.activitybar` correctly declared. Catalog tree view registered. Welcome view with `when: "awesome-coding-assistants.noSources"` and Configure Source link.
+- **Evidence**: `package.json` contributes.views, viewsWelcome.
+
+#### PASS - Menu Contributions
+- **Requirement**: Section 4.2 — contextValue when clauses
+- **Status**: Compliant
+- **Detail**: view/title (3 entries: refresh, checkUpdates, showAllTools), view/item/context (5 entries) with correct `when` clauses using `viewItem` context values.
+- **Evidence**: `package.json` contributes.menus.
+
+#### PASS - Test Infrastructure
+- **Requirement**: T01-04 — Mocha + @vscode/test-electron
+- **Status**: Compliant
+- **Detail**: `test/runTest.ts`, `test/suite/index.ts` (Mocha with bdd UI, 10s timeout), `test/suite/extension.test.ts` (4 tests), `.vscode/launch.json` with Extension Tests config. `tsconfig.test.json` correctly includes both src and test.
+- **Evidence**: All test infrastructure files verified, 155 tests pass.
+
+#### PASS - Process Compliance
+- **Requirement**: Spec Compliance Checklist (Step 2b)
+- **Status**: Compliant
+- **Detail**: Self-Review section with Spec Compliance checklist present, all items checked.
+- **Evidence**: WP01 "Self-Review" section.
+
+#### PASS - Encoding (UTF-8)
+- **Requirement**: No smart quotes, em dashes, curly apostrophes
+- **Status**: Compliant
+- **Detail**: All WP01 files use standard ASCII/UTF-8 encoding.
+- **Evidence**: Searched all source files, no violations found.
+
+#### PASS - Documentation
+- **Requirement**: Section 4h — all 6 standard doc files
+- **Status**: Compliant
+- **Detail**: All 6 docs exist and are populated: `api-reference.md`, `architecture.md`, `configuration-guide.md`, `deployment-guide.md`, `developer-guide.md`, `user-guide.md`.
+- **Evidence**: `docs/` directory listing.
+
+#### PASS - Scope Discipline
+- **Requirement**: Only scaffolding, no feature implementations beyond stubs
+- **Status**: Compliant
+- **Detail**: 6 commands are stubs logging "not yet implemented" as expected. No unspecified features or over-engineering detected (aside from the `icon` field noted as WARN).
+
+### Statistics
+
+| Dimension | Pass | Warn | Fail |
+|-----------|------|------|------|
+| Process Compliance | 1 | 0 | 0 |
+| Spec Adherence | 3 | 0 | 0 |
+| Data Model | 0 | 0 | 0 |
+| API / Interface | 2 | 0 | 0 |
+| Architecture | 1 | 0 | 0 |
+| Test Coverage | 0 | 0 | 1 |
+| Non-Functional | 0 | 0 | 0 |
+| Performance | 0 | 0 | 0 |
+| Documentation | 1 | 0 | 0 |
+| Success Criteria | 0 | 0 | 0 |
+| Coverage Thresholds | 0 | 0 | 1 |
+| Scope Discipline | 1 | 1 | 0 |
+| Encoding (UTF-8) | 1 | 1 | 0 |
+
+### Recommended Actions
+
+1. Fix coverage tooling so `npm run test:coverage` either produces real coverage data or does not fail the build. See FB-01 for options.
+2. Fix the missing `extension-icon.png` reference. See FB-02.
+3. After fixes, CI should pass green on all 3 matrix platforms.
