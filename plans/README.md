@@ -7,7 +7,7 @@
 
 | ID | Title | Priority | Status | Depends On | Parallelisable |
 |----|-------|----------|--------|------------|----------------|
-| [WP01](WP01-foundation.md) | Foundation and Project Scaffolding | P0 | Not Started | none | - |
+| [WP01](WP01-foundation.md) | Foundation and Project Scaffolding | P0 | Complete | none | - |
 | [WP02](WP02-infrastructure.md) | Infrastructure Services | P0 | Not Started | WP01 | No |
 | [WP03](WP03-source-tree.md) | Source Registry and Tree View | P1 | Not Started | WP01, WP02 | No |
 | [WP04](WP04-preview.md) | Preview | P1 | Not Started | WP01, WP02, WP03 | Yes (with WP05) |

@@ -1,0 +1,250 @@
+{
+  "name": "awesome-coding-assistants",
+  "displayName": "Awesome Coding Assistants",
+  "description": "Universal browser, installer, and lifecycle manager for AI coding assistant customizations across multiple tools.",
+  "version": "0.1.0",
+  "publisher": "jlacube",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jlacube/awesome-coding-assistants"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "copilot",
+    "claude",
+    "ai",
+    "agents",
+    "customization"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "icon": "resources/icons/extension-icon.png",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "awesome-coding-assistants",
+          "title": "Awesome Coding Assistants",
+          "icon": "resources/icons/activity-bar.svg"
+        }
+      ]
+    },
+    "views": {
+      "awesome-coding-assistants": [
+        {
+          "id": "awesomeCodingAssistants.catalog",
+          "name": "Catalog",
+          "icon": "resources/icons/activity-bar.svg"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "awesomeCodingAssistants.catalog",
+        "contents": "No sources configured.\nConfigure a source repository to browse AI coding assistant customizations.\n[Configure Source](command:workbench.action.openSettings?%5B%22awesome-coding-assistants.sources%22%5D)",
+        "when": "awesome-coding-assistants.noSources"
+      }
+    ],
+    "commands": [
+      {
+        "command": "awesome-coding-assistants.refresh",
+        "title": "Refresh Sources",
+        "category": "Awesome Coding Assistants",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "awesome-coding-assistants.preview",
+        "title": "Preview Item",
+        "category": "Awesome Coding Assistants",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "awesome-coding-assistants.install",
+        "title": "Install Item",
+        "category": "Awesome Coding Assistants",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "awesome-coding-assistants.update",
+        "title": "Update Item",
+        "category": "Awesome Coding Assistants",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "awesome-coding-assistants.uninstall",
+        "title": "Uninstall Item",
+        "category": "Awesome Coding Assistants",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "awesome-coding-assistants.checkUpdates",
+        "title": "Check for Updates",
+        "category": "Awesome Coding Assistants",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "awesome-coding-assistants.addToken",
+        "title": "Add GitHub Token",
+        "category": "Awesome Coding Assistants"
+      },
+      {
+        "command": "awesome-coding-assistants.removeToken",
+        "title": "Remove GitHub Token",
+        "category": "Awesome Coding Assistants"
+      },
+      {
+        "command": "awesome-coding-assistants.clearCache",
+        "title": "Clear Cache",
+        "category": "Awesome Coding Assistants"
+      },
+      {
+        "command": "awesome-coding-assistants.showAllTools",
+        "title": "Toggle Show All Tools",
+        "category": "Awesome Coding Assistants",
+        "icon": "$(filter)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "awesome-coding-assistants.refresh",
+          "when": "view == awesomeCodingAssistants.catalog",
+          "group": "navigation"
+        },
+        {
+          "command": "awesome-coding-assistants.checkUpdates",
+          "when": "view == awesomeCodingAssistants.catalog",
+          "group": "navigation"
+        },
+        {
+          "command": "awesome-coding-assistants.showAllTools",
+          "when": "view == awesomeCodingAssistants.catalog",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "awesome-coding-assistants.preview",
+          "when": "view == awesomeCodingAssistants.catalog && viewItem == catalogItem.item",
+          "group": "inline@1"
+        },
+        {
+          "command": "awesome-coding-assistants.preview",
+          "when": "view == awesomeCodingAssistants.catalog && viewItem == catalogItem.installed",
+          "group": "inline@1"
+        },
+        {
+          "command": "awesome-coding-assistants.install",
+          "when": "view == awesomeCodingAssistants.catalog && viewItem == catalogItem.item",
+          "group": "inline@2"
+        },
+        {
+          "command": "awesome-coding-assistants.update",
+          "when": "view == awesomeCodingAssistants.catalog && viewItem == catalogItem.updateAvailable",
+          "group": "inline@2"
+        },
+        {
+          "command": "awesome-coding-assistants.uninstall",
+          "when": "view == awesomeCodingAssistants.catalog && viewItem =~ /catalogItem\\.installed|catalogItem\\.updateAvailable/",
+          "group": "inline@3"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Awesome Coding Assistants",
+      "properties": {
+        "awesome-coding-assistants.sources": {
+          "type": "array",
+          "default": [],
+          "description": "Configured source repositories for AI coding assistant customizations.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "GitHub repository URL (e.g., https://github.com/owner/repo)"
+              },
+              "name": {
+                "type": "string",
+                "description": "Display name for this source"
+              },
+              "branch": {
+                "type": "string",
+                "default": "main",
+                "description": "Branch to read from (default: main)"
+              },
+              "authTokenKey": {
+                "type": "string",
+                "description": "SecretStorage key for the GitHub personal access token (for private repos)"
+              }
+            },
+            "required": [
+              "url",
+              "name"
+            ]
+          }
+        },
+        "awesome-coding-assistants.indexUrl": {
+          "type": "string",
+          "default": "https://raw.githubusercontent.com/jlacube/awesome-coding-assistants/main/index.json",
+          "description": "URL to the master index JSON file listing available source repositories."
+        },
+        "awesome-coding-assistants.cacheExpirationMinutes": {
+          "type": "integer",
+          "default": 1440,
+          "minimum": 5,
+          "maximum": 43200,
+          "description": "Cache expiration time in minutes (default: 1440 = 24 hours)."
+        },
+        "awesome-coding-assistants.showAllTools": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show all tools regardless of workspace detection."
+        },
+        "awesome-coding-assistants.autoCheckUpdates": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically check for updates on extension activation."
+        },
+        "awesome-coding-assistants.autoCheckIntervalMinutes": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 5,
+          "maximum": 1440,
+          "description": "Interval in minutes between automatic update checks (default: 60)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "compile": "tsc -p tsconfig.test.json",
+    "lint": "eslint src/ test/",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js",
+    "test:coverage": "c8 node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@vscode/test-electron": "^2.3.8",
+    "c8": "^9.1.0",
+    "esbuild": "^0.27.4",
+    "eslint": "^8.56.0",
+    "glob": "^10.3.0",
+    "mocha": "^11.3.0",
+    "typescript": "^5.3.0"
+  }
+}
