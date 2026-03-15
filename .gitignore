@@ -2,5 +2,7 @@ node_modules/
 dist/
 out/
 coverage/
+.coverage-tmp/
+.coverage-marker
 .vscode-test/
 *.vsix

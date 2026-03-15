@@ -831,6 +831,158 @@ describe('WP06 - Lifecycle Management', () => {
         Object.defineProperty(vscode.workspace, 'workspaceFolders', { value: origFolders, configurable: true });
       }
     });
+
+    it('shows error when item is not installed', async () => {
+      const { updateCommand } = await import('../../src/commands/updateCommand.js');
+
+      const manifest = new ManifestManager(makeMockLog(), mockFs);
+      const github = makeMockGitHub();
+      const installer = new Installer(github, makeMockLog(), mockFs);
+      const lifecycle = new LifecycleManager(github, manifest, installer, makeMockLog(), mockFs);
+
+      const origFolders = vscode.workspace.workspaceFolders;
+      Object.defineProperty(vscode.workspace, 'workspaceFolders', { value: [makeFolder()], configurable: true });
+
+      let errorMsg = '';
+      const origShowError = vscode.window.showErrorMessage;
+      (vscode.window as any).showErrorMessage = async (msg: string) => { errorMsg = msg; };
+
+      try {
+        const item = {
+          kind: 'item' as const,
+          name: 'test-item',
+          path: '.github/agents/test.agent.md',
+          source: makeSource(),
+          tool: 'copilot' as const,
+          category: 'agents' as const,
+          installed: false,
+          updateAvailable: false,
+        };
+
+        await updateCommand(item, lifecycle, manifest, () => {}, makeMockLog());
+        assert.ok(errorMsg.includes('not installed'), `Expected not installed error, got: ${errorMsg}`);
+      } finally {
+        (vscode.window as any).showErrorMessage = origShowError;
+        Object.defineProperty(vscode.workspace, 'workspaceFolders', { value: origFolders, configurable: true });
+      }
+    });
+
+    it('shows up-to-date message when no update available', async () => {
+      const { updateCommand } = await import('../../src/commands/updateCommand.js');
+
+      const entry = makeEntry({
+        commitSha: 'sha12345678901234567890123456789012345678',
+      });
+      const manifest = new ManifestManager(makeMockLog(), mockFs);
+      await manifest.addInstallation(makeFolder(), entry);
+
+      const github = makeMockGitHub({
+        getLatestCommitSha: async () => 'sha12345678901234567890123456789012345678',
+      });
+      const installer = new Installer(github, makeMockLog(), mockFs);
+      const lifecycle = new LifecycleManager(github, manifest, installer, makeMockLog(), mockFs);
+
+      const origFolders = vscode.workspace.workspaceFolders;
+      Object.defineProperty(vscode.workspace, 'workspaceFolders', { value: [makeFolder()], configurable: true });
+
+      let infoMsg = '';
+      const origShowInfo = vscode.window.showInformationMessage;
+      (vscode.window as any).showInformationMessage = async (msg: string) => { infoMsg = msg; };
+
+      try {
+        const item = {
+          kind: 'item' as const,
+          name: 'code-review.agent.md',
+          path: '.github/agents/code-review.agent.md',
+          source: makeSource(),
+          tool: 'copilot' as const,
+          category: 'agents' as const,
+          installed: true,
+          updateAvailable: false,
+        };
+
+        await updateCommand(item, lifecycle, manifest, () => {}, makeMockLog());
+        assert.ok(infoMsg.includes('up to date'), `Expected up-to-date message, got: ${infoMsg}`);
+      } finally {
+        (vscode.window as any).showInformationMessage = origShowInfo;
+        Object.defineProperty(vscode.workspace, 'workspaceFolders', { value: origFolders, configurable: true });
+      }
+    });
+
+    it('applies update when user accepts', async () => {
+      const { updateCommand } = await import('../../src/commands/updateCommand.js');
+
+      const entry = makeEntry({
+        commitSha: 'oldsha1234567890123456789012345678901234',
+        targetPaths: ['.github/agents/code-review.agent.md'],
+      });
+      const manifest = new ManifestManager(makeMockLog(), mockFs);
+      await manifest.addInstallation(makeFolder(), entry);
+      store.set('/workspace/.github/agents/code-review.agent.md', '# Old content');
+
+      const github = makeMockGitHub({
+        getLatestCommitSha: async () => 'newsha5678901234567890123456789012345678',
+        getFileContent: async () => '# Updated content',
+      });
+      const installer = new Installer(github, makeMockLog(), mockFs);
+      const lifecycle = new LifecycleManager(github, manifest, installer, makeMockLog(), mockFs);
+      const folder = makeFolder();
+
+      // Populate update cache
+      await lifecycle.checkForUpdates(folder);
+
+      const origFolders = vscode.workspace.workspaceFolders;
+      Object.defineProperty(vscode.workspace, 'workspaceFolders', { value: [folder], configurable: true });
+
+      // Mock vscode.diff to no-op
+      const origExecCommand = vscode.commands.executeCommand;
+      (vscode.commands as any).executeCommand = async (cmd: string, ...args: any[]) => {
+        if (cmd === 'vscode.diff') { return; }
+        return origExecCommand(cmd, ...args);
+      };
+
+      // Mock showInformationMessage to accept update
+      const origShowInfo = vscode.window.showInformationMessage;
+      let infoMsgs: string[] = [];
+      (vscode.window as any).showInformationMessage = async (msg: string, ...items: string[]) => {
+        infoMsgs.push(msg);
+        if (msg.includes('Apply update')) { return 'Accept Update'; }
+        return undefined;
+      };
+
+      // Mock withProgress to just call the callback
+      const origWithProgress = vscode.window.withProgress;
+      (vscode.window as any).withProgress = async (_opts: any, cb: any) => cb();
+
+      let refreshCalled = false;
+
+      try {
+        const item = {
+          kind: 'item' as const,
+          name: 'code-review.agent.md',
+          path: '.github/agents/code-review.agent.md',
+          source: makeSource(),
+          tool: 'copilot' as const,
+          category: 'agents' as const,
+          installed: true,
+          updateAvailable: true,
+        };
+
+        await updateCommand(item, lifecycle, manifest, () => { refreshCalled = true; }, makeMockLog());
+
+        // Verify file was updated
+        assert.strictEqual(store.get('/workspace/.github/agents/code-review.agent.md'), '# Updated content');
+        // Verify refresh was called
+        assert.ok(refreshCalled, 'Tree refresh should have been called');
+        // Verify success message
+        assert.ok(infoMsgs.some(m => m.includes('Updated')), 'Should show updated message');
+      } finally {
+        (vscode.commands as any).executeCommand = origExecCommand;
+        (vscode.window as any).showInformationMessage = origShowInfo;
+        (vscode.window as any).withProgress = origWithProgress;
+        Object.defineProperty(vscode.workspace, 'workspaceFolders', { value: origFolders, configurable: true });
+      }
+    });
   });
 
   // ========================================

@@ -31,11 +31,20 @@ export class GitHubClient {
   private readonly auth: AuthManager;
   private readonly cache: CacheManager;
   private readonly log: vscode.LogOutputChannel;
+  private readonly abortController: AbortController;
 
   constructor(auth: AuthManager, cache: CacheManager, log: vscode.LogOutputChannel) {
     this.auth = auth;
     this.cache = cache;
     this.log = log;
+    this.abortController = new AbortController();
+  }
+
+  /**
+   * Abort all in-flight fetch requests (called on dispose/deactivation).
+   */
+  dispose(): void {
+    this.abortController.abort();
   }
 
   /**
@@ -223,7 +232,7 @@ export class GitHubClient {
     this.log.trace(`Fetch: ${url}`);
 
     try {
-      const response = await fetch(url, { headers });
+      const response = await fetch(url, { headers, signal: this.abortController.signal });
 
       // Log rate limit info (never log tokens)
       const remaining = response.headers.get('x-ratelimit-remaining');
@@ -270,6 +279,11 @@ export class GitHubClient {
     } catch (err) {
       if (err instanceof AuthFailedError || err instanceof RateLimitedError || err instanceof SourceUnreachableError) {
         throw err;
+      }
+      // Gracefully handle aborted/terminated fetch (extension shutting down)
+      if (this.abortController.signal.aborted ||
+          (err instanceof TypeError && (err.message === 'terminated' || err.message === 'Failed to fetch'))) {
+        this.log.trace(`Fetch aborted for ${url}`);
       }
       throw new SourceUnreachableError(source.url);
     }
