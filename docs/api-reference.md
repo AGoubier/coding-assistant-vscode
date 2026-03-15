@@ -14,6 +14,7 @@
 | `awesome-coding-assistants.removeToken` | Remove GitHub Token | Delete a stored token from SecretStorage |
 | `awesome-coding-assistants.clearCache` | Clear Cache | Purge all cached data |
 | `awesome-coding-assistants.showAllTools` | Toggle Show All Tools | Toggle tool filter on/off |
+| `awesome-coding-assistants.installBundle` | Install Bundle | Install all items in a practice bundle |
 
 All commands are fully implemented:
 - **refresh**: Invalidates all caches, reloads master index, and refreshes the catalog tree
@@ -26,6 +27,7 @@ All commands are fully implemented:
 - **removeToken**: Shows QuickPick of stored tokens, deletes selected
 - **clearCache**: Purges all cached API responses
 - **showAllTools**: Toggles `showAllTools` workspace setting, refreshes catalog tree, shows confirmation message
+- **installBundle**: Installs all items in a practice bundle sequentially with progress notification. Handles cross-source references, optional/required items, and cancellation.
 
 ## Extension API
 
@@ -97,6 +99,8 @@ File item descriptions are fetched lazily via `GitHubClient.getFileContent()` on
 | `catalogItem.item` | An installable item (not installed) |
 | `catalogItem.installed` | An installed item |
 | `catalogItem.updateAvailable` | An installed item with an update available |
+| `bundleItem` | A practice bundle node (supports "Install Bundle" action) |
+| `bundleFileItem` | A file item within a practice bundle |
 
 ## Preview Provider
 
@@ -237,3 +241,40 @@ Orchestrates update detection, update application, and uninstallation. Delegates
 3. Delete file(s) at target path(s) using `workspace.fs.delete` (graceful if already deleted)
 4. Remove manifest entry
 5. Refresh tree to remove installed badge
+
+## Practice Bundles
+
+### Bundle Parser (`bundleParser.ts`)
+
+Parses and validates bundle manifest JSON files from `bundles/*.json` in source repos.
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `parseBundle` | `(content: string, bundleName?: string) => Bundle` | Parses JSON, validates schema, returns Bundle or throws descriptive error |
+
+**Bundle schema**: `{ name: string (1-100 chars), description?: string (0-500 chars), items: BundleItem[] (min 1) }`
+
+**BundleItem schema**: `{ path: string, tool: 'copilot' \| 'claude-code', category: string, sourceUrl?: string, required?: boolean (default: true) }`
+
+### Install Bundle Command Flow
+
+1. Select target workspace folder (same logic as single-item install)
+2. For each item in the bundle (sequentially):
+   a. Resolve source config (parent source or cross-source via `sourceUrl`)
+   b. Compute target path from tool/category mapping
+   c. Download and install file via Installer service
+   d. Record installation entry in manifest (per-item, not per-bundle)
+3. Progress notification: "Installing bundle '{name}': {current}/{total}"
+4. Cross-source items with unresolved `sourceUrl`: warn user, skip item
+5. Required items that fail: abort remaining installs
+6. Optional items that fail: warn and continue
+7. Summary: "Installed {N}/{total} items from bundle '{name}'"
+8. Cancellable via progress notification
+
+### Bundle Tree Display
+
+Bundles appear as a "Bundles" category under each source that has a `bundles/` directory. Each bundle shows:
+- Label: bundle name
+- Description: "{N} items" count badge
+- Collapsible: expands to show individual bundle items with tool/category info
+- Context value: `bundleItem` (enables "Install Bundle" inline action)

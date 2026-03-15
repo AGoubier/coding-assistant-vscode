@@ -158,3 +158,40 @@ export interface GitHubCommit {
   sha: string;
   url: string;
 }
+
+// --- Bundle types - Section 7.7, 7.8 (P2) ---
+
+export interface BundleItem {
+  path: string;
+  sourceUrl?: string;
+  tool: 'copilot' | 'claude-code';
+  category: string;
+  required?: boolean;
+}
+
+export interface Bundle {
+  name: string;
+  description?: string;
+  items: BundleItem[];
+}
+
+// --- Bundle tree items ---
+
+export interface BundleCategoryItem {
+  kind: 'bundleCategory';
+  source: SourceConfig;
+}
+
+export interface BundleNodeItem {
+  kind: 'bundle';
+  source: SourceConfig;
+  bundle: Bundle;
+  bundlePath: string;
+}
+
+export interface BundleFileItem {
+  kind: 'bundleFile';
+  source: SourceConfig;
+  bundleItem: BundleItem;
+  bundleName: string;
+}

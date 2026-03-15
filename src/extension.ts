@@ -12,10 +12,11 @@ import { updateCommand } from './commands/updateCommand';
 import { uninstallCommand } from './commands/uninstallCommand';
 import { addTokenCommand, removeTokenCommand } from './commands/tokenCommands';
 import { clearCacheCommand } from './commands/cacheCommands';
+import { installBundleCommand } from './commands/installBundleCommand';
 import { Installer } from './services/installer';
 import { ManifestManager } from './services/manifestManager';
 import { LifecycleManager } from './services/lifecycle';
-import type { CatalogFileItem, SourceConfig } from './models/types';
+import type { CatalogFileItem, BundleNodeItem, SourceConfig } from './models/types';
 
 let outputChannel: vscode.LogOutputChannel;
 
@@ -320,6 +321,25 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       catalogTreeProvider.refresh();
+    }),
+  );
+
+  // Install Bundle command (US-07, T09-03)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('awesome-coding-assistants.installBundle', (item?: BundleNodeItem) => {
+      if (!item || !('kind' in item) || item.kind !== 'bundle') {
+        outputChannel.info('Install Bundle command invoked without a valid bundle item');
+        return;
+      }
+      return installBundleCommand(
+        item,
+        installer,
+        githubClient,
+        manifestManager,
+        sourceRegistry,
+        outputChannel,
+        () => { catalogTreeProvider.refresh(); void updateHasInstalledContext(); },
+      );
     }),
   );
 

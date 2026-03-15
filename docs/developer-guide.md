@@ -55,6 +55,7 @@ awesome-coding-assistants/
       checkUpdatesCommand.ts # check for updates command handler (WP06)
       updateCommand.ts     # update command handler with diff view (WP06)
       uninstallCommand.ts  # uninstall command handler (WP06)
+      installBundleCommand.ts # install bundle command handler (WP09)
     providers/           # TreeDataProvider, TextDocumentContentProvider
       catalogTree.ts     # CatalogTreeProvider (WP03) - main catalog tree view
       previewProvider.ts # PreviewProvider (WP04) - read-only virtual documents
@@ -67,6 +68,7 @@ awesome-coding-assistants/
       manifestManager.ts # Manifest CRUD for installation tracking (WP05)
       sourceRegistry.ts  # Source config management and master index
       toolDetector.ts    # File path to tool/category classification + workspace scanning (WP08)
+      bundleParser.ts    # Bundle manifest parsing and validation (WP09)
     models/              # TypeScript interfaces and types
       types.ts           # All shared type definitions
       errors.ts          # Custom error classes (8 error codes)
@@ -98,6 +100,7 @@ awesome-coding-assistants/
       e2e-update-uninstall.test.ts # E2E: update > uninstall journey (WP07)
       integration-github.test.ts  # Integration: GitHubClient + CacheManager + AuthManager (WP07)
       integration-source.test.ts  # Integration: SourceRegistry + GitHubClient (WP07)
+      bundles.test.ts            # Bundle parser, tree display, install tests (WP09)
       performance.test.ts  # Performance tests: NFR thresholds (WP07)
       security.test.ts     # Security tests: path traversal, HTTPS, credentials (WP07)
       accessibility.test.ts # Accessibility: labels, tooltips, command palette (WP07)

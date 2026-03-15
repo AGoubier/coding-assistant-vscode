@@ -30,6 +30,7 @@ Features are being implemented incrementally. Current status:
 - [x] Uninstall with confirmation
 - [x] Auto-check for updates on activation
 - [x] Smart tool detection (auto-filter catalog by workspace tools)
+- [x] Practice bundles (one-click install of curated item collections)
 - [ ] Search and filter
 - [ ] Import/export
 
@@ -222,6 +223,35 @@ When no AI tool markers are found in the workspace, the catalog shows all items 
 
 The extension automatically refreshes tool detection when workspace folders are added or removed.
 
+## Practice Bundles
+
+Org leads can define named collections of customizations ("practice bundles") in source repos. Users can install all items in a bundle with one click.
+
+### How Bundles Work
+
+Bundles are JSON files stored in the `bundles/` directory of a source repo. Each bundle lists a set of customization items to install together. For example, a "Team Onboarding" bundle might include agents, prompts, and rules that every new team member should have.
+
+### Browsing Bundles
+
+If a source repository contains a `bundles/` directory with `.json` files, a **Bundles** category appears under that source in the catalog tree. Expanding it shows each bundle with a count badge (e.g., "5 items"). Expanding a bundle shows its individual items with tool and category info.
+
+### Installing a Bundle
+
+1. Find a bundle in the catalog tree under the "Bundles" category
+2. Click the **Install Bundle** action (package icon) on the bundle item, or right-click and select "Install Bundle"
+3. Select the target workspace folder (if multi-root)
+4. A progress notification shows installation status: "Installing bundle '{name}': {current}/{total}"
+5. After completion, a summary notification shows how many items were installed
+
+### Cross-Source Bundles
+
+A bundle can reference items from other configured source repos. If a referenced source is not configured, a warning is shown and that item is skipped.
+
+### Required vs Optional Items
+
+- **Required items** (default): if installation fails, remaining items are not installed
+- **Optional items**: if installation fails, the bundle continues with remaining items
+
 ## Commands
 
 Access commands via Cmd/Ctrl+Shift+P and search for "Awesome Coding Assistants":
@@ -238,6 +268,7 @@ Access commands via Cmd/Ctrl+Shift+P and search for "Awesome Coding Assistants":
 | Remove GitHub Token | Remove a stored token |
 | Clear Cache | Clear all cached data |
 | Toggle Show All Tools | Show/hide items for all tools |
+| Install Bundle | Install all items in a practice bundle |
 
 ## Troubleshooting
 

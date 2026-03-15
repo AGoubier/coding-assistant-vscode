@@ -15,10 +15,15 @@ import type {
   CategoryType,
   ToolType,
   DetectedTool,
+  BundleCategoryItem,
+  BundleNodeItem,
+  BundleFileItem,
+  Bundle,
 } from '../models/types';
 import { GitHubClient } from '../services/githubClient';
 import { SourceRegistry } from '../services/sourceRegistry';
 import { classifyItem, detectWorkspaceTools } from '../services/toolDetector';
+import { parseBundle } from '../services/bundleParser';
 import type { ManifestManager } from '../services/manifestManager';
 import type { LifecycleManager } from '../services/lifecycle';
 
@@ -43,7 +48,7 @@ interface ErrorItem {
   source: SourceConfig;
 }
 
-type TreeElement = CatalogItem | ErrorItem;
+type TreeElement = CatalogItem | ErrorItem | BundleCategoryItem | BundleNodeItem | BundleFileItem;
 
 export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement> {
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<TreeElement | undefined | null>();
@@ -74,6 +79,9 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   private detectedTools: Set<string> = new Set();
   private detectedToolsInitialized = false;
 
+  // Cache parsed bundles per source URL
+  private bundleCache = new Map<string, Bundle[]>();
+
   constructor(
     registry: SourceRegistry,
     github: GitHubClient,
@@ -99,6 +107,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     this.descriptionCache.clear();
     this.pendingDescriptions.clear();
     this.detectedToolsInitialized = false;
+    this.bundleCache.clear();
     this.refreshInstalledCache();
     this._onDidChangeTreeData.fire(undefined);
   }
@@ -179,6 +188,18 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       return this.createErrorTreeItem(element);
     }
 
+    if ('kind' in element && element.kind === 'bundleCategory') {
+      return this.createBundleCategoryTreeItem();
+    }
+
+    if ('kind' in element && element.kind === 'bundle') {
+      return this.createBundleTreeItem(element);
+    }
+
+    if ('kind' in element && element.kind === 'bundleFile') {
+      return this.createBundleFileTreeItem(element);
+    }
+
     const item = element as CatalogItem;
     switch (item.kind) {
       case 'source':
@@ -197,6 +218,18 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     }
 
     if ('kind' in element && element.kind === 'error') {
+      return [];
+    }
+
+    if ('kind' in element && element.kind === 'bundleCategory') {
+      return this.getBundleNodes(element);
+    }
+
+    if ('kind' in element && element.kind === 'bundle') {
+      return this.getBundleFileNodes(element);
+    }
+
+    if ('kind' in element && element.kind === 'bundleFile') {
       return [];
     }
 
@@ -248,7 +281,17 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
         }
       }
 
-      return categories;
+      // Check for bundles directory and add Bundles category if present
+      const hasBundleFiles = await this.hasBundles(sourceItem.source);
+      const result: TreeElement[] = categories;
+      if (hasBundleFiles) {
+        result.push({
+          kind: 'bundleCategory',
+          source: sourceItem.source,
+        });
+      }
+
+      return result;
     } catch (err) {
       this.log.error(`Failed to load source ${sourceItem.source.url}: ${err}`);
       return [{
@@ -257,6 +300,82 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
         source: sourceItem.source,
       }];
     }
+  }
+
+  /**
+   * Discover and cache bundles from the bundles/ directory in a source repo.
+   */
+  private async discoverBundles(source: SourceConfig): Promise<Bundle[]> {
+    const cached = this.bundleCache.get(source.url);
+    if (cached) {
+      return cached;
+    }
+
+    const tree = await this.getOrFetchTree(source);
+    const bundleEntries = tree.tree.filter(
+      e => e.type === 'blob' && e.path.startsWith('bundles/') && e.path.endsWith('.json'),
+    );
+
+    if (bundleEntries.length === 0) {
+      this.bundleCache.set(source.url, []);
+      return [];
+    }
+
+    const bundles: Bundle[] = [];
+    for (const entry of bundleEntries) {
+      try {
+        const content = await this.github.getFileContent(source, entry.path);
+        const bundle = parseBundle(content, entry.path);
+        bundles.push(bundle);
+      } catch (err) {
+        this.log.warn(`Failed to parse bundle ${entry.path}: ${err}`);
+      }
+    }
+
+    this.bundleCache.set(source.url, bundles);
+    return bundles;
+  }
+
+  /**
+   * Check if a source has any bundles and return a BundleCategory node if so.
+   * Called from getCategoryNodes after regular categories.
+   */
+  async hasBundles(source: SourceConfig): Promise<boolean> {
+    try {
+      const bundles = await this.discoverBundles(source);
+      return bundles.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  private async getBundleNodes(bundleCat: BundleCategoryItem): Promise<BundleNodeItem[]> {
+    try {
+      const bundles = await this.discoverBundles(bundleCat.source);
+      const tree = await this.getOrFetchTree(bundleCat.source);
+      const bundleEntries = tree.tree.filter(
+        e => e.type === 'blob' && e.path.startsWith('bundles/') && e.path.endsWith('.json'),
+      );
+
+      return bundles.map((bundle, i) => ({
+        kind: 'bundle' as const,
+        source: bundleCat.source,
+        bundle,
+        bundlePath: bundleEntries[i]?.path || `bundles/${bundle.name}.json`,
+      }));
+    } catch (err) {
+      this.log.error(`Failed to load bundles for ${bundleCat.source.url}: ${err}`);
+      return [];
+    }
+  }
+
+  private getBundleFileNodes(bundleNode: BundleNodeItem): BundleFileItem[] {
+    return bundleNode.bundle.items.map(item => ({
+      kind: 'bundleFile' as const,
+      source: bundleNode.source,
+      bundleItem: item,
+      bundleName: bundleNode.bundle.name,
+    }));
   }
 
   private async getFileNodes(categoryItem: CategoryItem): Promise<CatalogFileItem[]> {
@@ -517,6 +636,52 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       case 'workflows': return new vscode.ThemeIcon('workflow');
       default: return new vscode.ThemeIcon('file');
     }
+  }
+
+  // --- Bundle tree items ---
+
+  private createBundleCategoryTreeItem(): vscode.TreeItem {
+    const treeItem = new vscode.TreeItem(
+      'Bundles',
+      vscode.TreeItemCollapsibleState.Collapsed,
+    );
+    treeItem.contextValue = 'catalogItem.category';
+    treeItem.tooltip = 'Practice bundles - install multiple items at once';
+    treeItem.iconPath = new vscode.ThemeIcon('package');
+    treeItem.accessibilityInformation = { label: 'Category: Bundles' };
+    return treeItem;
+  }
+
+  private createBundleTreeItem(item: BundleNodeItem): vscode.TreeItem {
+    const treeItem = new vscode.TreeItem(
+      item.bundle.name,
+      vscode.TreeItemCollapsibleState.Collapsed,
+    );
+    treeItem.contextValue = 'bundleItem';
+    treeItem.description = `${item.bundle.items.length} items`;
+    treeItem.tooltip = item.bundle.description || `Bundle: ${item.bundle.name}`;
+    treeItem.iconPath = new vscode.ThemeIcon('package');
+    treeItem.accessibilityInformation = {
+      label: `Bundle: ${item.bundle.name}, ${item.bundle.items.length} items`,
+    };
+    return treeItem;
+  }
+
+  private createBundleFileTreeItem(item: BundleFileItem): vscode.TreeItem {
+    const filename = item.bundleItem.path.split('/').pop() || item.bundleItem.path;
+    const treeItem = new vscode.TreeItem(
+      filename,
+      vscode.TreeItemCollapsibleState.None,
+    );
+    treeItem.contextValue = 'bundleFileItem';
+    treeItem.description = `${item.bundleItem.tool} / ${item.bundleItem.category}`;
+    treeItem.tooltip = `${item.bundleItem.path} (${item.bundleItem.tool})`;
+    treeItem.iconPath = this.getToolIcon(item.bundleItem.tool as ToolType);
+    const requiredLabel = item.bundleItem.required === false ? ', optional' : '';
+    treeItem.accessibilityInformation = {
+      label: `${filename}, ${item.bundleItem.tool}, ${item.bundleItem.category}${requiredLabel}`,
+    };
+    return treeItem;
   }
 
   dispose(): void {

@@ -31,6 +31,7 @@ Extension Host (src/extension.ts)
   |     +-- LifecycleManager - update detection (SHA comparison), update application, uninstall orchestration
   |     +-- AuthManager - SecretStorage token management
   |     +-- ToolDetector - workspace tool detection
+  |     +-- BundleParser - parses and validates bundle manifest JSON from source repos
   |
   +-- Models (src/models/)
   |     +-- types.ts - shared TypeScript interfaces
@@ -64,6 +65,8 @@ Extension Host (src/extension.ts)
 8. LifecycleManager checks for upstream updates by comparing manifest SHAs with latest GitHub commit SHAs (concurrency limit of 10)
 9. On update: diff view shows installed vs upstream; on accept, Installer re-downloads and ManifestManager updates SHA
 10. On uninstall: files are deleted and manifest entry is removed
+11. CatalogTreeProvider discovers bundles from `bundles/*.json` in source repos and displays them under a "Bundles" category
+12. On install bundle: each item is installed sequentially with progress, supporting cross-source references and optional/required items
 
 ## Extension Activation
 
@@ -89,6 +92,7 @@ The extension activates lazily. On activation:
 19. Registers showAllTools toggle command to switch between filtered and full catalog views
 20. Runs workspace tool detection on tree load (scans for `.github/agents/`, `CLAUDE.md`, etc.) and caches results per folder
 21. Listens for workspace folder changes and configuration changes to refresh tool detection and filtering
+22. Registers installBundle command for one-click bundle installation with progress and cross-source support
 
 ## Security
 
