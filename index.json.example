@@ -1,0 +1,60 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jlacube/awesome-coding-assistants/main/index.schema.json",
+  "version": "1.0.0",
+  "sources": [
+    {
+      "url": "https://github.com/jlacube/awesome-coding-assistants",
+      "name": "Awesome Coding Assistants",
+      "description": "Community-curated collection of coding assistant customizations",
+      "branch": "main",
+      "categories": ["agents", "instructions", "skills", "prompts", "rules", "modes"],
+      "tools": ["copilot", "claude-code", "kiro"],
+      "private": false
+    },
+    {
+      "url": "https://github.com/example-org/copilot-customizations",
+      "name": "Copilot Customizations",
+      "description": "GitHub Copilot agents, prompts, and instructions",
+      "branch": "main",
+      "categories": ["agents", "prompts", "instructions", "skills"],
+      "tools": ["copilot"],
+      "private": false
+    },
+    {
+      "url": "https://github.com/example-org/claude-code-rules",
+      "name": "Claude Code Rules",
+      "description": "Rules and hooks for Claude Code workflows",
+      "branch": "main",
+      "categories": ["rules", "hooks", "commands"],
+      "tools": ["claude-code"],
+      "private": false
+    },
+    {
+      "url": "https://github.com/example-org/kiro-plugins",
+      "name": "Kiro Plugins",
+      "description": "Kiro agent plugins and configurations",
+      "branch": "main",
+      "categories": ["plugins", "agents"],
+      "tools": ["kiro"],
+      "private": false
+    },
+    {
+      "url": "https://github.com/example-org/multi-tool-bundles",
+      "name": "Multi-Tool Bundles",
+      "description": "Cross-tool practice bundles for team onboarding",
+      "branch": "main",
+      "categories": ["bundles", "agents", "prompts", "rules"],
+      "tools": ["copilot", "claude-code", "kiro", "opencode"],
+      "private": false
+    },
+    {
+      "url": "https://github.com/example-corp/internal-standards",
+      "name": "Internal Engineering Standards",
+      "description": "Private org-specific coding standards and review agents",
+      "branch": "release",
+      "categories": ["agents", "rules", "instructions"],
+      "tools": ["copilot", "claude-code"],
+      "private": true
+    }
+  ]
+}

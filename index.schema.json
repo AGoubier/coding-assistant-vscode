@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/jlacube/awesome-coding-assistants/main/index.schema.json",
+  "title": "Awesome Coding Assistants Master Index",
+  "description": "Schema for the master index file that lists community-curated sources of coding assistant customizations.",
+  "type": "object",
+  "required": ["version", "sources"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri",
+      "description": "JSON Schema reference URI."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the index format (e.g. \"1.0.0\")."
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Array of source repositories providing coding assistant customizations.",
+      "items": {
+        "$ref": "#/definitions/SourceEntry"
+      }
+    }
+  },
+  "definitions": {
+    "SourceEntry": {
+      "type": "object",
+      "required": ["url", "name"],
+      "additionalProperties": false,
+      "description": "A single source repository entry.",
+      "properties": {
+        "url": {
+          "type": "string",
+          "pattern": "^https://github\\.com/[^/]+/[^/]+$",
+          "description": "GitHub repository URL (e.g. \"https://github.com/org/repo\")."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Display name for the source."
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Short description of the source repository."
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "default": "main",
+          "description": "Git branch to read from. Defaults to \"main\"."
+        },
+        "categories": {
+          "type": "array",
+          "uniqueItems": true,
+          "description": "Categories of customizations provided by this source.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "agents",
+              "instructions",
+              "skills",
+              "prompts",
+              "hooks",
+              "commands",
+              "rules",
+              "modes",
+              "plugins",
+              "workflows",
+              "bundles"
+            ]
+          }
+        },
+        "tools": {
+          "type": "array",
+          "uniqueItems": true,
+          "description": "Coding assistant tools supported by this source.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "copilot",
+              "claude-code",
+              "kiro",
+              "kilocode",
+              "opencode"
+            ]
+          }
+        },
+        "private": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether authentication is required to access this source."
+        }
+      }
+    }
+  }
+}
