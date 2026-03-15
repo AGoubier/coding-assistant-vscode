@@ -331,24 +331,9 @@ git commit -m "docs(plan): mark WP<NN> complete and submit for review"
 6. Summarise what was built and any outstanding issues to the user
 
 Do NOT set `lane: done` — only the Reviewer agent sets `done`. The coder's final state is always `for_review`.
-## 4b. Automatic Handoff to Reviewer
+## 4b. Handoff to Reviewer
 
-After marking a work package complete, **immediately invoke the Reviewer agent** to begin review. Do not wait for the user to manually trigger a review.
-
-Invoke `#agent:5. Reviewer` with the following structured handoff message:
-
-> WP<NN> implementation is complete and ready for review.
-> The work package is at lane=for_review.
-> All tasks are complete with:
-> - Self-review passed for each task
-> - All tests passing
-> - Coverage thresholds met (80% code, 90% branch)
-> - Documentation updated across all affected docs/ files
-> - Success criteria validated
->
-> Please review WP<NN> against the spec, plan, and documentation.
-
-This handoff is automatic -- the coder does not ask the user for permission to request a review.
+After marking a WP complete, immediately invoke `#agent:5. Reviewer` to review it. Do not wait for user input. This handoff is automatic.
 ## 5. Handle Reviewer Feedback (to_do)
 
 If the Reviewer returns a work package with `lane: to_do` (verdict: Changes Required):
@@ -367,19 +352,7 @@ git commit -m "fix: address FB-<NN> <brief description of what was fixed> (WP<NN
 ```
 
 8. Return to Step 4 -- set `lane: for_review` and submit for re-review
-9. **Invoke the Reviewer agent** for re-review, exactly as in Step 4b:
-
-   Invoke `#agent:5. Reviewer` with:
-
-   > WP<NN> feedback has been addressed and is ready for re-review.
-   > The work package is at lane=for_review.
-   > All FB-XX items have been remediated with:
-   > - Tests re-run and passing after each fix
-   > - Documentation updated where affected
-   >
-   > Please re-review WP<NN> focusing on the remediated FB-XX items and any regressions.
-
-   This re-review handoff is automatic -- the coder does not ask the user for permission.
+9. Invoke `#agent:5. Reviewer` for re-review. Do not wait for user input.
 
 ### Activity Log Protocol
 
@@ -395,32 +368,14 @@ Do NOT prepend or insert mid-list — always append to the end. Future timestamp
 
 ## 6. Automatic Continuation
 
-After the Reviewer returns from reviewing the current WP (either via subagent return or a new invocation), the Coder **automatically continues** without waiting for user input.
+After the Reviewer returns, the Coder **automatically continues** without waiting for user input:
 
-### 6a. Scan Project State
+- **Changes Required**: Go to Step 5 to address feedback, then re-invoke Reviewer.
+- **Approved / Approved with Findings**: Return to Step 1 to pick the next WP.
+- **All WPs are `lane: done`**: Summarize all completed WPs and their verdicts, then stop.
+- **No actionable WPs remain** (all blocked or dependencies unmet): Inform the user and stop.
 
-Read `plans/README.md` and scan ALL `plans/WP*.md` frontmatter to determine what remains.
-
-### 6b. Decision Logic (execute in priority order)
-
-| Priority | Condition | Action |
-|----------|-----------|--------|
-| 1 | Reviewer returned **Changes Required** for current WP (`lane: to_do`) | Go to **Step 5** -- address feedback, then re-invoke Reviewer |
-| 2 | WPs with `lane: to_do` and `review_status: has_feedback` exist | Pick the lowest-numbered WP needing fixes, go to **Step 5** |
-| 3 | WPs with `lane: planned` whose dependencies are all `lane: done` | Pick the lowest-numbered WP, go to **Step 1b** (full implementation flow) |
-| 4 | All MVP WPs are `lane: done` but non-MVP WPs remain with `lane: planned` | Stop. Present MVP completion summary to user. Ask whether to continue |
-| 5 | All WPs are `lane: done` or `lane: for_review` | Execute graceful termination (below) |
-| 6 | Blocked by a spec ambiguity | Hand off to **Spec Architect** for clarification |
-| 7 | Plan tasks are missing or incorrect | Hand off to **Planner** for revision |
-| 8 | Stuck after multiple attempts with no progress | Stop. Surface the blocker to the user |
-
-### 6c. Graceful Termination Protocol
-
-When all work packages are complete (`lane: done`) and no WPs remain with `lane: planned`, `lane: to_do`, or `lane: doing`:
-1. Summarize all completed work packages and their review verdicts
-2. List any outstanding issues or WARNs from reviews
-3. Present the summary to the user
-4. Stop. Let the user decide what happens next.
+Never wait for user input between work packages. The Coder-Reviewer loop runs until all WPs are `lane: done` or no actionable WPs remain.
 
 Always use the handoff buttons when available.
 </workflow>

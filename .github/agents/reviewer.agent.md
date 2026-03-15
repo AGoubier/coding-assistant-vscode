@@ -307,27 +307,11 @@ Append an Activity Log entry:
 - Changes Required: `YYYY-MM-DDTHH:MM:SSZ - reviewer - lane=to_do - Verdict: Changes Required (N FAILs) -- awaiting remediation`
 Present the verdict and full report to the user.
 
-## 7. Handoff to Coder
+## 7. Handoff on Changes Required
 
 This step runs **only when verdict is Changes Required**.
 
-After setting `lane: to_do` and presenting the report, immediately invoke the Coder agent via `#4. Coder` with the following structured handoff message:
-
-```
-WP<NN> has been returned with verdict: Changes Required.
-
-The work package is at lane=to_do with review_status=has_feedback.
-
-Feedback items requiring remediation:
-<paste the FB-XX list from the Review Feedback section verbatim>
-
-Please:
-1. Update review_status to acknowledged in the WP frontmatter
-2. Set lane=doing and append an Activity Log entry
-3. Address every FB-XX item — no skipping, deferring, or partial fixes
-4. Re-run tests after each fix
-5. When all FB-XX items are resolved, set lane=for_review and request a re-review
-```
+After setting `lane: to_do` and presenting the report, immediately invoke `#agent:4. Coder` to address the findings. Do not wait for user input.
 
 **Iterative cycle protocol:**
 
@@ -335,72 +319,23 @@ Please:
 |-------|----------------|-------------|
 | 1 | Delivers verdict + FB-XX list, sets lane=to_do, invokes Coder | Acknowledges, fixes all FB-XX, sets lane=for_review |
 | N | Re-reviews only the FB-XX items from the previous round + any regressions | Fixes all new/surviving FB-XX items, sets lane=for_review |
-| Final | Zero FAILs — sets lane=done, no handoff | — |
+| Final | Zero FAILs -- sets lane=done, no handoff | -- |
 
-Re-reviews are **scoped** -- do not re-audit dimensions that previously passed unless the fix touched code in those dimensions. Re-review the fixed items and any dimension whose files were modified by the fix.
+Re-reviews are **scoped** -- do not re-audit dimensions that previously passed unless the fix touched code in those dimensions.
 
 If after three rounds the same FB-XX items remain unresolved, halt the cycle, set `lane: blocked`, append `YYYY-MM-DDTHH:MM:SSZ - reviewer - lane=blocked - Cycle stalled: FB-XX unresolved after 3 rounds` to the Activity Log, and escalate to the user via `#tool:vscode/askQuestions`.
 
 ## 8. Automatic Continuation
 
-After delivering a verdict, the reviewer does NOT stop and wait for user input. Instead, **proactively scan the project state and continue the pipeline automatically**.
+After delivering a verdict, the Reviewer **automatically continues** without waiting for user input:
 
-### 8a. Scan Project State
+1. If other WPs have `lane: for_review` -- review the next one immediately (return to Step 1).
+2. If WPs with `lane: to_do` and `review_status: has_feedback` exist -- invoke `#agent:4. Coder` to fix the lowest-numbered one.
+3. If WPs with `lane: planned` (dependencies met) exist -- invoke `#agent:4. Coder` to implement the lowest-numbered ready WP.
+4. If ALL WPs are `lane: done` -- produce a Final Project Summary (all WPs, verdicts, outstanding WARNs, coverage stats, SC-XXX status), present it to the user, and stop.
+5. If no WPs are actionable (all blocked or dependencies unmet) -- inform the user and stop.
 
-Read `plans/README.md` and scan ALL `plans/WP*.md` frontmatter to determine:
-- Which WPs have `lane: for_review` (ready for review)
-- Which WPs have `lane: planned` or `lane: to_do` (ready for implementation)
-- Which WPs have `lane: done` (completed)
-- Which WPs have `lane: blocked` (stalled)
-
-### 8b. Decision Logic (execute in priority order)
-
-| Priority | Condition | Action |
-|----------|-----------|--------|
-| 1 | Verdict is **Changes Required** | Immediately hand off to **Coder** to fix findings (via Step 7 handoff) |
-| 2 | Other WPs have `lane: for_review` | Immediately begin reviewing the next WP -- do NOT wait for user input |
-| 3 | WPs with `lane: to_do` and `review_status: has_feedback` exist | Hand off to **Coder** to fix the lowest-numbered WP needing remediation (via Step 8c handoff) |
-| 4 | WPs with `lane: planned` whose dependencies are all `lane: done` | Hand off to **Coder** to implement the lowest-numbered ready WP (via Step 8c handoff) |
-| 5 | ALL WPs are `lane: done` | Stop. Execute graceful termination protocol (below) |
-| 6 | No WPs are actionable (all blocked, all in-progress, or dependencies unmet) | Stop. Inform the user that no work packages are available |
-| 7 | Spec gaps or contradictions found during review | Hand off to **Spec Architect** for correction |
-| 8 | Plan tasks were missing or incorrect | Hand off to **Planner** for revision |
-| 9 | Review cycle is stalled (`lane: blocked`) | Stop. Escalate to user |
-
-**Key behavior**: When multiple WPs are `lane: for_review`, the reviewer processes them ALL in sequence before moving on. After draining the review queue, the reviewer hands off to the Coder for the next available work (fix-needed WPs first, then planned WPs). The reviewer does NOT ask the user -- it automatically continues the pipeline. It only stops when there is genuinely nothing left to do.
-
-### 8c. Handoff to Coder
-
-When handing off to the Coder (Priorities 3 and 4), invoke `#agent:4. Coder` with the appropriate message:
-
-**For fix-needed WPs (Priority 3)**:
-
-> WP<NN> has review findings that need remediation.
-> The work package is at lane=to_do with review_status=has_feedback.
-> Please address the FB-XX items and resubmit for re-review.
-
-**For planned WPs (Priority 4)**:
-
-> All reviews are complete. Next work package ready for implementation: WP<XX> - <title>
-> Dependencies satisfied: <list completed dependencies>
->
-> Please implement WP<XX> following the standard workflow.
-
-These handoffs are automatic -- the reviewer does not ask the user for permission.
-
-### 8d. Graceful Termination Protocol
-
-When all work packages have `lane: done`, do NOT invoke another agent. Instead:
-1. Produce a **Final Project Summary** covering:
-   - All completed work packages and their verdicts
-   - Total findings: PASSes, WARNs, and any resolved FAILs
-   - Outstanding WARNs that were accepted
-   - Documentation completeness status
-   - Overall coverage statistics
-   - Success criteria (SC-XXX) achievement status
-2. Present this summary to the user
-3. Ask the user what to do next (new features, optimizations, deployment, etc.)
-4. Stop. The project is complete until the user decides otherwise.
+Process all reviewable WPs before handing off to the Coder. The Reviewer-Coder loop runs until all WPs are `lane: done` or no actionable WPs remain.
 
 Always use the handoff buttons when available.
 </workflow>
