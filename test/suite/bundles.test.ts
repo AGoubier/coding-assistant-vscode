@@ -6,8 +6,11 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { parseBundle } from '../../src/services/bundleParser';
 import { CatalogTreeProvider } from '../../src/providers/catalogTree';
+import { installBundleCommand } from '../../src/commands/installBundleCommand';
 import { SourceRegistry } from '../../src/services/sourceRegistry';
 import { GitHubClient } from '../../src/services/githubClient';
+import { Installer } from '../../src/services/installer';
+import { ManifestManager } from '../../src/services/manifestManager';
 import { createMockLogOutputChannel } from '../helpers/mocks';
 import type {
   SourceConfig,
@@ -17,6 +20,7 @@ import type {
   BundleNodeItem,
   BundleFileItem,
   Bundle,
+  InstallationEntry,
 } from '../../src/models/types';
 
 // --- Fixtures ---
@@ -303,10 +307,10 @@ describe('Org Practice Bundles (WP09)', () => {
 
   describe('Install Bundle command (T09-03)', () => {
     it('installBundle command is registered in package.json', () => {
-      // Verify the command exists by checking contribution points
-      const config = vscode.workspace.getConfiguration('awesome-coding-assistants');
-      // The command should be accessible (even if not yet activated)
-      assert.ok(true, 'installBundle command registered via package.json contributes');
+      const pkgPath = require.resolve('../../../package.json');
+      const pkg = require(pkgPath);
+      const commandIds = (pkg.contributes?.commands || []).map((c: { command: string }) => c.command);
+      assert.ok(commandIds.includes('awesome-coding-assistants.installBundle'), 'installBundle command missing from package.json');
     });
   });
 
@@ -329,6 +333,171 @@ describe('Org Practice Bundles (WP09)', () => {
 
       provider.dispose();
       registry.dispose();
+    });
+  });
+
+  describe('Install Bundle integration (T09-03, T09-05)', () => {
+    const OTHER_SOURCE: SourceConfig = {
+      url: 'https://github.com/other/repo',
+      name: 'Other Repo',
+      branch: 'main',
+    };
+
+    const FAKE_FOLDER: vscode.WorkspaceFolder = {
+      uri: vscode.Uri.file('/tmp/test-workspace'),
+      name: 'test-workspace',
+      index: 0,
+    };
+
+    function createMockInstaller(opts?: {
+      failPaths?: string[];
+    }): Installer {
+      const failPaths = opts?.failPaths || [];
+      const installedFiles: string[] = [];
+      return {
+        selectTargetFolder: async () => FAKE_FOLDER,
+        installFile: async (_source: SourceConfig, path: string, _targetUri: vscode.Uri, _relPath: string) => {
+          if (failPaths.includes(path)) {
+            throw new Error(`Simulated install failure for ${path}`);
+          }
+          installedFiles.push(path);
+        },
+        installDirectory: async () => [],
+        fileExists: async () => false,
+        _installedFiles: installedFiles,
+      } as unknown as Installer & { _installedFiles: string[] };
+    }
+
+    function createMockManifest(): ManifestManager & { _entries: InstallationEntry[] } {
+      const entries: InstallationEntry[] = [];
+      return {
+        addInstallation: async (_folder: vscode.WorkspaceFolder, entry: InstallationEntry) => {
+          entries.push(entry);
+        },
+        removeInstallation: async () => {},
+        readManifest: async () => ({ version: '1.0', installations: [] }),
+        writeManifest: async () => {},
+        getInstallation: async () => undefined,
+        isInstalled: async () => false,
+        _entries: entries,
+      } as unknown as ManifestManager & { _entries: InstallationEntry[] };
+    }
+
+    function createMockGitHubForInstall(): GitHubClient {
+      return {
+        getRepoTree: async () => TREE_WITH_BUNDLES,
+        getFileContent: async () => '# Content',
+        getLatestCommitSha: async () => 'sha-latest-123',
+        validateRepo: async () => ({ valid: true } as ValidationResult),
+      } as unknown as GitHubClient;
+    }
+
+    it('should install all items in a bundle (happy path)', async () => {
+      const bundle = parseBundle(VALID_BUNDLE_JSON);
+      const bundleNode: BundleNodeItem = { kind: 'bundle', source: TEST_SOURCE, bundle, bundlePath: 'bundles/test.json' };
+      const installer = createMockInstaller();
+      const manifest = createMockManifest();
+      const github = createMockGitHubForInstall();
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const log = createMockLogOutputChannel();
+      let refreshed = false;
+
+      await installBundleCommand(bundleNode, installer, github, manifest, registry, log, () => { refreshed = true; });
+
+      assert.strictEqual((installer as any)._installedFiles.length, 5, 'All 5 items should be installed');
+      assert.strictEqual(manifest._entries.length, 5, 'All 5 items should be in manifest');
+      assert.ok(refreshed, 'Tree should be refreshed after install');
+    });
+
+    it('should resolve cross-source items from registry', async () => {
+      const bundle = parseBundle(CROSS_SOURCE_BUNDLE_JSON);
+      const bundleNode: BundleNodeItem = { kind: 'bundle', source: TEST_SOURCE, bundle, bundlePath: 'bundles/cross.json' };
+      const installer = createMockInstaller();
+      const manifest = createMockManifest();
+      const github = createMockGitHubForInstall();
+      const registry = createMockSourceRegistry([TEST_SOURCE, OTHER_SOURCE]);
+      const log = createMockLogOutputChannel();
+
+      await installBundleCommand(bundleNode, installer, github, manifest, registry, log, () => {});
+
+      // Both items should install - one from parent source, one from cross-source
+      assert.strictEqual((installer as any)._installedFiles.length, 2, 'Both items should install');
+      assert.strictEqual(manifest._entries.length, 2, 'Both items in manifest');
+      // Cross-source item should reference the other source URL
+      const crossEntry = manifest._entries.find(e => e.sourceUrl === 'https://github.com/other/repo');
+      assert.ok(crossEntry, 'Cross-source entry should reference other repo URL');
+    });
+
+    it('should abort on required item failure', async () => {
+      const bundle = parseBundle(VALID_BUNDLE_JSON);
+      const bundleNode: BundleNodeItem = { kind: 'bundle', source: TEST_SOURCE, bundle, bundlePath: 'bundles/test.json' };
+      // Fail the second item (which is required by default)
+      const installer = createMockInstaller({ failPaths: ['.github/agents/reviewer.agent.md'] });
+      const manifest = createMockManifest();
+      const github = createMockGitHubForInstall();
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const log = createMockLogOutputChannel();
+
+      await installBundleCommand(bundleNode, installer, github, manifest, registry, log, () => {});
+
+      // First item installs, second fails and aborts, remaining items skipped
+      assert.strictEqual((installer as any)._installedFiles.length, 1, 'Only first item should install before abort');
+      assert.strictEqual(manifest._entries.length, 1, 'Only first manifest entry');
+    });
+
+    it('should continue on optional item failure', async () => {
+      const bundle = parseBundle(OPTIONAL_ITEMS_BUNDLE_JSON);
+      const bundleNode: BundleNodeItem = { kind: 'bundle', source: TEST_SOURCE, bundle, bundlePath: 'bundles/opt.json' };
+      // Fail the optional item
+      const installer = createMockInstaller({ failPaths: ['.github/prompts/review.prompt.md'] });
+      const manifest = createMockManifest();
+      const github = createMockGitHubForInstall();
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const log = createMockLogOutputChannel();
+
+      await installBundleCommand(bundleNode, installer, github, manifest, registry, log, () => {});
+
+      // First item (required) installs, second (optional) fails but continues
+      assert.strictEqual((installer as any)._installedFiles.length, 1, 'Required item should install');
+      assert.strictEqual(manifest._entries.length, 1, 'Only successful item in manifest');
+    });
+
+    it('should warn and skip when cross-source is not configured', async () => {
+      const bundle = parseBundle(CROSS_SOURCE_BUNDLE_JSON);
+      const bundleNode: BundleNodeItem = { kind: 'bundle', source: TEST_SOURCE, bundle, bundlePath: 'bundles/cross.json' };
+      const installer = createMockInstaller();
+      const manifest = createMockManifest();
+      const github = createMockGitHubForInstall();
+      // Only parent source configured, NOT the cross-source
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const log = createMockLogOutputChannel();
+
+      await installBundleCommand(bundleNode, installer, github, manifest, registry, log, () => {});
+
+      // First item installs, second (cross-source) skips since its source is not configured
+      // The cross-source item has no "required" field so defaults to true - should abort
+      assert.strictEqual((installer as any)._installedFiles.length, 1, 'Only parent-source item should install');
+    });
+
+    it('should return gracefully if no workspace folder selected', async () => {
+      const bundle = parseBundle(VALID_BUNDLE_JSON);
+      const bundleNode: BundleNodeItem = { kind: 'bundle', source: TEST_SOURCE, bundle, bundlePath: 'bundles/test.json' };
+      const noFolderInstaller = {
+        selectTargetFolder: async () => undefined,
+        installFile: async () => {},
+        installDirectory: async () => [],
+        fileExists: async () => false,
+      } as unknown as Installer;
+      const manifest = createMockManifest();
+      const github = createMockGitHubForInstall();
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const log = createMockLogOutputChannel();
+      let refreshed = false;
+
+      await installBundleCommand(bundleNode, noFolderInstaller, github, manifest, registry, log, () => { refreshed = true; });
+
+      assert.strictEqual(manifest._entries.length, 0, 'No items should be installed');
+      assert.strictEqual(refreshed, false, 'Tree should not be refreshed');
     });
   });
 });

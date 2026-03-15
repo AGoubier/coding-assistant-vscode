@@ -1,6 +1,6 @@
 ---
-lane: to_do
-review_status: has_feedback
+lane: for_review
+review_status: acknowledged
 ---
 
 # WP09 - Org Practice Bundles (P2)
@@ -158,6 +158,8 @@ Implement practice bundle support: parse bundle manifests from source repos, dis
 - 2026-03-15T19:10:00Z - coder - lane=doing - Starting WP09 implementation (T09-01 through T09-05)
 - 2026-03-15T19:20:00Z - coder - lane=for_review - All tasks complete, submitted for review
 - 2026-03-15T21:30:00Z - reviewer - lane=to_do - Verdict: Changes Required (3 FAILs) -- awaiting remediation
+- 2026-03-15T21:45:00Z - coder - lane=doing - Addressing reviewer feedback (FB-01, FB-02, FB-03)
+- 2026-03-15T22:00:00Z - coder - lane=for_review - All feedback addressed, resubmitted for review
 
 ## Review
 
