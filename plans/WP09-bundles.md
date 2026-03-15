@@ -38,7 +38,7 @@ Implement practice bundle support: parse bundle manifests from source repos, dis
   - [ ] BundleItem schema validated: `path` (required), `sourceUrl` (optional), `tool` (required, enum), `category` (required), `required` (optional, default true)
   - [ ] Cross-source references: if `sourceUrl` is specified on a BundleItem, it overrides the parent bundle's source
   - [ ] Invalid bundle JSON returns a descriptive error with the bundle name and validation issue
-  - [ ] Types `Bundle` and `BundleItem` added to `src/types.ts`
+  - [ ] Types `Bundle` and `BundleItem` added to `src/models/types.ts`
 - **Test requirements**: unit (valid bundles, invalid bundles, edge cases)
 - **Depends on**: WP02 T02-01 (types)
 - **Implementation Guidance**:

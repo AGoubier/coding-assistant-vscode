@@ -9,8 +9,8 @@ lane: planned
 > **Priority**: P1
 > **Goal**: Users can see "installed" and "update available" badges on tree items, check for upstream updates, view diffs, accept/reject updates, and uninstall items - completing the full lifecycle loop.
 > **Independent Test**: Install an item via WP05. Simulate an upstream change (mock API returns different SHA), run "Check for Updates" command, verify the update badge appears. Click "Update" and verify a diff view opens. Click "Accept Update" to apply. Click "Uninstall" to remove the item and verify the manifest entry and file are both deleted.
-> **Depends on**: WP01, WP02, WP03, WP05
-> **Parallelisable**: No (requires WP05 manifest and install flow)
+> **Depends on**: WP01, WP02, WP03, WP04, WP05
+> **Parallelisable**: No (requires WP04 preview scheme for diff view and WP05 manifest/install flow)
 > **Prompt**: `plans/WP06-lifecycle.md`
 
 ## Objective
@@ -47,8 +47,8 @@ Implement the lifecycle management layer: installed-state badges on tree items, 
   - Follow the same service pattern as GitHubClient and CacheManager (constructor injection, disposable)
   - The LifecycleManager does NOT own the manifest - it delegates to the manifest functions created in WP05 T05-06
   - Spec contract: `checkForUpdates(folder?: WorkspaceFolder): Promise<UpdateCheckResult[]>`
-  - Spec contract: `applyUpdate(entry: ManifestEntry, folder: WorkspaceFolder): Promise<void>`
-  - Spec contract: `uninstallItem(entry: ManifestEntry, folder: WorkspaceFolder): Promise<void>`
+  - Spec contract: `applyUpdate(entry: InstallationEntry, folder: WorkspaceFolder): Promise<void>`
+  - Spec contract: `uninstallItem(entry: InstallationEntry, folder: WorkspaceFolder): Promise<void>`
 
 ### T06-02 - Update check logic (SHA comparison)
 
@@ -57,21 +57,21 @@ Implement the lifecycle management layer: installed-state badges on tree items, 
 - **Parallel**: No (depends on T06-01)
 - **Acceptance criteria**:
   - [ ] `checkForUpdates(folder?: WorkspaceFolder): Promise<UpdateCheckResult[]>` reads manifest entries
-  - [ ] For each entry, calls `GitHubClient.getLatestCommitSha(owner, repo, path)` using `GET /repos/{owner}/{repo}/commits?path={file_path}&per_page=1`
-  - [ ] Compares `entry.installedSha` with `latestSha` - if different, `hasUpdate = true`
+  - [ ] For each entry, calls `GitHubClient.getLatestCommitSha(source, path)` using `GET /repos/{owner}/{repo}/commits?path={file_path}&per_page=1`
+  - [ ] Compares `entry.commitSha` with `latestSha` - if different, `hasUpdate = true`
   - [ ] If folder is undefined, checks ALL workspace folders (iterates `vscode.workspace.workspaceFolders`)
   - [ ] Uses ETag caching: sends `If-None-Match` header; on 304, no update flagged (same SHA cached)
   - [ ] Returns `UpdateCheckResult[]` where `UpdateCheckResult = { entry: InstallationEntry, hasUpdate: boolean, latestSha: string, folder: WorkspaceFolder }`
   - [ ] Errors on individual items do not abort the entire check - logs warning, skips item, continues
-  - [ ] Parallel requests with concurrency limit of 5 to avoid rate limiting
-  - [ ] Performance: completes within 5 seconds for 50 items (mock scenario)
+  - [ ] Parallel requests with concurrency limit of 10 (per spec NFR) to avoid rate limiting
+  - [ ] Performance: completes within 30 seconds for 50 items (parallelized, max 10 concurrent per spec NFR)
 - **Test requirements**: unit (mock GitHubClient, various SHA scenarios), performance (50-item check under 5s)
 - **Depends on**: T06-01, WP02 (GitHubClient.getLatestCommitSha)
 - **Implementation Guidance**:
   - GitHub API: `GET /repos/{owner}/{repo}/commits?path={file_path}&per_page=1` returns an array; latest SHA is `response[0].sha`
-  - Implement a simple concurrency limiter: use a semaphore pattern with Promise.all and a pool of 5
+  - Implement a simple concurrency limiter: use a semaphore pattern with Promise.all and a pool of 10
   - ETag is handled at the CacheManager level - just call GitHubClient which delegates to CacheManager
-  - For per-item error handling: `try { ... } catch (e) { results.push({ entry, hasUpdate: false, latestSha: entry.installedSha, error: e }); }`
+  - For per-item error handling: `try { ... } catch (e) { results.push({ entry, hasUpdate: false, latestSha: entry.commitSha, error: e }); }`
 
 ### T06-03 - Installed badge on tree items
 
@@ -181,7 +181,28 @@ Implement the lifecycle management layer: installed-state badges on tree items, 
   - Group lifecycle actions in menu: `"group": "lifecycle"` with appropriate sort order
   - Set context: `vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.hasInstalledItems', true)`
 
-### T06-08 - Unit and integration tests for lifecycle
+### T06-08 - Auto-check updates on activation
+
+- **Description**: Implement the `autoCheckUpdates` and `autoCheckIntervalMinutes` settings behavior. When activated, the extension optionally runs an update check and schedules periodic re-checks.
+- **Spec refs**: Section 8.2 Settings (`autoCheckUpdates`, `autoCheckIntervalMinutes`)
+- **Parallel**: Yes (independent of T06-05/T06-06)
+- **Acceptance criteria**:
+  - [ ] On extension activation, if `autoCheckUpdates` is `true` (default), call `checkForUpdates()` with a short delay (e.g., 5 seconds after activation to not block startup)
+  - [ ] Schedule periodic re-checks using `setInterval` at the `autoCheckIntervalMinutes` interval (default: 60 minutes, min: 5, max: 1440)
+  - [ ] When `autoCheckUpdates` is `false`, no auto-check runs and no interval is scheduled
+  - [ ] Interval is cleared on extension deactivation (`Disposable` pattern)
+  - [ ] Configuration changes to these settings take effect immediately (listen to `onDidChangeConfiguration`)
+  - [ ] Auto-check results update tree badges silently (no notification unless updates are found)
+  - [ ] If updates are found during auto-check, show a single notification: "{N} updates available"
+- **Test requirements**: unit (mock timers, verify scheduling)
+- **Depends on**: T06-02, T06-04
+- **Implementation Guidance**:
+  - Use `setTimeout` for initial delay and `setInterval` for periodic checks
+  - Register the interval handle as a disposable: `context.subscriptions.push({ dispose: () => clearInterval(handle) })`
+  - Read settings: `config.get<boolean>('autoCheckUpdates', true)`, `config.get<number>('autoCheckIntervalMinutes', 60)`
+  - On config change: clear existing interval, reconfigure based on new values
+
+### T06-09 - Unit and integration tests for lifecycle
 
 - **Description**: Write comprehensive tests covering all lifecycle scenarios from US-05 and the BDD Lifecycle Management feature.
 - **Spec refs**: Section 11.2 BDD (Lifecycle Management feature - 3 scenarios), US-05 Scenarios 1-4
@@ -197,12 +218,15 @@ Implement the lifecycle management layer: installed-state badges on tree items, 
   - [ ] Test: check updates with no installed items shows appropriate message
   - [ ] Test: check updates with mixed results (some updated, some not)
   - [ ] Test: per-item error does not abort entire update check
+  - [ ] Test: auto-check runs on activation when setting is true
+  - [ ] Test: auto-check interval is scheduled and can be reconfigured
+  - [ ] Test: auto-check does not run when setting is false
   - [ ] Integration: full lifecycle roundtrip (install -> check updates -> apply update -> uninstall) with mock GitHubClient
   - [ ] All tests pass with `npm test`
 - **Test requirements**: This IS the test deliverable
-- **Depends on**: T06-01 through T06-07
+- **Depends on**: T06-01 through T06-08
 - **Implementation Guidance**:
-  - For SHA mismatch testing: create manifest with `installedSha: 'abc123'`, mock GitHubClient to return `latestSha: 'def456'`
+  - For SHA mismatch testing: create manifest with `commitSha: 'abc123'`, mock GitHubClient to return `latestSha: 'def456'`
   - For diff view testing: verify `vscode.commands.executeCommand` was called with `'vscode.diff'` and correct URI arguments
   - For uninstall testing: verify both `workspace.fs.delete` and `removeInstallation` were called
   - Integration roundtrip test in a temp directory: install a file, modify the mock SHA, check updates, apply, verify file updated, uninstall, verify file gone
@@ -219,6 +243,7 @@ Implement the lifecycle management layer: installed-state badges on tree items, 
 - T06-03 (badges) and T06-02 (update check) can be worked in parallel
 - T06-05 (update action) and T06-06 (uninstall) can be worked in parallel after T06-04
 - T06-07 (menu contributions) can be done early, independently of logic implementation
+- T06-08 (auto-check) can be worked in parallel with T06-05/T06-06 after T06-02 and T06-04
 
 ## Risks & Mitigations
 

@@ -48,10 +48,10 @@ Implement the three core infrastructure services (GitHubClient, CacheManager, Au
   - [ ] `CatalogItem` discriminated union type with variants: `source`, `category`, `item`
   - [ ] `DetectedTool` type: `{ tool: 'copilot' | 'claude-code', confidence: 'high' | 'low' }`
   - [ ] `ToolClassification` type: `{ tool: 'copilot' | 'claude-code' | 'unknown', category: CategoryType }`
-  - [ ] `CategoryType` string literal union: `'agents' | 'instructions' | 'skills' | 'prompts' | 'hooks' | 'commands' | 'rules' | 'modes' | 'plugins' | 'bundles'`
+  - [ ] `CategoryType` string literal union: `'agents' | 'instructions' | 'skills' | 'prompts' | 'hooks' | 'commands' | 'rules' | 'modes' | 'plugins' | 'workflows' | 'bundles'`
   - [ ] `ValidationResult` type: `{ valid: boolean, error?: string }`
   - [ ] `InstallResult` type: `{ success: boolean, filesWritten: string[], error?: string }`
-  - [ ] `UpdateCheckResult` type: `{ item: ManifestEntry, hasUpdate: boolean, latestSha: string }`
+  - [ ] `UpdateCheckResult` type: `{ entry: InstallationEntry, hasUpdate: boolean, latestSha: string, folder: WorkspaceFolder }`
 - **Test requirements**: none (type definitions, compile-time validation)
 - **Depends on**: none
 - **Implementation Guidance**:
@@ -185,6 +185,7 @@ Implement the three core infrastructure services (GitHubClient, CacheManager, Au
   - [ ] Rate limit handling: on 429, throw `RateLimitedError` with `resetAt` from `X-RateLimit-Reset`; log `X-RateLimit-Remaining` at trace level
   - [ ] Auth errors (401/403): throw `AuthFailedError`
   - [ ] Network errors / 404: throw `SourceUnreachableError`
+  - [ ] 5xx server errors: attempt to serve stale cache if available (return cached data even if expired) with a warning log; if no cache exists, throw `SourceUnreachableError`. Per spec Section 9.5: "On 5xx/network error, use stale cache with a 'stale data' warning badge."
   - [ ] Trace-level logging for all requests (URL, method, status code) - never log tokens
   - [ ] Unit tests with mocked HTTP: verify URL construction, header assembly, caching integration, error handling for all status codes
 - **Test requirements**: unit (extensive - mock HTTP layer)

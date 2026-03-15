@@ -50,7 +50,7 @@ Set up the complete development environment for the Awesome Coding Assistants VS
   - Tree View API: https://code.visualstudio.com/api/extension-guides/tree-view
   - Use `viewsWelcome` contribution for the empty-state welcome message per spec FR-005
   - View container icon: create a placeholder SVG in `resources/icons/` (simple robot/AI icon outline, 24x24px, single color for theme compatibility)
-  - Command `when` clauses must use `viewItem` context values documented in spec Section 4.2: `catalogItem.source`, `catalogItem.category`, `catalogItem.item`, `catalogItem.item.installed`
+  - Command `when` clauses must use `viewItem` context values documented in spec Section 4.2: `catalogItem.source`, `catalogItem.category`, `catalogItem.item`, `catalogItem.installed`, `catalogItem.updateAvailable`
   - Set `main: "./dist/extension.js"` (esbuild output) not `./out/`
   - Use `"bundler": "esbuild"` pattern per VS Code extension scaffolding
   - Settings validation: `cacheExpirationMinutes` must declare `minimum: 5, maximum: 43200`; `autoCheckIntervalMinutes` must declare `minimum: 5, maximum: 1440`

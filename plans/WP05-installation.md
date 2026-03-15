@@ -178,7 +178,7 @@ Implement the installation pipeline: download files from source repos, compute c
   - The command handler function should be in `src/commands/install.ts`
   - Wrap the entire flow in `vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Installing...' })`
   - Error handling: catch all errors, show appropriate notification based on error type (InvalidPathError, InstallFailedError, etc.)
-  - After install, update the tree item's `contextValue` to `catalogItem.item.installed` by refreshing
+  - After install, update the tree item's `contextValue` to `catalogItem.installed` by refreshing
 
 ### T05-08 - Unit and integration tests for installation
 

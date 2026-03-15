@@ -139,7 +139,7 @@ Deliver the capstone quality assurance layer: end-to-end tests that exercise the
 - **Parallel**: Yes
 - **Acceptance criteria**:
   - [ ] Test: load source tree with 500 items (mocked). Measure time. Pass: under 3 seconds cached, under 10 seconds cold.
-  - [ ] Test: check updates for 50 installed items (mocked). Measure time. Pass: under 30 seconds.
+  - [ ] Test: check updates for 50 installed items (mocked). Measure time. Pass: under 30 seconds (per spec NFR-003).
   - [ ] Test: preview a file. Measure time. Pass: under 3 seconds.
   - [ ] Performance tests are tagged/categorized separately from functional tests (can be skipped in fast CI)
   - [ ] Results are logged to stdout for CI visibility

@@ -89,7 +89,7 @@ Implement the SourceRegistry service (reads/validates configured sources from se
   - [ ] `getTreeItem(element)` returns `TreeItem` with: label (item name), description (from file's first non-heading line, fetched lazily), tooltip, icon, contextValue, collapsibleState
   - [ ] Source nodes: collapsible, icon = source icon, contextValue = `catalogItem.source`
   - [ ] Category nodes: collapsible, icon = category icon, contextValue = `catalogItem.category`
-  - [ ] Item nodes: none/leaf, icon = tool badge (Copilot/Claude Code/AI), contextValue = `catalogItem.item` or `catalogItem.item.installed`
+  - [ ] Item nodes: none/leaf, icon = tool badge (Copilot/Claude Code/AI), contextValue = `catalogItem.item` or `catalogItem.installed`
   - [ ] `onDidChangeTreeData` event is exposed for refresh
   - [ ] `refresh()` method fires the change event to reload the tree
   - [ ] Empty categories (no matching files) are not shown
@@ -143,7 +143,7 @@ Implement the SourceRegistry service (reads/validates configured sources from se
 - **Implementation Guidance**:
   - SVG icons should be 16x16 or 24x24, single color (#424242 for light, #C5C5C5 for dark) per VS Code icon guidelines
   - For installed overlay: since VS Code TreeItem doesn't support overlays natively, use a separate icon set for installed items (e.g., `copilot-installed-light.svg` with a checkmark) or use `TreeItem.description = "[installed]"`
-  - Simpler approach: use `contextValue` to differentiate (`catalogItem.item` vs `catalogItem.item.installed`) and show the installed indicator via description text
+  - Simpler approach: use `contextValue` to differentiate (`catalogItem.item` vs `catalogItem.installed`) and show the installed indicator via description text
   - Icon path pattern: `{ light: context.asAbsolutePath('resources/icons/copilot-light.svg'), dark: context.asAbsolutePath('resources/icons/copilot-dark.svg') }`
   - Use Codicons (VS Code built-in) where possible: `$(check)` for installed indicator in description
 
