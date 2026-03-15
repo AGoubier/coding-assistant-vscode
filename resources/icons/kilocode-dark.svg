@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <!-- Kilo Code: bold K lettermark -->
+  <rect x="1" y="1" width="14" height="14" rx="3" fill="#C5C5C5"/>
+  <path d="M5.5 4v8M5.5 8l5-4M5.5 8l5 4" stroke="#1e1e1e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
