@@ -352,7 +352,10 @@ export function activate(context: vscode.ExtensionContext): void {
         value: catalogTreeProvider.getSearchQuery(),
       });
       if (query === undefined) {
-        return; // Cancelled
+        // Escape pressed - clear the active search filter (T10-04)
+        catalogTreeProvider.setSearchQuery('');
+        await vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.searchActive', false);
+        return;
       }
       catalogTreeProvider.setSearchQuery(query);
       await vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.searchActive', query.length > 0);

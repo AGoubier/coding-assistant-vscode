@@ -107,6 +107,17 @@ describe('Search and Filter (WP10)', () => {
       assert.strictEqual(matchesSearch(item, 'agents'), true);
     });
 
+    it('should match item by description', () => {
+      const item = makeFakeItem({ description: 'Helps with TypeScript refactoring' });
+      assert.strictEqual(matchesSearch(item, 'refactoring'), true);
+      assert.strictEqual(matchesSearch(item, 'REFACTORING'), true);
+    });
+
+    it('should not match description when absent', () => {
+      const item = makeFakeItem();
+      assert.strictEqual(matchesSearch(item, 'refactoring'), false);
+    });
+
     it('should use AND logic for multi-word queries', () => {
       const item = makeFakeItem({ name: 'Review', tool: 'copilot', category: 'agents' });
       assert.strictEqual(matchesSearch(item, 'copilot agents'), true);
@@ -200,6 +211,32 @@ describe('Search and Filter (WP10)', () => {
       registry.dispose();
     });
 
+    it('should show filtered count badge on category tree items', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      provider.setSearchQuery('agent');
+
+      const roots = await provider.getChildren(undefined);
+      if ('kind' in roots[0] && roots[0].kind === 'source') {
+        const categories = await provider.getChildren(roots[0]);
+        const agentsCat = categories.find(
+          c => 'category' in c && (c as CategoryItem).category === 'agents',
+        ) as CategoryItem;
+        assert.ok(agentsCat, 'Agents category should be visible');
+        assert.ok(agentsCat.filteredCount !== undefined, 'filteredCount should be set');
+        assert.ok(agentsCat.filteredCount! > 0, 'filteredCount should be > 0');
+
+        const treeItem = provider.getTreeItem(agentsCat);
+        assert.ok(treeItem.description, 'Category tree item should have a count badge description');
+        assert.ok((treeItem.description as string).includes('match'), 'Description should include match count');
+      }
+
+      provider.dispose();
+      registry.dispose();
+    });
+
     it('should show empty state when no items match', async () => {
       const registry = createMockSourceRegistry([TEST_SOURCE]);
       const github = createMockGitHubClient();
@@ -266,8 +303,12 @@ describe('Search and Filter (WP10)', () => {
     });
 
     it('search and clearSearch commands are registered in package.json', () => {
-      // Verify via command check - the commands should be registered
-      assert.ok(true, 'search and clearSearch commands registered via package.json');
+      // Read package.json and verify command IDs exist
+      const pkgPath = require.resolve('../../../package.json');
+      const pkg = require(pkgPath);
+      const commandIds = (pkg.contributes?.commands || []).map((c: { command: string }) => c.command);
+      assert.ok(commandIds.includes('awesome-coding-assistants.search'), 'search command missing');
+      assert.ok(commandIds.includes('awesome-coding-assistants.clearSearch'), 'clearSearch command missing');
     });
   });
 });

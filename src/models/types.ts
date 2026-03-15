@@ -89,6 +89,7 @@ export interface CategoryItem {
   source: SourceConfig;
   category: CategoryType;
   tool: ToolType;
+  filteredCount?: number;
 }
 
 export interface CatalogFileItem {
@@ -100,6 +101,7 @@ export interface CatalogFileItem {
   category: CategoryType;
   installed: boolean;
   updateAvailable: boolean;
+  description?: string;
 }
 
 export type CatalogItem = SourceItem | CategoryItem | CatalogFileItem;

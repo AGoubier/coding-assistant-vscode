@@ -75,6 +75,7 @@ export function matchesSearch(item: CatalogFileItem, query: string): boolean {
     item.path,
     item.tool,
     item.category,
+    item.description || '',
   ].join(' ').toLowerCase();
 
   return words.every(word => searchText.includes(word));
@@ -340,10 +341,11 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
 
           // US-08: if search is active, skip categories with no matching items
           if (this.searchQuery) {
-            const hasMatchingItem = entries.some(e => {
+            let matchCount = 0;
+            for (const e of entries) {
               const classification = classifyItem(e.path);
               if (!this.shouldShowTool(classification.tool)) {
-                return false;
+                continue;
               }
               const name = this.extractItemName(e.path);
               const fakeItem: CatalogFileItem = {
@@ -356,11 +358,21 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
                 installed: false,
                 updateAvailable: false,
               };
-              return matchesSearch(fakeItem, this.searchQuery);
-            });
-            if (!hasMatchingItem) {
+              if (matchesSearch(fakeItem, this.searchQuery)) {
+                matchCount++;
+              }
+            }
+            if (matchCount === 0) {
               continue;
             }
+            categories.push({
+              kind: 'category',
+              source: sourceItem.source,
+              category: category as CategoryType,
+              tool: firstClassification.tool,
+              filteredCount: matchCount,
+            });
+            continue;
           }
 
           categories.push({
@@ -580,6 +592,9 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     treeItem.tooltip = `${label} (${item.tool})`;
     treeItem.iconPath = this.getCategoryIcon(item.category);
     treeItem.accessibilityInformation = { label: `Category: ${label}, tool: ${item.tool}` };
+    if (item.filteredCount !== undefined) {
+      treeItem.description = `${item.filteredCount} match${item.filteredCount === 1 ? '' : 'es'}`;
+    }
     return treeItem;
   }
 

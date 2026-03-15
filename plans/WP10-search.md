@@ -1,6 +1,6 @@
 ---
-lane: to_do
-review_status: has_feedback
+lane: for_review
+review_status: acknowledged
 ---
 
 # WP10 - Search and Filter (P2)
@@ -146,6 +146,9 @@ Implement keyword search and filtering across all configured sources. Users can 
 - 2026-03-15T00:00:00Z - planner - lane=planned - Work package created
 - 2026-03-15T19:25:00Z - coder - lane=doing - Starting WP10 implementation (T10-01 through T10-05)
 - 2026-03-15T20:15:00Z - coder - lane=for_review - All tasks complete, submitted for review
+- 2026-03-15T20:30:00Z - reviewer - lane=to_do - Changes Required (FB-01 through FB-05)
+- 2026-03-15T20:35:00Z - coder - lane=doing - Addressing reviewer feedback (FB-01, FB-02, FB-03, FB-04, FB-05)
+- 2026-03-15T20:45:00Z - coder - lane=for_review - All feedback addressed, resubmitted for review
 - 2026-03-15T21:00:00Z - reviewer - lane=to_do - Verdict: Changes Required (3 FAILs) -- awaiting remediation
 
 ## Self-Review
