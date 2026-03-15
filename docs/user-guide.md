@@ -42,6 +42,8 @@ Items display tool badges:
 - **Claude icon** - Items for Claude Code (`.claude/agents/`, `.claude/rules/`, etc.)
 - **AI icon** - Items with unknown tool affiliation
 
+Each item also shows a brief description extracted from the file's first non-heading line (fetched lazily on first view). Installed items display a `$(check) installed` indicator instead.
+
 ### Default Source
 
 When no sources are configured, the extension uses the default source: `https://github.com/jlacube/awesome-coding-assistants`

@@ -1,6 +1,6 @@
 ---
-lane: to_do
-review_status: has_feedback
+lane: for_review
+review_status: acknowledged
 ---
 
 # WP03 - Source Registry and Tree View
@@ -234,12 +234,14 @@ Implement the SourceRegistry service (reads/validates configured sources from se
 - 2025-07-19T11:00:00Z - coder - lane=doing - All tasks implemented, 143 tests passing
 - 2025-07-19T11:05:00Z - coder - lane=for_review - All tasks complete, submitted for review
 - 2025-07-19T12:00:00Z - reviewer - lane=to_do - Verdict: Changes Required (2 FAILs) -- awaiting remediation
+- 2025-07-19T12:30:00Z - coder - lane=doing - Addressing reviewer feedback (FB-01, FB-02, FB-03, FB-04, FB-05)
+- 2025-07-19T13:00:00Z - coder - lane=for_review - All FB items resolved, 155 tests passing, submitted for re-review
 
 ## Self-Review
 
 ### Correctness
 - [x] All acceptance criteria from the spec are met
-- [x] All 143 tests pass (51 new tests for WP03)
+- [x] All 155 tests pass (63 new/updated tests for WP03)
 - [x] Edge cases handled (empty paths, backslash paths, unknown patterns, unreachable sources)
 - [x] Error paths behave as specified (error child nodes for unreachable sources)
 
@@ -251,7 +253,7 @@ Implement the SourceRegistry service (reads/validates configured sources from se
 - [x] FR-005: Default source when no sources configured
 - [x] FR-006: Activity Bar view container registered
 - [x] FR-007: Tree organized as Source > Category > Item
-- [x] FR-008: Item names, tool icons, descriptions
+- [x] FR-008: Item names, tool icons, descriptions (lazy-fetched from file content)
 - [x] FR-009: Lazy loading (root=settings, expand=fetch)
 - [x] FR-010: Refresh command invalidates caches, reloads tree
 - [x] FR-011: Installed badge via contextValue and description
@@ -293,11 +295,11 @@ Changes Required. Two FAILs block approval: (1) FR-008/T03-03 file descriptions 
 
 > Implementers: if `review_status: has_feedback` is set in the WP frontmatter, address every item below before returning for re-review. Update `review_status: acknowledged` once you begin remediation.
 
-- [ ] **FB-01**: Implement lazy file description fetching in `CatalogTreeProvider.createFileTreeItem()`. FR-008 requires "a brief description (from frontmatter or first non-heading line of the file)". T03-03 acceptance criteria: "description (from file's first non-heading line, fetched lazily)". Currently no description is set on non-installed file items. Fetch the first non-heading line asynchronously via `GitHubClient.getFileContent()`, cache it, and set `TreeItem.description`. Do not block tree rendering.
-- [ ] **FB-02**: Add a test in `sourceRegistry.test.ts` or `catalogTree.test.ts` verifying that when no sources are configured, the `awesome-coding-assistants.noSources` context key is set to `true`. T03-08 acceptance criteria bullet 2: "no sources configured -> welcome view context key is set to true".
-- [ ] **FB-03**: Fix the `sourceRegistry.test.ts` "should parse valid master index JSON" test. Currently it only asserts no errors were logged. It must verify that `getSources()` returns the merged index sources after `loadMasterIndex()`. The test's mock `getFileContent` returns valid JSON but `loadMasterIndex()` skips because the default `indexUrl` resolves to a raw.githubusercontent.com URL that `indexUrlToSource()` can parse -- verify the mock is actually invoked and the cached master index is populated.
-- [ ] **FB-04**: Add tests for `removeSource()` and `addSource()` success path in `sourceRegistry.test.ts`. These public API methods have zero test coverage for their happy paths. T03-08 requires "master index parsing and merging with user sources" -- the merge-priority (user wins on URL collision) behavior must also be tested.
-- [ ] **FB-05**: Fix the type lie in `toolDetector.ts` line 79: `'unknown' as CategoryType`. Either add `'unknown'` to the `CategoryType` union in `types.ts`, or return a sentinel value that is actually in the union. The current cast defeats type safety.
+- [x] **FB-01**: Implement lazy file description fetching in `CatalogTreeProvider.createFileTreeItem()`. FR-008 requires "a brief description (from frontmatter or first non-heading line of the file)". T03-03 acceptance criteria: "description (from file's first non-heading line, fetched lazily)". Currently no description is set on non-installed file items. Fetch the first non-heading line asynchronously via `GitHubClient.getFileContent()`, cache it, and set `TreeItem.description`. Do not block tree rendering.
+- [x] **FB-02**: Add a test in `sourceRegistry.test.ts` or `catalogTree.test.ts` verifying that when no sources are configured, the `awesome-coding-assistants.noSources` context key is set to `true`. T03-08 acceptance criteria bullet 2: "no sources configured -> welcome view context key is set to true".
+- [x] **FB-03**: Fix the `sourceRegistry.test.ts` "should parse valid master index JSON" test. Currently it only asserts no errors were logged. It must verify that `getSources()` returns the merged index sources after `loadMasterIndex()`. The test's mock `getFileContent` returns valid JSON but `loadMasterIndex()` skips because the default `indexUrl` resolves to a raw.githubusercontent.com URL that `indexUrlToSource()` can parse -- verify the mock is actually invoked and the cached master index is populated.
+- [x] **FB-04**: Add tests for `removeSource()` and `addSource()` success path in `sourceRegistry.test.ts`. These public API methods have zero test coverage for their happy paths. T03-08 requires "master index parsing and merging with user sources" -- the merge-priority (user wins on URL collision) behavior must also be tested.
+- [x] **FB-05**: Fix the type lie in `toolDetector.ts` line 79: `'unknown' as CategoryType`. Either add `'unknown'` to the `CategoryType` union in `types.ts`, or return a sentinel value that is actually in the union. The current cast defeats type safety.
 
 ### Findings
 

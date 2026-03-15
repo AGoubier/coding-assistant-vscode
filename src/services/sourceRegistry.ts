@@ -89,16 +89,16 @@ export class SourceRegistry {
       throw new SourceUnreachableError(source.url);
     }
 
-    const config = vscode.workspace.getConfiguration(SETTING_SECTION);
-    const current = config.get<SourceConfig[]>(SETTING_SOURCES, []);
-
-    // Prevent duplicates
-    const exists = current.some(s => s.url === source.url);
+    // Prevent duplicates - check all visible sources (including default and index)
+    const allSources = this.getSources();
+    const exists = allSources.some(s => s.url === source.url);
     if (exists) {
       this.log.info(`Source already configured: ${source.url}`);
       return;
     }
 
+    const config = vscode.workspace.getConfiguration(SETTING_SECTION);
+    const current = config.get<SourceConfig[]>(SETTING_SOURCES, []);
     const updated = [...current, source];
     await config.update(SETTING_SOURCES, updated, vscode.ConfigurationTarget.Global);
     this.log.info(`Source added: ${source.url}`);

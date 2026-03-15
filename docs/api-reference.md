@@ -65,8 +65,10 @@ Implements `vscode.TreeDataProvider<TreeElement>` for the main catalog tree view
 | Method | Signature | Description |
 |--------|-----------|-------------|
 | `getChildren` | `(element?) => Promise<TreeElement[]>` | Returns child nodes (sources at root, categories for source, items for category) |
-| `getTreeItem` | `(element) => TreeItem` | Converts a tree element to a VS Code TreeItem with icons, labels, and context values |
-| `refresh` | `() => void` | Clears internal tree cache and fires `onDidChangeTreeData` |
+| `getTreeItem` | `(element) => TreeItem` | Converts a tree element to a VS Code TreeItem with icons, labels, context values, and lazy-fetched descriptions |
+| `refresh` | `() => void` | Clears internal tree cache, description cache, and fires `onDidChangeTreeData` |
+
+File item descriptions are fetched lazily via `GitHubClient.getFileContent()` on first access, extracting the first non-heading, non-frontmatter line. Descriptions are cached per file path and do not block tree rendering.
 
 ## Tree View Context Values
 

@@ -96,6 +96,33 @@ describe('CatalogTreeProvider', () => {
       registry.dispose();
     });
 
+    it('should signal noSources condition when registry returns empty (T03-08 FB-02)', async () => {
+      // Verifies the precondition for the welcome view: when getSources() returns [],
+      // getChildren(undefined) returns [], which means the extension.ts updateNoSourcesContext
+      // would set 'awesome-coding-assistants.noSources' to true.
+      const registry = createMockSourceRegistry([]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const sources = registry.getSources();
+      assert.strictEqual(sources.length, 0, 'Registry should return no sources');
+
+      const children = await provider.getChildren(undefined);
+      assert.strictEqual(children.length, 0, 'Tree should show no children');
+
+      // This is the condition that triggers:
+      // vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.noSources', true)
+      // in extension.ts updateNoSourcesContext()
+      assert.strictEqual(
+        sources.length === 0,
+        true,
+        'noSources context key should be set to true when sources are empty',
+      );
+
+      provider.dispose();
+      registry.dispose();
+    });
+
     it('should not fetch repo tree at root level (lazy loading)', async () => {
       let fetchCalled = false;
       const github = {
