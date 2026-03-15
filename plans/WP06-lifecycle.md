@@ -1,5 +1,6 @@
 ---
-lane: for_review
+lane: to_do
+review_status: has_feedback
 ---
 
 # WP06 - Lifecycle Management (Updates, Uninstall, Badges)
@@ -256,6 +257,7 @@ Implement the lifecycle management layer: installed-state badges on tree items, 
 - 2026-03-15T00:00:00Z - planner - lane=planned - Work package created
 - 2026-03-15T13:15:00Z - coder - lane=doing - Starting WP06 implementation
 - 2026-03-15T13:30:00Z - coder - lane=for_review - All tasks complete, submitted for review
+- 2026-03-15T14:00:00Z - reviewer - lane=to_do - Verdict: Changes Required (3 FAILs) -- awaiting remediation
 
 ## Self-Review
 
@@ -307,3 +309,165 @@ Implement the lifecycle management layer: installed-state badges on tree items, 
 - Modified: src/extension.ts (wiring lifecycle commands, auto-check, removed stubs)
 - Created: test/suite/lifecycle.test.ts (19 tests)
 - Modified: test/suite/installer.test.ts (fixed flaky test, added delete to mock fs)
+
+## Review
+
+> **Reviewed by**: Reviewer Agent
+> **Date**: 2026-03-15
+> **Verdict**: Changes Required
+> **review_status**: has_feedback
+
+### Summary
+Changes Required. Three failures found: update-available tree items lack any visual indicator (partial FR-030), `hasInstalledItems` context key is missing (T06-07 AC), and 5 of 14 required tests from T06-09 are absent.
+
+### Review Feedback
+
+> Implementers: if `review_status: has_feedback` is set in the WP frontmatter, address every item below before returning for re-review. Update `review_status: acknowledged` once you begin remediation.
+
+- [ ] **FB-01**: Update-available tree items have NO visual differentiation from regular items. T06-03 AC requires "a different icon/badge" and implementation guidance specifies `new vscode.ThemeIcon('cloud-download')` for update-available and description text. In [src/providers/catalogTree.ts](src/providers/catalogTree.ts#L318), the `updateAvailable` branch sets only `contextValue` but no `description` (unlike the `installed` branch which sets `'$(check) installed'`) and no icon override (line 337 unconditionally sets `treeItem.iconPath = this.getToolIcon(item.tool)`). Add a description like `'$(cloud-download) update available'` and/or override the icon for update-available items.
+- [ ] **FB-02**: When-clause context `awesome-coding-assistants.hasInstalledItems` is never set. T06-07 AC explicitly requires: "When-clause context `awesome-coding-assistants.hasInstalledItems` set to true when manifest has entries". No call to `setContext('awesome-coding-assistants.hasInstalledItems', ...)` exists anywhere in the codebase. Add this context key update in extension.ts (e.g., after tree refresh or manifest changes).
+- [ ] **FB-03**: 5 tests required by T06-09 acceptance criteria are missing from [test/suite/lifecycle.test.ts](test/suite/lifecycle.test.ts): (a) "update action opens diff view with correct URIs", (b) "reject update leaves file and manifest unchanged", (c) "auto-check runs on activation when setting is true", (d) "auto-check interval is scheduled and can be reconfigured", (e) "auto-check does not run when setting is false". These may require separate test files or mocking of VS Code command execution and timer APIs.
+
+### Findings
+
+#### FAIL - Spec Adherence: FR-030 / T06-03 (Update indicator badge)
+- **Requirement**: FR-030 "The extension SHALL display an update indicator (badge) on tree items where the upstream commit SHA differs." T06-03 AC: "Items with available updates display `contextValue = 'catalogItem.updateAvailable'` and a different icon/badge."
+- **Status**: Partial
+- **Detail**: `contextValue` is set correctly. However, no visual indicator is present on the tree item itself. The `updateAvailable` branch in `createFileTreeItem` sets no `description` and no icon override. The inline "Update" button appears via package.json when-clause, but the tree item is visually indistinguishable from a non-installed item.
+- **Evidence**: [src/providers/catalogTree.ts](src/providers/catalogTree.ts#L318) — `if (item.updateAvailable) { treeItem.contextValue = 'catalogItem.updateAvailable'; }` with no description or icon set.
+
+#### FAIL - Spec Adherence: T06-07 (hasInstalledItems context key)
+- **Requirement**: T06-07 AC: "When-clause context `awesome-coding-assistants.hasInstalledItems` set to true when manifest has entries."
+- **Status**: Missing
+- **Detail**: The context key is never set. Only `awesome-coding-assistants.noSources` is managed in extension.ts.
+- **Evidence**: grep for `hasInstalledItems` returns zero matches in src/.
+
+#### FAIL - Test Coverage: T06-09 (5 missing tests)
+- **Requirement**: T06-09 ACs explicitly list 14 tests. 9 are present. 5 are absent.
+- **Status**: Partial
+- **Detail**: Missing: (a) diff view URI verification for update command, (b) reject update leaves state unchanged, (c) auto-check on activation, (d) auto-check interval scheduling/reconfiguration, (e) auto-check disabled when setting is false.
+- **Evidence**: [test/suite/lifecycle.test.ts](test/suite/lifecycle.test.ts) — 19 tests present, none cover update command handler behavior or auto-check scheduling.
+
+#### PASS - Spec Adherence: FR-029 (SHA comparison)
+- **Requirement**: FR-029 "check for updates by comparing the installed commit SHA against the latest commit SHA"
+- **Status**: Compliant
+- **Detail**: `checkForUpdates` reads manifest, fetches latest SHA via `getLatestCommitSha`, compares, returns `hasUpdate: true` when different.
+- **Evidence**: [src/services/lifecycle.ts](src/services/lifecycle.ts#L62)
+
+#### PASS - Spec Adherence: FR-031 (Update action with diff)
+- **Requirement**: FR-031 "Update action SHALL fetch new content, open a diff view, and allow accept/reject"
+- **Status**: Compliant
+- **Detail**: `updateCommand` opens diff via `vscode.commands.executeCommand('vscode.diff', installedUri, upstreamUri, title)`, prompts Accept/Reject, and calls `applyUpdate` on accept.
+- **Evidence**: [src/commands/updateCommand.ts](src/commands/updateCommand.ts#L56)
+
+#### PASS - Spec Adherence: FR-032 (Check for Updates command)
+- **Requirement**: FR-032 "Check for Updates command scans all installed items"
+- **Status**: Compliant
+- **Detail**: Command registered, shows progress notification, calls `lifecycle.checkForUpdates()`, shows result count, refreshes tree.
+- **Evidence**: [src/commands/checkUpdatesCommand.ts](src/commands/checkUpdatesCommand.ts), [package.json](package.json#L85)
+
+#### PASS - Spec Adherence: FR-033 (Uninstall action)
+- **Requirement**: FR-033 "Uninstall action removes files and manifest entry"
+- **Status**: Compliant
+- **Detail**: Confirmation dialog (modal), file deletion with graceful handling of already-deleted files, manifest entry removal, tree refresh.
+- **Evidence**: [src/commands/uninstallCommand.ts](src/commands/uninstallCommand.ts), [src/services/lifecycle.ts](src/services/lifecycle.ts#L153)
+
+#### PASS - Spec Adherence: FR-034 (ETag caching for update checks)
+- **Requirement**: FR-034 "Update checks SHALL use conditional requests (ETags)"
+- **Status**: Compliant
+- **Detail**: Delegated to GitHubClient which uses CacheManager for ETag handling (established in WP02).
+- **Evidence**: GitHubClient.getLatestCommitSha delegates caching to fetchWithCache.
+
+#### PASS - Non-Functional: NFR-003 (Concurrency limit)
+- **Requirement**: NFR-003 "max 10 concurrent" for update checks
+- **Status**: Compliant
+- **Detail**: `pAll` function implements a concurrency limiter with limit parameter of 10.
+- **Evidence**: [src/services/lifecycle.ts](src/services/lifecycle.ts#L13) — `pAll` implementation, called with limit 10 at [line 87](src/services/lifecycle.ts#L87).
+
+#### PASS - Data Model Adherence
+- **Requirement**: Section 7.5 InstallationEntry, Section 7.4 Manifest
+- **Status**: Compliant
+- **Detail**: `UpdateCheckResult` type includes `entry: InstallationEntry`, `hasUpdate`, `latestSha`, `folder`. All fields match spec (with documented consistency-note deviations).
+- **Evidence**: [src/models/types.ts](src/models/types.ts#L132)
+
+#### PASS - API / Interface: Commands registration
+- **Requirement**: Section 8.1 commands `checkUpdates`, `update`, `uninstall`
+- **Status**: Compliant
+- **Detail**: All three commands registered in package.json with correct IDs, titles, and icons. Menu contributions correctly placed with proper when-clause expressions.
+- **Evidence**: [package.json](package.json#L73) commands, [package.json](package.json#L147) menus
+
+#### PASS - Architecture Adherence
+- **Requirement**: Section 9.1 LifecycleManager component, Section 9.3 directory structure
+- **Status**: Compliant
+- **Detail**: LifecycleManager in `src/services/lifecycle.ts`, command handlers in `src/commands/`, tree provider enhanced for badges. DI pattern consistent with other services.
+- **Evidence**: Directory structure matches spec Section 9.3.
+
+#### PASS - Non-Functional: Security
+- **Requirement**: Section 10.2, OWASP
+- **Status**: Compliant
+- **Detail**: No credential exposure in logs. File deletion uses workspace.fs (no raw fs). Path validation delegated to Installer (validated in WP05). No user input passed to shell commands.
+- **Evidence**: All file operations go through vscode.workspace.fs API.
+
+#### PASS - Documentation Accuracy
+- **Requirement**: docs/ must reflect implementation
+- **Status**: Compliant
+- **Detail**: architecture.md lists LifecycleManager and all lifecycle commands. api-reference.md documents LifecycleManager API with correct signatures. developer-guide.md lists all new files. user-guide.md covers updating and uninstalling workflows. All 6 standard doc files exist.
+- **Evidence**: All docs/ files searched and confirmed.
+
+#### PASS - Scope Discipline
+- **Requirement**: No code outside WP06 scope
+- **Status**: Compliant
+- **Detail**: Files created/modified are all within expected scope. ManifestManager VscFs interface extension (adding `delete`) is a minimal necessary change. No unspecified features or abstractions added.
+- **Evidence**: File list in self-review matches scope.
+
+#### PASS - Encoding (UTF-8)
+- **Requirement**: No em dashes, smart quotes, curly apostrophes
+- **Status**: Compliant
+- **Detail**: All WP06 files checked; no encoding violations found.
+- **Evidence**: Terminal encoding check returned OK for all 5 files.
+
+#### WARN - Spec Adherence: T06-05 (Diff title format)
+- **Requirement**: T06-05 AC: "Diff title format: `{filename}: Installed (SHA:{short}) vs Upstream (SHA:{short})`"
+- **Status**: Deviating
+- **Detail**: Implementation uses `${filename}: Installed (${shortOld}) vs Upstream (${shortNew})` without "SHA:" prefix. Minor format deviation.
+- **Evidence**: [src/commands/updateCommand.ts](src/commands/updateCommand.ts#L61)
+
+#### WARN - API Contract: applyUpdate signature
+- **Requirement**: Spec contract: `applyUpdate(entry: ManifestEntry, folder: WorkspaceFolder): Promise<void>`. Plan T06-01 echoes same.
+- **Status**: Deviating
+- **Detail**: Implementation adds `latestSha: string` as third parameter. Pragmatic addition since caller already has this data from update check, but deviates from the documented contract.
+- **Evidence**: [src/services/lifecycle.ts](src/services/lifecycle.ts#L126) — `async applyUpdate(entry, folder, latestSha)`
+
+#### WARN - Menu Contribution Gap: Preview for updateAvailable
+- **Requirement**: Package.json menus (WP04 + WP06)
+- **Status**: Deviating
+- **Detail**: Preview inline action is registered for `catalogItem.item` and `catalogItem.installed` but NOT for `catalogItem.updateAvailable`. When an item transitions to update-available, users lose the inline preview button. This is a side-effect of introducing a new contextValue.
+- **Evidence**: [package.json](package.json#L139) — no preview entry for `catalogItem.updateAvailable`
+
+#### WARN - Process: Batched commits
+- **Requirement**: Review dimension 4a: "one commit per task, not batched"
+- **Status**: Deviating
+- **Detail**: All 9 tasks committed in a single commit `1e9ffa4`. This matches the established project pattern (WP04, WP05 also used single commits) but deviates from the per-task rule.
+- **Evidence**: `git log --oneline` shows one commit for T06-01 through T06-09.
+
+### Statistics
+| Dimension | Pass | Warn | Fail |
+|-----------|------|------|------|
+| Process Compliance | 0 | 1 | 0 |
+| Spec Adherence | 4 | 2 | 2 |
+| Data Model | 1 | 0 | 0 |
+| API / Interface | 1 | 0 | 0 |
+| Architecture | 1 | 0 | 0 |
+| Test Coverage | 0 | 0 | 1 |
+| Non-Functional | 2 | 0 | 0 |
+| Performance | 0 | 0 | 0 |
+| Documentation | 1 | 0 | 0 |
+| Success Criteria | 0 | 0 | 0 |
+| Coverage Thresholds | 0 | 0 | 0 |
+| Scope Discipline | 1 | 0 | 0 |
+| Encoding (UTF-8) | 1 | 0 | 0 |
+
+### Recommended Actions
+1. **(FB-01)** In `createFileTreeItem` in [src/providers/catalogTree.ts](src/providers/catalogTree.ts#L318), add a description and/or icon override for the `updateAvailable` branch (e.g., `treeItem.description = '$(cloud-download) update available'`).
+2. **(FB-02)** Add `setContext('awesome-coding-assistants.hasInstalledItems', ...)` in [src/extension.ts](src/extension.ts) — call it after manifest changes (install, uninstall, update, tree refresh) by reading the manifest and checking `installations.length > 0`.
+3. **(FB-03)** Add the 5 missing tests: (a) test that `updateCommand` calls `vscode.diff` with correct URIs, (b) test that rejecting an update leaves file+manifest unchanged, (c-e) test auto-check behavior by extracting the scheduling logic into a testable function or by mocking timers in extension.ts.
