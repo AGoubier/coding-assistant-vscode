@@ -776,24 +776,24 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     switch (tool) {
       case 'copilot': return 'copilot';
       case 'claude-code': return 'claude';
+      case 'kiro': return 'kiro';
+      case 'kilocode': return 'kilocode';
+      case 'opencode': return 'opencode';
       default: return 'ai';
     }
   }
 
-  private getCategoryIcon(category: string): vscode.ThemeIcon {
-    switch (category) {
-      case 'agents': return new vscode.ThemeIcon('person');
-      case 'instructions': return new vscode.ThemeIcon('book');
-      case 'skills': return new vscode.ThemeIcon('tools');
-      case 'prompts': return new vscode.ThemeIcon('comment-discussion');
-      case 'hooks': return new vscode.ThemeIcon('git-commit');
-      case 'commands': return new vscode.ThemeIcon('terminal');
-      case 'rules': return new vscode.ThemeIcon('law');
-      case 'modes': return new vscode.ThemeIcon('layout');
-      case 'plugins': return new vscode.ThemeIcon('plug');
-      case 'workflows': return new vscode.ThemeIcon('workflow');
-      default: return new vscode.ThemeIcon('file');
+  private getCategoryIcon(category: string): { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon {
+    const knownCategories = [
+      'agents', 'instructions', 'skills', 'prompts',
+      'hooks', 'commands', 'rules', 'modes', 'plugins', 'workflows',
+    ];
+    if (knownCategories.includes(category)) {
+      const lightPath = vscode.Uri.joinPath(this.extensionUri, 'resources', 'icons', `cat-${category}-light.svg`);
+      const darkPath = vscode.Uri.joinPath(this.extensionUri, 'resources', 'icons', `cat-${category}-dark.svg`);
+      return { light: lightPath, dark: darkPath };
     }
+    return new vscode.ThemeIcon('file');
   }
 
   // --- Bundle tree items ---

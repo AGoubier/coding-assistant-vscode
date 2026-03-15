@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="#424242">
+  <!-- Flow diagram - workflows -->
+  <circle cx="4" cy="3" r="2"/>
+  <circle cx="12" cy="3" r="2"/>
+  <circle cx="8" cy="8" r="2"/>
+  <circle cx="4" cy="13" r="2"/>
+  <circle cx="12" cy="13" r="2"/>
+  <path d="M5.5 4.5L6.5 6.5M10.5 4.5L9.5 6.5M6.5 9.5L5.5 11.5M9.5 9.5L10.5 11.5" stroke="#424242" stroke-width="1" fill="none"/>
+</svg>
