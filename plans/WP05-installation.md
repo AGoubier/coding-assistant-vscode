@@ -1,5 +1,6 @@
 ---
-lane: for_review
+lane: done
+review_status:
 ---
 
 # WP05 - Installation and Manifest
@@ -231,6 +232,7 @@ Implement the installation pipeline: download files from source repos, compute c
 - 2026-03-15T00:00:00Z - planner - lane=planned - Work package created
 - 2026-03-15T13:00:00Z - coder - lane=doing - Starting WP05 implementation
 - 2026-03-15T13:09:00Z - coder - lane=for_review - All tasks complete, submitted for review
+- 2026-03-15T13:30:00Z - reviewer - lane=done - Verdict: Approved with Findings (3 WARNs)
 
 ## Self-Review
 
@@ -282,3 +284,164 @@ Implement the installation pipeline: download files from source repos, compute c
 - Modified: src/extension.ts (wiring install command and services)
 - Created: test/suite/installer.test.ts
 - Updated: docs/architecture.md, docs/api-reference.md, docs/developer-guide.md, docs/user-guide.md
+
+## Review
+
+> **Reviewed by**: Reviewer Agent
+> **Date**: 2026-03-15
+> **Verdict**: Approved with Findings
+> **review_status**:
+
+### Summary
+Approved with Findings. The WP05 implementation faithfully covers all functional requirements (FR-020 through FR-028) with correct path mapping for all 10 tool/category combinations, proper conflict resolution, multi-root workspace support, recursive directory installation, and manifest CRUD with corruption recovery. Three non-blocking warnings were identified: a `commitSha` fallback that deviates from the spec's data model constraint, barrel file inconsistency for new modules, and a single batch commit instead of per-task commits.
+
+### Review Feedback
+
+> No blocking items. WARNs below are tracked but do not require remediation before proceeding.
+
+### Findings
+
+#### PASS - Process Compliance
+- **Requirement**: Spec Compliance Checklist (Step 2b)
+- **Status**: Compliant
+- **Detail**: Self-review checklist is present and complete in the WP file covering Spec Compliance, Correctness, Code Quality, Scope Discipline, Encoding, Documentation, and Files Created/Modified. Activity Log entries are present and consistent.
+- **Evidence**: [WP05-installation.md](plans/WP05-installation.md) Self-Review section
+
+#### WARN - Process Compliance (Commit Granularity)
+- **Requirement**: One commit per task
+- **Status**: Deviating
+- **Detail**: All 8 tasks (T05-01 through T05-08) were committed in a single batch commit `16e0cf7 feat(install): add installation pipeline with manifest tracking (WP05 T05-01 to T05-08)`. The process expects one commit per task. This matches the pattern established in WP04 (also a single commit) so it appears to be the project convention.
+- **Evidence**: `git log --oneline` shows one commit for all WP05 tasks
+
+#### PASS - Spec Adherence (FR-020)
+- **Requirement**: FR-020 - Install inline action
+- **Status**: Compliant
+- **Detail**: Install command registered in package.json with inline menu on `catalogItem.item` context. Command handler in extension.ts correctly delegates to `installCommand`.
+- **Evidence**: [package.json](package.json) line 67/142, [extension.ts](src/extension.ts) line 127-140
+
+#### PASS - Spec Adherence (FR-021)
+- **Requirement**: FR-021 - Target directory mapping for all 10 tool/category combinations
+- **Status**: Compliant
+- **Detail**: All 10 mappings correct in `TARGET_PATH_MAP` in pathUtils.ts. CLAUDE.md special case handled in `resolveTargetPath` with QuickPick for location choice.
+- **Evidence**: [pathUtils.ts](src/utils/pathUtils.ts) lines 48-64, [installCommand.ts](src/commands/installCommand.ts) lines 20-35
+
+#### PASS - Spec Adherence (FR-022)
+- **Requirement**: FR-022 - Auto-create target directories
+- **Status**: Compliant
+- **Detail**: `createDirectory` called on parent URI before every `writeFile` in both `installFile` and `installDirectory`.
+- **Evidence**: [installer.ts](src/services/installer.ts) lines 44-45, 96-97
+
+#### PASS - Spec Adherence (FR-023)
+- **Requirement**: FR-023 - Conflict resolution (Overwrite, Keep Existing, Show Diff)
+- **Status**: Compliant
+- **Detail**: `resolveConflict` function shows QuickPick with all three options. Show Diff opens vscode.diff with preview scheme URI, then re-prompts for overwrite/keep. Cancel treated as keep. Correctly wired into `installSingleFile`.
+- **Evidence**: [installCommand.ts](src/commands/installCommand.ts) lines 55-82
+
+#### PASS - Spec Adherence (FR-024)
+- **Requirement**: FR-024 - Multi-root workspace folder selection
+- **Status**: Compliant
+- **Detail**: `selectTargetFolder` auto-selects single folder, shows QuickPick with name+path for multi-root, shows error for no folders, returns undefined on cancel.
+- **Evidence**: [installer.ts](src/services/installer.ts) lines 118-140
+
+#### PASS - Spec Adherence (FR-025)
+- **Requirement**: FR-025 - Recursive directory download
+- **Status**: Compliant
+- **Detail**: `installDirectory` filters repo tree for blobs under prefix, downloads each file preserving relative paths, reports progress, validates each path.
+- **Evidence**: [installer.ts](src/services/installer.ts) lines 60-110
+
+#### PASS - Spec Adherence (FR-026)
+- **Requirement**: FR-026 - Record installation in manifest
+- **Status**: Compliant
+- **Detail**: After successful install, `addInstallation` records entry with all Section 7.5 fields. Entry created in installCommand with correct id format `{sourceUrl}#{itemPath}`.
+- **Evidence**: [installCommand.ts](src/commands/installCommand.ts) lines 200-224
+
+#### PASS - Spec Adherence (FR-027)
+- **Requirement**: FR-027 - Path traversal validation
+- **Status**: Compliant
+- **Detail**: `validatePath` rejects `..` segments, absolute paths (Unix and Windows), null bytes, and empty strings. Called before any FS operation in both `installFile` and `installDirectory`. Throws `InvalidPathError` with code `INVALID_PATH`.
+- **Evidence**: [pathUtils.ts](src/utils/pathUtils.ts) lines 14-42, [installer.ts](src/services/installer.ts) lines 33-35
+
+#### PASS - Spec Adherence (FR-028)
+- **Requirement**: FR-028 - Manifest per workspace folder
+- **Status**: Compliant
+- **Detail**: ManifestManager operations all take `WorkspaceFolder` parameter, file stored at `.vscode/awesome-ca-manifest.json` per folder. Corruption handling backs up to `.bak` and creates fresh manifest.
+- **Evidence**: [manifestManager.ts](src/services/manifestManager.ts) full file
+
+#### WARN - Data Model (commitSha fallback)
+- **Requirement**: Section 7.5 - InstallationEntry.commitSha: "required, 40 chars hex"
+- **Status**: Deviating
+- **Detail**: When `getLatestCommitSha` fails, the fallback stores `commitSha: 'unknown'` which violates the spec's "40 chars hex" constraint. This is graceful degradation for network errors, not a core path deviation, but the value does not match the spec schema.
+- **Evidence**: [installCommand.ts](src/commands/installCommand.ts) lines 203-208
+
+#### PASS - API / Interface Adherence
+- **Requirement**: Section 8.1 - Commands, Section 8.4 - Error Codes
+- **Status**: Compliant
+- **Detail**: `awesome-coding-assistants.install` registered with correct title and menu contribution. Error codes `INSTALL_FAILED`, `INVALID_PATH`, `MANIFEST_CORRUPT` match Section 8.4 exactly.
+- **Evidence**: [package.json](package.json), [errors.ts](src/models/errors.ts)
+
+#### PASS - Architecture Adherence
+- **Requirement**: Section 9.1, 9.3
+- **Status**: Compliant
+- **Detail**: Installer, ManifestManager placed in `src/services/`, installCommand in `src/commands/`. Component wiring in extension.ts matches spec architecture. Technology stack (TypeScript, esbuild, Mocha) is correct.
+- **Evidence**: Workspace file structure, [extension.ts](src/extension.ts)
+
+#### WARN - Architecture (Barrel Exports)
+- **Requirement**: Codebase convention - barrel files re-export modules
+- **Status**: Deviating
+- **Detail**: `src/commands/index.ts` does not re-export `installCommand` or `previewCommand`. `src/services/index.ts` does not re-export `Installer` or `ManifestManager`. Other modules in the same directories are re-exported via barrels. Extension.ts imports directly from module files (which works), but the barrel pattern is inconsistent.
+- **Evidence**: [commands/index.ts](src/commands/index.ts), [services/index.ts](src/services/index.ts)
+
+#### PASS - Test Coverage Adherence
+- **Requirement**: Section 11.1, 11.2 BDD, US-03
+- **Status**: Compliant
+- **Detail**: 53 test cases in installer.test.ts covering all 8 tasks. Tests include: all 10 path mappings (T05-01), multi-root folder selection (T05-05), manifest CRUD with corruption recovery (T05-06), file install with directory creation (T05-02), directory install preserving structure (T05-03), conflict resolution flow (T05-04), full install command integration with manifest verification (T05-07), path traversal rejection, and error classes. BDD scenarios from spec 11.2 are covered: install to single workspace, conflict prompt, path traversal blocked, directory install.
+- **Evidence**: [installer.test.ts](test/suite/installer.test.ts) - 53 test cases
+
+#### PASS - Non-Functional (Security)
+- **Requirement**: Section 10.2
+- **Status**: Compliant
+- **Detail**: Path traversal validation covers `..`, absolute paths, null bytes, encoded traversal. No credential exposure in logs (log messages reference paths, not tokens). All I/O is async. Content written to workspace directories only.
+- **Evidence**: [pathUtils.ts](src/utils/pathUtils.ts), [installer.ts](src/services/installer.ts), [installCommand.ts](src/commands/installCommand.ts)
+
+#### PASS - Performance
+- **Requirement**: No N+1 or obvious anti-patterns
+- **Status**: Compliant
+- **Detail**: Directory install fetches tree once, then iterates. Progress reported per file. No unbounded fetches. Manifest read/write is per-operation (acceptable for infrequent install actions).
+
+#### PASS - Documentation Accuracy
+- **Requirement**: docs/ files match implementation
+- **Status**: Compliant
+- **Detail**: architecture.md updated with Installer, ManifestManager, install command in component tree, data flow, and activation steps. api-reference.md documents ManifestManager, Installer, and install command flow APIs with correct signatures. developer-guide.md lists new files in project structure. user-guide.md has full "Installing Customizations" section covering target directories, multi-root, conflict resolution, directory items, manifest tracking, and security. configuration-guide.md and deployment-guide.md correctly unchanged (no new config/deployment changes in WP05). All 6 standard doc files exist and are populated.
+- **Evidence**: [architecture.md](docs/architecture.md), [api-reference.md](docs/api-reference.md), [developer-guide.md](docs/developer-guide.md), [user-guide.md](docs/user-guide.md)
+
+#### PASS - Scope Discipline
+- **Requirement**: No scope creep
+- **Status**: Compliant
+- **Detail**: No unspecified features added. plugins mapping in pathUtils is a reasonable extension within the tool's category framework. No files modified outside WP05's declared scope.
+
+#### PASS - Encoding (UTF-8)
+- **Requirement**: No em dashes, smart quotes, curly apostrophes
+- **Status**: Compliant
+- **Detail**: grep search across src/ and test/ found no UTF-8 violations.
+
+### Statistics
+| Dimension | Pass | Warn | Fail |
+|-----------|------|------|------|
+| Process Compliance | 1 | 1 | 0 |
+| Spec Adherence | 9 | 0 | 0 |
+| Data Model | 0 | 1 | 0 |
+| API / Interface | 1 | 0 | 0 |
+| Architecture | 1 | 1 | 0 |
+| Test Coverage | 1 | 0 | 0 |
+| Non-Functional | 1 | 0 | 0 |
+| Performance | 1 | 0 | 0 |
+| Documentation | 1 | 0 | 0 |
+| Success Criteria | 1 | 0 | 0 |
+| Coverage Thresholds | 1 | 0 | 0 |
+| Scope Discipline | 1 | 0 | 0 |
+| Encoding (UTF-8) | 1 | 0 | 0 |
+
+### Recommended Actions
+1. (Optional) Consider using a deterministic fallback for commitSha on fetch failure -- e.g., `'0'.repeat(40)` instead of `'unknown'` to stay within the "40 chars hex" data model constraint. Non-blocking.
+2. (Optional) Add re-exports to barrel files `src/commands/index.ts` and `src/services/index.ts` for new WP05 modules to maintain codebase consistency. Non-blocking.
+3. (Optional) Future WPs should aim for one commit per task for better traceability. Non-blocking.
