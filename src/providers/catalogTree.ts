@@ -336,7 +336,9 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     }
 
     treeItem.tooltip = `${item.name} (${item.tool})`;
-    treeItem.iconPath = this.getToolIcon(item.tool);
+    if (!item.updateAvailable) {
+      treeItem.iconPath = this.getToolIcon(item.tool);
+    }
     return treeItem;
   }
 
