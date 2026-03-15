@@ -1,5 +1,6 @@
 ---
-lane: for_review
+lane: to_do
+review_status: has_feedback
 ---
 
 # WP09 - Org Practice Bundles (P2)
@@ -156,6 +157,133 @@ Implement practice bundle support: parse bundle manifests from source repos, dis
 - 2026-03-15T00:00:00Z - planner - lane=planned - Work package created
 - 2026-03-15T19:10:00Z - coder - lane=doing - Starting WP09 implementation (T09-01 through T09-05)
 - 2026-03-15T19:20:00Z - coder - lane=for_review - All tasks complete, submitted for review
+- 2026-03-15T21:30:00Z - reviewer - lane=to_do - Verdict: Changes Required (3 FAILs) -- awaiting remediation
+
+## Review
+
+> **Reviewed by**: Reviewer Agent
+> **Date**: 2026-03-15
+> **Verdict**: Changes Required
+> **review_status**: has_feedback
+
+### Summary
+
+Changes Required. Three FAIL findings block approval: (1) four T09-05 acceptance criteria are explicitly unchecked, meaning required tests were not written; (2) the T09-03 "Install Bundle command" test uses `assert.ok(true)` which cannot fail and is vacuous; (3) installBundleCommand.ts is at 72.54% line coverage, below the 80% minimum, with critical logic paths (cross-source resolution, required/optional abort, progress) entirely untested.
+
+The bundle parser, data model, tree display, package.json contributions, and documentation are all correct and well-implemented. The installBundleCommand.ts logic itself reads correctly but lacks automated test coverage.
+
+### Review Feedback
+
+> Implementers: if `review_status: has_feedback` is set in the WP frontmatter, address every item below before returning for re-review. Update `review_status: acknowledged` once you begin remediation.
+
+- [ ] **FB-01**: Write a real test for the `installBundle` command registration. Replace `assert.ok(true)` in the T09-03 test with an actual assertion that verifies the command is registered (e.g., `vscode.commands.getCommands` lookup). File: [test/suite/bundles.test.ts](test/suite/bundles.test.ts#L308).
+- [ ] **FB-02**: Add integration tests for `installBundleCommand` covering the 4 unchecked T09-05 ACs: (a) cross-source unknown sourceUrl logs warning and skips item, (b) install bundle installs items to correct paths, (c) required item failure aborts remaining, (d) optional item failure continues. Use mock Installer, ManifestManager, and SourceRegistry. File: [test/suite/bundles.test.ts](test/suite/bundles.test.ts).
+- [ ] **FB-03**: Achieve >= 80% line coverage for installBundleCommand.ts. Current: 72.54%. Target: >= 80%.
+
+### Findings
+
+#### FAIL - Test Coverage: T09-05 unchecked acceptance criteria
+- **Requirement**: T09-05 ACs (items 5, 8, 9, 10)
+- **Status**: Missing
+- **Detail**: Four acceptance criteria in T09-05 are explicitly unchecked `[ ]` in the WP file. The WP notes "not testable without full command integration" and "full integration test deferred" but this does not exempt them from the requirement. The tested behavior is limited to parser validation and tree display; the core business logic of bundle installation (cross-source resolution, abort-on-required-failure, continue-on-optional-failure) has zero test coverage.
+- **Evidence**: [WP09-bundles.md](plans/WP09-bundles.md) T09-05 ACs at lines with `[ ]` markers.
+
+#### FAIL - Test Coverage: vacuous test
+- **Requirement**: T09-03 test requirements
+- **Status**: Deviating
+- **Detail**: The T09-03 test body is `assert.ok(true, 'installBundle command registered via package.json contributes')`. This assertion always passes regardless of implementation state. It does not verify the command is actually registered, does not call `vscode.commands.getCommands()`, and provides zero evidence of correctness.
+- **Evidence**: [bundles.test.ts](test/suite/bundles.test.ts#L308) -- `assert.ok(true, ...)`.
+
+#### FAIL - Coverage Thresholds: installBundleCommand.ts below 80%
+- **Requirement**: Section 11.1 (80% line coverage minimum)
+- **Status**: Non-compliant
+- **Detail**: WP self-review states installBundleCommand.ts has 72.54% line coverage. The spec requires 80% minimum. Critical logic branches (cross-source resolution failure, required item abort, optional item continue, cancellation handling) are the uncovered paths.
+- **Evidence**: WP09 Self-Review section states "installBundleCommand.ts has 72.54% line coverage."
+
+#### PASS - Spec Adherence: Bundle schema (Section 7.7, 7.8)
+- **Requirement**: Section 7.7 (Bundle Manifest), Section 7.8 (BundleItem)
+- **Status**: Compliant
+- **Detail**: `Bundle` and `BundleItem` interfaces match spec exactly. `parseBundle` validates all constraints: name (required, 1-100), description (optional, 0-500), items (required, min 1), tool (required, enum copilot/claude-code), category (required), sourceUrl (optional), required (optional, default true).
+- **Evidence**: [types.ts](src/models/types.ts#L166-L178), [bundleParser.ts](src/services/bundleParser.ts).
+
+#### PASS - Spec Adherence: US-07 Scenario 1 (tree display)
+- **Requirement**: US-07 Scenario 1
+- **Status**: Compliant
+- **Detail**: Bundles category appears under sources with bundles/ directory. Each bundle shows name as label and "N items" as description. Bundle items expandable with child nodes showing tool/category. No Bundles category when source has no bundles. Tests verify all of this.
+- **Evidence**: [catalogTree.ts](src/providers/catalogTree.ts#L800-L850), [bundles.test.ts](test/suite/bundles.test.ts).
+
+#### PASS - Spec Adherence: US-07 Scenario 2 (install logic)
+- **Requirement**: US-07 Scenario 2
+- **Status**: Compliant (implementation)
+- **Detail**: Command logic correctly implements: folder selection, sequential install with progress, cross-source resolution, required/optional handling, cancellation via token, summary notification. The logic is correct per code review; only test coverage is lacking.
+- **Evidence**: [installBundleCommand.ts](src/commands/installBundleCommand.ts).
+
+#### PASS - API/Interface: command and menu contributions
+- **Requirement**: Section 8.1 (installBundle command), T09-04
+- **Status**: Compliant
+- **Detail**: Command registered with correct ID, title "Install Bundle", icon `$(package)`. Menu contribution targets `viewItem == bundleItem` in inline group. Bundle tree items have `contextValue = 'bundleItem'`.
+- **Evidence**: [package.json](package.json#L115) (command), [package.json](package.json#L186) (menu).
+
+#### PASS - Data Model
+- **Requirement**: Section 7.7, 7.8
+- **Status**: Compliant
+- **Detail**: Bundle, BundleItem, BundleCategoryItem, BundleNodeItem, BundleFileItem types all defined correctly. CategoryType includes 'bundles'.
+- **Evidence**: [types.ts](src/models/types.ts#L164-L199).
+
+#### PASS - Architecture
+- **Requirement**: Section 9.1, 9.3
+- **Status**: Compliant
+- **Detail**: bundleParser.ts in services/, installBundleCommand.ts in commands/. No new dependencies. Reuses existing Installer, ManifestManager, GitHubClient.
+
+#### PASS - Non-Functional
+- **Requirement**: Section 10
+- **Status**: Compliant
+- **Detail**: No secrets exposure. Async operations throughout. Path validation delegated to existing Installer. Progress notification with cancellation support. Accessibility labels on all tree items.
+
+#### PASS - Documentation
+- **Requirement**: docs/ accuracy
+- **Status**: Compliant
+- **Detail**: user-guide.md covers browsing, installing, cross-source, and required/optional bundles. api-reference.md documents parseBundle and installBundle command. developer-guide.md updated with file structure.
+- **Evidence**: [docs/user-guide.md](docs/user-guide.md#L226), [docs/api-reference.md](docs/api-reference.md#L259).
+
+#### PASS - Scope Discipline
+- **Requirement**: WP09 scope
+- **Status**: Compliant
+- **Detail**: Single commit touches only bundle-related files. No unspecified features or abstractions.
+
+#### PASS - Encoding (UTF-8)
+- **Requirement**: No em dashes, smart quotes, curly apostrophes
+- **Status**: Compliant
+- **Detail**: All WP09-modified files scanned. All clean.
+
+#### WARN - Process Compliance: commit discipline
+- **Requirement**: One commit per task
+- **Status**: Deviating
+- **Detail**: All 5 tasks merged in a single commit `f0ca4d3`.
+
+### Statistics
+
+| Dimension | Pass | Warn | Fail |
+|-----------|------|------|------|
+| Process Compliance | 0 | 1 | 0 |
+| Spec Adherence | 3 | 0 | 0 |
+| Data Model | 1 | 0 | 0 |
+| API / Interface | 1 | 0 | 0 |
+| Architecture | 1 | 0 | 0 |
+| Test Coverage | 0 | 0 | 2 |
+| Non-Functional | 1 | 0 | 0 |
+| Performance | 0 | 0 | 0 |
+| Documentation | 1 | 0 | 0 |
+| Success Criteria | 0 | 0 | 0 |
+| Coverage Thresholds | 0 | 0 | 1 |
+| Scope Discipline | 1 | 0 | 0 |
+| Encoding (UTF-8) | 1 | 0 | 0 |
+
+### Recommended Actions
+
+1. **FB-01**: Replace the vacuous `assert.ok(true)` test with a real command existence check (e.g., verify via `vscode.commands.getCommands(true)` that `awesome-coding-assistants.installBundle` is in the list).
+2. **FB-02**: Add targeted tests for `installBundleCommand` using mock Installer and SourceRegistry. At minimum, test: (a) happy path with 2 items, verifying Installer is called for each; (b) cross-source with missing source, verifying warning and skip; (c) required item failure, verifying abort; (d) optional item failure, verifying continuation.
+3. **FB-03**: The tests from FB-01 and FB-02 should bring installBundleCommand.ts above 80% line coverage. Verify after writing tests.
 
 ## Self-Review
 
