@@ -142,6 +142,25 @@ export function activate(context: vscode.ExtensionContext): void {
   // Inject lifecycle dependencies into tree provider for installed/update badges
   catalogTreeProvider.setLifecycle(manifestManager, lifecycleManager);
 
+  // Helper: set hasInstalledItems context based on current manifest state
+  const updateHasInstalledContext = async (): Promise<void> => {
+    const folders = vscode.workspace.workspaceFolders ?? [];
+    let hasInstalled = false;
+    for (const folder of folders) {
+      const manifest = await manifestManager.readManifest(folder);
+      if (manifest.installations.length > 0) {
+        hasInstalled = true;
+        break;
+      }
+    }
+    await vscode.commands.executeCommand(
+      'setContext', 'awesome-coding-assistants.hasInstalledItems', hasInstalled,
+    );
+  };
+
+  // Set initial context value
+  void updateHasInstalledContext();
+
   // Install command (FR-020, T05-07)
   context.subscriptions.push(
     vscode.commands.registerCommand('awesome-coding-assistants.install', (item?: CatalogFileItem) => {
@@ -155,7 +174,7 @@ export function activate(context: vscode.ExtensionContext): void {
         githubClient,
         manifestManager,
         outputChannel,
-        () => catalogTreeProvider.refresh(),
+        () => { catalogTreeProvider.refresh(); void updateHasInstalledContext(); },
         (source) => catalogTreeProvider.getOrFetchTreePublic(source),
       );
     }),
@@ -183,7 +202,7 @@ export function activate(context: vscode.ExtensionContext): void {
         item,
         lifecycleManager,
         manifestManager,
-        () => catalogTreeProvider.refresh(),
+        () => { catalogTreeProvider.refresh(); void updateHasInstalledContext(); },
         outputChannel,
       );
     }),
@@ -200,7 +219,7 @@ export function activate(context: vscode.ExtensionContext): void {
         item,
         lifecycleManager,
         manifestManager,
-        () => catalogTreeProvider.refresh(),
+        () => { catalogTreeProvider.refresh(); void updateHasInstalledContext(); },
         outputChannel,
       );
     }),
