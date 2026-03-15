@@ -1,6 +1,8 @@
 // Shared TypeScript interfaces and type aliases
 // Spec refs: Section 7 (Data Models), Section 4.2, 4.5, 4.6
 
+import type { WorkspaceFolder } from 'vscode';
+
 // --- Category and Tool types ---
 
 export type CategoryType =
@@ -131,6 +133,7 @@ export interface UpdateCheckResult {
   entry: InstallationEntry;
   hasUpdate: boolean;
   latestSha: string;
+  folder: WorkspaceFolder;
 }
 
 // --- GitHub API response types ---

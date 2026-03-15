@@ -1,6 +1,6 @@
 ---
-lane: to_do
-review_status: has_feedback
+lane: for_review
+review_status: acknowledged
 ---
 
 # WP02 - Infrastructure Services
@@ -304,6 +304,8 @@ Implement the three core infrastructure services (GitHubClient, CacheManager, Au
 - 2026-03-15T10:20:00Z - coder - lane=doing - Starting implementation of WP02
 - 2026-03-15T10:25:00Z - coder - lane=for_review - All tasks complete, submitted for review
 - 2025-07-19T12:00:00Z - reviewer - lane=to_do - Verdict: Changes Required (2 FAILs) -- awaiting remediation
+- 2026-03-15T12:00:00Z - coder - lane=doing - Addressing reviewer feedback (FB-01, FB-02)
+- 2026-03-15T12:05:00Z - coder - lane=for_review - All feedback addressed, submitted for re-review
 
 ## Review
 
@@ -320,8 +322,10 @@ Changes Required. Two FAILs found: (1) `UpdateCheckResult` is missing the `folde
 
 > Implementers: if `review_status: has_feedback` is set in the WP frontmatter, address every item below before returning for re-review. Update `review_status: acknowledged` once you begin remediation.
 
-- [ ] **FB-01**: `UpdateCheckResult` in `src/models/types.ts` is missing the `folder` field. The T02-01 acceptance criteria require `{ entry: InstallationEntry, hasUpdate: boolean, latestSha: string, folder: WorkspaceFolder }`. The consistency notes in `plans/README.md` line 54 explicitly state: "added `folder` field". Add `folder: import('vscode').WorkspaceFolder` (or import `WorkspaceFolder` from `vscode`) to the interface.
-- [ ] **FB-02**: `addTokenCommand` in `src/commands/tokenCommands.ts` does not accept an optional argument for pre-filling the token name. The T02-07 acceptance criteria require: "Token name InputBox pre-fills if the command is triggered with an argument (for flow from FR-038 notification)". Add an optional `prefillName?: string` parameter and use it as the `value` property in the InputBox options. Update the command registration in `extension.ts` to forward the argument: `(arg?: string) => addTokenCommand(authManager, arg)`.
+- [x] **FB-01**: `UpdateCheckResult` in `src/models/types.ts` is missing the `folder` field. The T02-01 acceptance criteria require `{ entry: InstallationEntry, hasUpdate: boolean, latestSha: string, folder: WorkspaceFolder }`. The consistency notes in `plans/README.md` line 54 explicitly state: "added `folder` field". Add `folder: import('vscode').WorkspaceFolder` (or import `WorkspaceFolder` from `vscode`) to the interface.
+  - **Resolution**: Added `import type { WorkspaceFolder } from 'vscode'` and `folder: WorkspaceFolder` field to `UpdateCheckResult` in `src/models/types.ts`.
+- [x] **FB-02**: `addTokenCommand` in `src/commands/tokenCommands.ts` does not accept an optional argument for pre-filling the token name. The T02-07 acceptance criteria require: "Token name InputBox pre-fills if the command is triggered with an argument (for flow from FR-038 notification)". Add an optional `prefillName?: string` parameter and use it as the `value` property in the InputBox options. Update the command registration in `extension.ts` to forward the argument: `(arg?: string) => addTokenCommand(authManager, arg)`.
+  - **Resolution**: Added `prefillName?: string` parameter to `addTokenCommand`, set `value: prefillName` in InputBox options, updated command registration in `extension.ts` to `(arg?: string) => addTokenCommand(authManager, arg)`.
 
 ### Findings
 

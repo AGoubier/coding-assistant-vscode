@@ -61,8 +61,8 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Wire real commands for token and cache management
   context.subscriptions.push(
-    vscode.commands.registerCommand('awesome-coding-assistants.addToken', () =>
-      addTokenCommand(authManager),
+    vscode.commands.registerCommand('awesome-coding-assistants.addToken', (arg?: string) =>
+      addTokenCommand(authManager, arg),
     ),
   );
   context.subscriptions.push(

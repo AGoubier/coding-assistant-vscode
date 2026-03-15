@@ -4,10 +4,11 @@
 import * as vscode from 'vscode';
 import type { AuthManager } from '../services/authManager';
 
-export async function addTokenCommand(auth: AuthManager): Promise<void> {
+export async function addTokenCommand(auth: AuthManager, prefillName?: string): Promise<void> {
   const name = await vscode.window.showInputBox({
     prompt: 'Enter a name for this token',
     placeHolder: 'e.g., my-github-token',
+    value: prefillName,
     validateInput: (value) => {
       if (!value || value.trim().length === 0) {
         return 'Token name is required';
