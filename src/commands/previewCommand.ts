@@ -8,6 +8,32 @@ import type { GitHubClient } from '../services/githubClient';
 import { PreviewFetchFailedError } from '../models/errors';
 import { buildPreviewUri, resolvePrimaryFile } from '../providers/previewProvider';
 
+// Map file extensions to VS Code language identifiers
+const EXT_LANGUAGE_MAP: Record<string, string> = {
+  '.md': 'markdown',
+  '.json': 'json',
+  '.jsonc': 'jsonc',
+  '.yaml': 'yaml',
+  '.yml': 'yaml',
+  '.sh': 'shellscript',
+  '.bash': 'shellscript',
+  '.ts': 'typescript',
+  '.js': 'javascript',
+  '.py': 'python',
+  '.xml': 'xml',
+  '.html': 'html',
+  '.css': 'css',
+};
+
+function getLanguageId(filename: string): string | undefined {
+  const lower = filename.toLowerCase();
+  const dotIdx = lower.lastIndexOf('.');
+  if (dotIdx === -1) {
+    return undefined;
+  }
+  return EXT_LANGUAGE_MAP[lower.slice(dotIdx)];
+}
+
 export async function previewCommand(
   item: CatalogFileItem,
   github: GitHubClient,
@@ -22,7 +48,11 @@ export async function previewCommand(
     try {
       const tree = await getRepoTree(item.source);
       const allPaths = tree.tree.map(e => e.path);
-      const primaryFile = resolvePrimaryFile(item.path, allPaths);
+
+      // item.path is a file path (e.g. .github/skills/my-skill/SKILL.md);
+      // extract the parent directory for primary file resolution
+      const dirPath = item.path.split('/').slice(0, -1).join('/');
+      const primaryFile = resolvePrimaryFile(dirPath, allPaths);
 
       if (!primaryFile) {
         vscode.window.showInformationMessage(
@@ -44,16 +74,15 @@ export async function previewCommand(
   const uri = buildPreviewUri(item.source, previewPath, filename);
 
   try {
-    // Load content via our TextDocumentContentProvider
     const doc = await vscode.workspace.openTextDocument(uri);
 
-    if (filename.toLowerCase().endsWith('.md')) {
-      // Show rendered Markdown preview for .md files
-      await vscode.commands.executeCommand('markdown.showPreview', uri);
-    } else {
-      // Show in text editor with syntax highlighting based on file extension
-      await vscode.window.showTextDocument(doc, { preview: true, preserveFocus: false });
+    // Set language mode explicitly since custom URI schemes bypass auto-detection
+    const langId = getLanguageId(filename);
+    if (langId) {
+      await vscode.languages.setTextDocumentLanguage(doc, langId);
     }
+
+    await vscode.window.showTextDocument(doc, { preview: true, preserveFocus: false });
   } catch (err) {
     if (err instanceof PreviewFetchFailedError) {
       vscode.window.showErrorMessage(err.userMessage);
