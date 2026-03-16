@@ -1,0 +1,48 @@
+{
+  "name": "Full-Stack Dev Toolkit",
+  "description": "Cross-tool bundle combining Copilot agents and Claude Code rules for a complete full-stack development setup.",
+  "items": [
+    {
+      "path": ".github/agents/test-writer.agent.md",
+      "tool": "copilot",
+      "category": "agents",
+      "required": true
+    },
+    {
+      "path": ".github/agents/refactoring-guru.agent.md",
+      "tool": "copilot",
+      "category": "agents",
+      "required": true
+    },
+    {
+      "path": ".github/instructions/typescript-conventions.instructions.md",
+      "tool": "copilot",
+      "category": "instructions",
+      "required": true
+    },
+    {
+      "path": ".github/skills/api-docs-generator/SKILL.md",
+      "tool": "copilot",
+      "category": "skills",
+      "required": false
+    },
+    {
+      "path": ".claude/rules/project-rules.md",
+      "tool": "claude-code",
+      "category": "rules",
+      "required": true
+    },
+    {
+      "path": ".claude/rules/error-handling.md",
+      "tool": "claude-code",
+      "category": "rules",
+      "required": true
+    },
+    {
+      "path": ".claude/commands/fix.md",
+      "tool": "claude-code",
+      "category": "commands",
+      "required": false
+    }
+  ]
+}

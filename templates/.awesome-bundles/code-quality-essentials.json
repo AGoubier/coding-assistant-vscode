@@ -1,0 +1,30 @@
+{
+  "name": "Code Quality Essentials",
+  "description": "A starter bundle with code review agent, security instructions, and commit standards for any TypeScript project.",
+  "items": [
+    {
+      "path": ".github/agents/code-reviewer.agent.md",
+      "tool": "copilot",
+      "category": "agents",
+      "required": true
+    },
+    {
+      "path": ".github/instructions/security-first.instructions.md",
+      "tool": "copilot",
+      "category": "instructions",
+      "required": true
+    },
+    {
+      "path": ".github/instructions/commit-standards.instructions.md",
+      "tool": "copilot",
+      "category": "instructions",
+      "required": true
+    },
+    {
+      "path": ".github/hooks/pre-commit-lint.sh",
+      "tool": "copilot",
+      "category": "hooks",
+      "required": false
+    }
+  ]
+}

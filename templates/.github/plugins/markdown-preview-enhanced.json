@@ -1,0 +1,21 @@
+{
+  "name": "markdown-preview-enhanced",
+  "description": "Enhanced Markdown preview with Mermaid diagram rendering and table of contents generation.",
+  "version": "1.0.0",
+  "entrypoint": "index.js",
+  "capabilities": [
+    "markdown.preview",
+    "diagram.render"
+  ],
+  "configuration": {
+    "theme": {
+      "type": "string",
+      "default": "github",
+      "enum": ["github", "dark", "light", "solarized"]
+    },
+    "mermaid.enabled": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

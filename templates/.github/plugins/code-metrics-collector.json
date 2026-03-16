@@ -1,0 +1,25 @@
+{
+  "name": "code-metrics-collector",
+  "description": "Collects code complexity metrics, dependency counts, and test coverage data for reporting.",
+  "version": "1.0.0",
+  "entrypoint": "collector.js",
+  "capabilities": [
+    "metrics.complexity",
+    "metrics.coverage",
+    "metrics.dependencies"
+  ],
+  "configuration": {
+    "outputFormat": {
+      "type": "string",
+      "default": "json",
+      "enum": ["json", "csv", "markdown"]
+    },
+    "thresholds": {
+      "type": "object",
+      "properties": {
+        "cyclomaticComplexity": { "type": "number", "default": 10 },
+        "coverageMinimum": { "type": "number", "default": 80 }
+      }
+    }
+  }
+}
