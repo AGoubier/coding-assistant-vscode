@@ -29,6 +29,7 @@ describe('Extension Test Suite', () => {
       'awesome-coding-assistants.removeToken',
       'awesome-coding-assistants.clearCache',
       'awesome-coding-assistants.showAllTools',
+      'awesome-coding-assistants.showDetectedTools',
     ];
 
     for (const cmd of expectedCommands) {

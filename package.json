@@ -118,9 +118,15 @@
       },
       {
         "command": "awesome-coding-assistants.showAllTools",
-        "title": "Toggle Show All Tools",
+        "title": "Show All Tools",
         "category": "Awesome Coding Assistants",
         "icon": "$(filter)"
+      },
+      {
+        "command": "awesome-coding-assistants.showDetectedTools",
+        "title": "Show Detected Tools Only",
+        "category": "Awesome Coding Assistants",
+        "icon": "$(filter-filled)"
       },
       {
         "command": "awesome-coding-assistants.installBundle",
@@ -155,7 +161,12 @@
         },
         {
           "command": "awesome-coding-assistants.showAllTools",
-          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && !awesome-coding-assistants.showAllTools",
+          "group": "navigation"
+        },
+        {
+          "command": "awesome-coding-assistants.showDetectedTools",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && awesome-coding-assistants.showAllTools",
           "group": "navigation"
         },
         {

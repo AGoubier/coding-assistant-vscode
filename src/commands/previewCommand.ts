@@ -41,7 +41,7 @@ export async function previewCommand(
   getRepoTree: (source: SourceConfig) => Promise<GitHubTreeResponse>,
 ): Promise<void> {
   let previewPath = item.path;
-  let filename = item.name;
+  let filename = item.path.split('/').pop() || item.name;
 
   // FR-018: For directory-type items (skills), resolve the primary file
   if (item.category === 'skills') {

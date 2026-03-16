@@ -255,6 +255,7 @@ describe('Accessibility (Section 10.4)', () => {
         'awesome-coding-assistants.removeToken',
         'awesome-coding-assistants.clearCache',
         'awesome-coding-assistants.showAllTools',
+        'awesome-coding-assistants.showDetectedTools',
       ];
 
       const allCommands = await vscode.commands.getCommands(true);
