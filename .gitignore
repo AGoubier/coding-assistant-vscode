@@ -3,6 +3,10 @@ dist/
 out/
 coverage/
 .coverage-tmp/
+.coverage-clean/
 .coverage-marker
 .vscode-test/
 *.vsix
+*.log
+.env
+.env.*
