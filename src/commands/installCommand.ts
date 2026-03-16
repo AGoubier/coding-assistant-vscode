@@ -38,7 +38,9 @@ async function resolveTargetPath(item: CatalogFileItem): Promise<string | undefi
  * Resolve the target directory relative path for directory items (skills).
  */
 function resolveTargetDirPath(item: CatalogFileItem): string | undefined {
-  const dirName = item.path.split('/').pop() || item.name;
+  // For directory-type items, extract the parent folder name (not the filename)
+  const segments = item.path.split('/');
+  const dirName = segments.length >= 4 ? segments[segments.length - 2] : (segments.pop() || item.name);
   const baseDir = getTargetDirectory(item.tool, item.category);
   if (!baseDir) {
     return undefined;
@@ -144,9 +146,15 @@ async function installDirectoryItem(
   const tree = await getRepoTree(item.source);
   const targetDirUri = vscode.Uri.joinPath(folder.uri, targetDirRelative);
 
+  // Derive the source directory path from the file path (strip filename)
+  const pathSegments = item.path.split('/');
+  const sourceDir = pathSegments.length >= 4
+    ? pathSegments.slice(0, -1).join('/')
+    : item.path;
+
   return installer.installDirectory(
     item.source,
-    item.path,
+    sourceDir,
     targetDirUri,
     targetDirRelative,
     tree.tree,

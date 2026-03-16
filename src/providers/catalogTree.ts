@@ -536,6 +536,8 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
    */
   private groupByCategory(entries: GitHubTreeEntry[]): Map<string, GitHubTreeEntry[]> {
     const map = new Map<string, GitHubTreeEntry[]>();
+    // Track seen skill directories to deduplicate files within the same folder
+    const seenSkillDirs = new Set<string>();
 
     for (const entry of entries) {
       // Only process blobs (files), not trees (directories)
@@ -548,6 +550,18 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
         continue;
       }
 
+      // For directory-type categories (skills), deduplicate by parent folder
+      if (classification.category === 'skills') {
+        const segments = entry.path.split('/');
+        if (segments.length >= 4) {
+          const dirKey = segments.slice(0, -1).join('/');
+          if (seenSkillDirs.has(dirKey)) {
+            continue;
+          }
+          seenSkillDirs.add(dirKey);
+        }
+      }
+
       const list = map.get(classification.category) || [];
       list.push(entry);
       map.set(classification.category, list);
@@ -558,6 +572,13 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
 
   private extractItemName(path: string): string {
     const segments = path.split('/');
+
+    // For directory-type categories (skills), use the parent folder name
+    // Pattern: .github/skills/<folder-name>/<file>
+    if (segments.length >= 4 && segments[1]?.toLowerCase() === 'skills') {
+      return segments[segments.length - 2];
+    }
+
     const filename = segments[segments.length - 1];
     // Remove tool-specific extensions for cleaner display
     return filename
