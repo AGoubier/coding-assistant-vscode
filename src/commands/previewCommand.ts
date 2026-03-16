@@ -44,9 +44,16 @@ export async function previewCommand(
   const uri = buildPreviewUri(item.source, previewPath, filename);
 
   try {
-    // Open as a text document with the virtual URI - reuses existing tab for same URI
+    // Load content via our TextDocumentContentProvider
     const doc = await vscode.workspace.openTextDocument(uri);
-    await vscode.window.showTextDocument(doc, { preview: true, preserveFocus: false });
+
+    if (filename.toLowerCase().endsWith('.md')) {
+      // Show rendered Markdown preview for .md files
+      await vscode.commands.executeCommand('markdown.showPreview', uri);
+    } else {
+      // Show in text editor with syntax highlighting based on file extension
+      await vscode.window.showTextDocument(doc, { preview: true, preserveFocus: false });
+    }
   } catch (err) {
     if (err instanceof PreviewFetchFailedError) {
       vscode.window.showErrorMessage(err.userMessage);
