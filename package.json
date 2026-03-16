@@ -8,7 +8,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jlacube/awesome-coding-assistants"
+    "url": "https://github.com/jlacube/awesome-coding-assistants-vscode"
   },
   "engines": {
     "vscode": "^1.85.0"
