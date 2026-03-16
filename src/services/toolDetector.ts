@@ -12,10 +12,8 @@ const COPILOT_PATTERNS: { dir: string; category: CategoryType; extensions?: stri
   { dir: 'instructions', category: 'instructions', extensions: ['.instructions.md'] },
   { dir: 'skills', category: 'skills' },
   { dir: 'prompts', category: 'prompts', extensions: ['.prompt.md'] },
-  { dir: 'hooks', category: 'hooks' },
+  { dir: 'hooks', category: 'hooks', extensions: ['.json'] },
   { dir: 'chatmodes', category: 'modes' },
-  { dir: 'plugins', category: 'plugins' },
-  { dir: 'workflows', category: 'workflows' },
 ];
 
 // Claude Code file patterns
@@ -23,6 +21,7 @@ const CLAUDE_PATTERNS: { dir: string; category: CategoryType }[] = [
   { dir: 'agents', category: 'agents' },
   { dir: 'rules', category: 'rules' },
   { dir: 'commands', category: 'commands' },
+  { dir: 'hooks', category: 'hooks' },
 ];
 
 function normalizePath(filePath: string): string {

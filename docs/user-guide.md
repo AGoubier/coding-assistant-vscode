@@ -119,6 +119,7 @@ Items are installed to the correct tool-specific directory automatically:
 | Claude Code | Agents | `.claude/agents/` |
 | Claude Code | Rules | `.claude/rules/` |
 | Claude Code | Commands | `.claude/commands/` |
+| Claude Code | Hooks | `.claude/hooks/` |
 
 **CLAUDE.md special case**: When installing a CLAUDE.md file, you are prompted to choose between placing it at the project root (`CLAUDE.md`) or inside the `.claude/` directory (`.claude/CLAUDE.md`).
 

@@ -55,12 +55,12 @@ const TARGET_PATH_MAP: Record<string, Record<string, string>> = {
     'prompts': '.github/prompts',
     'hooks': '.github/hooks',
     'modes': '.github/chatmodes',
-    'plugins': '.github/plugins',
   },
   'claude-code': {
     'agents': '.claude/agents',
     'rules': '.claude/rules',
     'commands': '.claude/commands',
+    'hooks': '.claude/hooks',
   },
 };
 
@@ -139,7 +139,6 @@ export function classifyPath(filePath: string): { tool: ToolType; category: Cate
       'prompts': 'prompts',
       'hooks': 'hooks',
       'chatmodes': 'modes',
-      'plugins': 'plugins',
     };
     const category = copilotMap[dir];
     if (category) {
@@ -154,6 +153,7 @@ export function classifyPath(filePath: string): { tool: ToolType; category: Cate
       'agents': 'agents',
       'rules': 'rules',
       'commands': 'commands',
+      'hooks': 'hooks',
     };
     const category = claudeMap[dir];
     if (category) {

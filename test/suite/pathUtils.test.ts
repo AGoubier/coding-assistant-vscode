@@ -88,6 +88,10 @@ describe('pathUtils', () => {
       assert.strictEqual(getTargetDirectory('claude-code', 'commands'), '.claude/commands');
     });
 
+    it('should return correct path for claude-code hooks', () => {
+      assert.strictEqual(getTargetDirectory('claude-code', 'hooks'), '.claude/hooks');
+    });
+
     it('should return undefined for unknown tool', () => {
       assert.strictEqual(getTargetDirectory('unknown-tool', 'agents'), undefined);
     });
@@ -189,6 +193,11 @@ describe('pathUtils', () => {
     it('should classify .claude/rules/ as claude-code rules', () => {
       const result = classifyPath('.claude/rules/style.md');
       assert.deepStrictEqual(result, { tool: 'claude-code', category: 'rules' });
+    });
+
+    it('should classify .claude/hooks/ as claude-code hooks', () => {
+      const result = classifyPath('.claude/hooks/block-rm.sh');
+      assert.deepStrictEqual(result, { tool: 'claude-code', category: 'hooks' });
     });
 
     it('should classify CLAUDE.md as claude-code rules', () => {

@@ -69,7 +69,7 @@ Classifies file paths into tool type and category, and detects which AI tools ar
 
 **classifyItem recognized patterns:**
 - Copilot: `.github/agents/*.agent.md`, `.github/instructions/*.instructions.md`, `.github/skills/*`, `.github/prompts/*.prompt.md`, `.github/hooks/*`, `.github/chatmodes/*`, `.github/plugins/*`, `.github/workflows/*`
-- Claude Code: `.claude/agents/*.md`, `.claude/rules/*.md`, `.claude/commands/*.md`, `CLAUDE.md`, `.claude/settings.json`
+- Claude Code: `.claude/agents/*.md`, `.claude/rules/*.md`, `.claude/commands/*.md`, `.claude/hooks/*`, `CLAUDE.md`, `.claude/settings.json`
 
 **detectWorkspaceTools markers:**
 

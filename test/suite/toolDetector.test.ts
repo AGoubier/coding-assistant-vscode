@@ -59,10 +59,15 @@ describe('toolDetector', () => {
     });
 
     describe('Copilot hooks', () => {
-      it('should classify .github/hooks/pre-commit.sh', () => {
-        const result = classifyItem('.github/hooks/pre-commit.sh');
+      it('should classify .github/hooks/on-save.json', () => {
+        const result = classifyItem('.github/hooks/on-save.json');
         assert.strictEqual(result.tool, 'copilot');
         assert.strictEqual(result.category, 'hooks');
+      });
+
+      it('should not classify .github/hooks/pre-commit.sh (wrong extension)', () => {
+        const result = classifyItem('.github/hooks/pre-commit.sh');
+        assert.strictEqual(result.tool, 'unknown');
       });
     });
 
@@ -74,19 +79,17 @@ describe('toolDetector', () => {
       });
     });
 
-    describe('Copilot plugins', () => {
-      it('should classify .github/plugins/myplugin/plugin.json', () => {
+    describe('Copilot plugins (not a Copilot customization)', () => {
+      it('should not classify .github/plugins/myplugin/plugin.json', () => {
         const result = classifyItem('.github/plugins/myplugin/plugin.json');
-        assert.strictEqual(result.tool, 'copilot');
-        assert.strictEqual(result.category, 'plugins');
+        assert.strictEqual(result.tool, 'unknown');
       });
     });
 
-    describe('Copilot workflows', () => {
-      it('should classify .github/workflows/ci.yml', () => {
+    describe('Copilot workflows (GitHub Actions, not Copilot)', () => {
+      it('should not classify .github/workflows/ci.yml', () => {
         const result = classifyItem('.github/workflows/ci.yml');
-        assert.strictEqual(result.tool, 'copilot');
-        assert.strictEqual(result.category, 'workflows');
+        assert.strictEqual(result.tool, 'unknown');
       });
     });
 
@@ -113,6 +116,14 @@ describe('toolDetector', () => {
         const result = classifyItem('.claude/commands/deploy.md');
         assert.strictEqual(result.tool, 'claude-code');
         assert.strictEqual(result.category, 'commands');
+      });
+    });
+
+    describe('Claude Code hooks', () => {
+      it('should classify .claude/hooks/block-rm.sh', () => {
+        const result = classifyItem('.claude/hooks/block-rm.sh');
+        assert.strictEqual(result.tool, 'claude-code');
+        assert.strictEqual(result.category, 'hooks');
       });
     });
 

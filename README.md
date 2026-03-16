@@ -3,6 +3,8 @@
 [![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/jlacube.awesome-coding-assistants?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=jlacube.awesome-coding-assistants)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
 
+> Inspired by [Awesome Copilot](https://github.com/timheuer/vscode-awesome-copilot) by [Tim Heuer](https://github.com/timheuer) - the original VS Code extension for browsing and downloading GitHub Copilot customizations from the [awesome-copilot](https://github.com/github/awesome-copilot) repository.
+
 **Browse, preview, install, and manage AI coding assistant customizations - all from within VS Code.**
 
 Awesome Coding Assistants is a universal catalog and lifecycle manager for customizations across multiple AI coding tools. Discover community-contributed agents, prompts, instructions, skills, rules, modes, and more - then install them into your workspace with a single click.
@@ -13,8 +15,8 @@ Awesome Coding Assistants is a universal catalog and lifecycle manager for custo
 
 | Tool | Status | Categories |
 |------|--------|------------|
-| **GitHub Copilot** | Fully supported | Agents, Instructions, Skills, Prompts, Hooks, Modes, Plugins, Workflows |
-| **Claude Code** | Fully supported | Agents, Rules, Commands |
+| **GitHub Copilot** | Fully supported | Agents, Instructions, Skills, Prompts, Hooks, Modes |
+| **Claude Code** | Fully supported | Agents, Rules, Commands, Hooks |
 | **Kiro** | Planned | - |
 | **KiloCode** | Planned | - |
 | **OpenCode** | Planned | - |
@@ -146,6 +148,7 @@ your-source-repo/
     instructions/    # Copilot instructions (.instructions.md)
     skills/          # Copilot skill packages (SKILL.md)
     prompts/         # Copilot prompt files (.prompt.md)
+    hooks/           # Copilot hooks (.json)
     chatmodes/       # Copilot chat modes
   .claude/
     agents/          # Claude Code agents
