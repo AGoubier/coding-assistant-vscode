@@ -1,5 +1,5 @@
 ---
-lane: for_review
+lane: done
 ---
 
 # WP14 - Removed Content Rendering and Dismiss
@@ -277,6 +277,7 @@ This work package extends the tree UI to render items that have been removed fro
 - **Risk**: The `installed` check for removed items might not work if the installedIds format differs.
   - **Mitigation**: Use the exact same ID format: `${sourceUrl}#${path}`. This matches existing code in `getFileNodes()`.
 
+
 ## Activity Log
 
 - 2026-03-17T00:00:00Z - planner - lane=planned - Work package created
@@ -284,6 +285,33 @@ This work package extends the tree UI to render items that have been removed fro
 - 2026-03-18T01:00:00Z - coder - lane=doing - T14-01 and T14-02 implemented (merge removed items, render markers)
 - 2026-03-18T01:30:00Z - coder - lane=doing - T14-03 badge tooltip, T14-04 notification, T14-05 unit tests, T14-06 integration tests, T14-07 build/test verified (419 passing)
 - 2026-03-18T01:45:00Z - coder - lane=for_review - All tasks complete, submitted for review
+- 2026-03-18T01:55:00Z - reviewer - lane=done - Review complete, PASS. All tasks and tests verified
+
+## Review
+
+---
+lane: done
+---
+
+### Review Verdict: PASS
+
+#### Summary
+All WP14 requirements are fully met:
+- **T14-01**: Removed items are merged as synthetic entries in `getFileNodes()` for the correct category only, with correct fields and sort order.
+- **T14-02**: `createFileTreeItem()` renders removed items with the correct contextValue, description, icon, and accessibility label. Installed/removed distinction is correct. Priority order is respected.
+- **T14-03**: Badge tooltip and value include removed count, with correct segment order and context key logic.
+- **T14-04**: Auto-check notification message includes removed count, with correct pluralization and segment order.
+- **T14-05**: Unit tests cover all acceptance criteria for removed content, including category merging, rendering, accessibility, and badge logic.
+- **T14-06**: Integration tests verify end-to-end removed content flow, including markAllSeen and contextValue for installed removed items.
+- **T14-07**: Lint, build, and all 419 tests pass. No new lint errors. No unrelated changes.
+
+#### Code Quality
+- Code is clear, well-structured, and follows project conventions.
+- No scope creep or over-engineering.
+- All acceptance criteria and spec references are satisfied.
+
+#### Reviewer Activity Log
+- 2026-03-18T01:55:00Z - reviewer - lane=done - Review complete, PASS. All tasks and tests verified.
 
 ## Self-Review
 
