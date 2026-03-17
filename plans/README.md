@@ -136,3 +136,102 @@ The following cross-WP inconsistencies were identified and corrected during the 
 | T10-05 | Unit tests for search | WP10 | No |
 
 **Total**: 10 work packages, 62 tasks
+
+---
+
+# Plan Index - New Content Notifications (Spec 002)
+
+> **Spec**: `specs/002-new-content-notifications.spec.md`
+> **Generated**: 2026-03-17
+
+## Work Packages
+
+| ID | Title | Priority | Status | Depends On | Parallelisable |
+|----|-------|----------|--------|-----------|----------------|
+| [WP11](WP11-bug-fixes.md) | Bug Fixes: Update Badge Visibility and Installed Cache Race | P1 | Not Started | none | Yes |
+| [WP12](WP12-new-content-service.md) | NewContentDetector Service and Data Model | P1 | Not Started | none | Yes |
+| [WP13](WP13-tree-ui-badges.md) | Tree UI Integration, TreeView Badge, and Commands | P1 | Not Started | WP11, WP12 | No |
+| [WP14](WP14-removed-content.md) | Removed Content Rendering and Dismiss | P2 | Not Started | WP12, WP13 | No |
+
+## MVP Scope (Spec 002)
+
+The following work packages constitute the minimum releasable increment: **WP11, WP12, WP13**.
+- WP11 fixes two existing bugs (codicon literal text, cache race) that are prerequisites for correct badge behavior.
+- WP12 implements the core NewContentDetector service that performs tree snapshot diffing.
+- WP13 wires everything together: TreeView badge, "new" markers, "Mark All as Seen" command, auto-check integration.
+
+**WP14** (removed content rendering) is post-MVP. It adds P2 functionality for surfacing items removed from upstream. It can be deferred without affecting the MVP experience.
+
+## Dependency & Execution Summary (Spec 002)
+
+```
+WP11 (Bug Fixes)  ----\
+                        +---> WP13 (Tree UI + Badge + Commands) ---> WP14 (Removed Content)
+WP12 (Service)    ----/
+```
+
+- **Sequence**: WP11 + WP12 (parallel) -> WP13 -> WP14
+- **Parallelization**: WP11 and WP12 can be worked concurrently (no shared code changes).
+- **Critical path**: WP12 -> WP13 -> WP14 (longest chain). WP11 is a shorter parallel track that must complete before WP13.
+
+## Sequencing Notes (Spec 002)
+
+**Phase 1 - Foundation (WP11 + WP12, parallel)**:
+WP11 and WP12 have zero shared dependencies and modify different files. WP11 touches only `catalogTree.ts` (bug fixes). WP12 creates the new `newContentDetector.ts` service and extends `types.ts`. Both add configuration to `package.json` but in non-overlapping sections (WP11: no config changes; WP12: adds `newContentDetection` setting and types).
+
+**Phase 2 - Integration (WP13)**:
+WP13 is the largest work package. It wires the NewContentDetector into `extension.ts`, adds badge logic, renders "new" markers in the tree, implements the "Mark All as Seen" command, and adds integration tests. It depends on both WP11 (clean badge rendering) and WP12 (the service itself).
+
+**Phase 3 - Removed Content (WP14)**:
+WP14 adds the P2 removed-content rendering. It builds on WP13's tree UI changes by adding synthetic removed items to `getFileNodes()` and rendering them with warning markers. This can be deferred without impacting the MVP.
+
+## Task Index (Spec 002)
+
+| Task ID | Summary | Work Package | Parallel? |
+|---------|---------|--------------|----------|
+| T11-01 | Fix codicon literal text in update description | WP11 | Yes |
+| T11-02 | Fix installed cache race condition with atomic swap | WP11 | Yes |
+| T11-03 | Unit tests for update badge fix | WP11 | No |
+| T11-04 | Unit tests for installed cache atomic swap | WP11 | No |
+| T11-05 | Build and lint verification | WP11 | No |
+| T12-01 | Add NewContentResult interface and CatalogFileItem extensions | WP12 | Yes |
+| T12-02 | Add newContentDetection configuration setting | WP12 | Yes |
+| T12-03 | Implement NewContentDetector service | WP12 | No |
+| T12-04 | Unit tests for NewContentDetector | WP12 | No |
+| T12-05 | Export and barrel file updates | WP12 | No |
+| T12-06 | Build and test verification | WP12 | No |
+| T13-01 | Register markAllSeen command and menu in package.json | WP13 | Yes |
+| T13-02 | Wire NewContentDetector in extension.ts activation | WP13 | No |
+| T13-03 | Add setNewContentDetector() method to CatalogTreeProvider | WP13 | Yes |
+| T13-04 | Render "new" markers in createFileTreeItem() | WP13 | No |
+| T13-05 | Set isNew flag in getFileNodes() | WP13 | No |
+| T13-06 | Mark category items as seen on expand | WP13 | No |
+| T13-07 | Integrate new-content check into auto-check cycle | WP13 | No |
+| T13-08 | Unit tests for tree UI integration | WP13 | No |
+| T13-09 | Integration and E2E tests | WP13 | No |
+| T13-10 | Build and test verification | WP13 | No |
+| T14-01 | Merge removed items into getFileNodes() | WP14 | No |
+| T14-02 | Render "removed upstream" markers in createFileTreeItem() | WP14 | No |
+| T14-03 | Include removed count in TreeView badge tooltip | WP14 | Yes |
+| T14-04 | Include removed items in auto-check notification message | WP14 | Yes |
+| T14-05 | Unit tests for removed content rendering | WP14 | No |
+| T14-06 | Integration tests for removed content flow | WP14 | No |
+| T14-07 | Build and test verification | WP14 | No |
+
+**Total (Spec 002)**: 4 work packages, 28 tasks
+
+## Consistency Notes (Spec 002)
+
+**Cross-WP verification performed:**
+- `CatalogFileItem.isNew` and `CatalogFileItem.isRemoved` fields defined in WP12 T12-01 (`types.ts`) and consumed by WP13 T13-04/T13-05 and WP14 T14-01/T14-02 -- field names, types, and optionality match across all references.
+- `NewContentDetector` API surface: constructor, `checkForNewContent()`, `getNewItems()`, `getRemovedItems()`, `markCategorySeen()`, `markAllSeen()`, `getTotalNewCount()`, `getTotalRemovedCount()` -- all method signatures referenced consistently across WP12, WP13, and WP14.
+- `setNewContentDetector()` method defined in WP13 T13-03, used in WP13 T13-02, and relied upon by WP14 for detector availability.
+- GlobalState key patterns (`newContent:seen:`, `newContent:new:`, `newContent:removed:`) consistent across WP12 service and all consuming WPs.
+- `updateTreeBadge()` badge formula: WP13 defines `newCount + updateCount`; WP14 T14-03 extends to `newCount + removedCount + updateCount`. The WP14 change is additive (modifies the same function).
+- `contextValue` strings: `catalogItem.new` (WP13 T13-04), `catalogItem.removed` and `catalogItem.removedInstalled` (WP14 T14-02) -- no conflicts with existing values (`catalogItem.installed`, `catalogItem.updateAvailable`).
+- Priority chain in `createFileTreeItem()`: WP11 fixes the update branch, WP13 adds `isNew` branch, WP14 adds `isRemoved` branch. Order: `updateAvailable` > `installed` (non-removed) > `isNew` > `isRemoved` > default -- consistent across all WP files.
+- `awesome-coding-assistants.hasNewContent` context key: WP13 sets it based on `newCount > 0`; WP14 extends to `(newCount + removedCount) > 0`. Additive change tracked in WP14 T14-03.
+- Configuration setting `newContentDetection`: defined in WP12 T12-02, consumed in WP13 T13-07. Same key name, type, and default value.
+- All 29 FRs from spec 002 are assigned to exactly one task across all WPs. No orphan FRs. No duplicate assignments.
+- Dependency graph is acyclic: WP11 -> WP13; WP12 -> WP13 -> WP14. No circular dependencies.
+- Coverage requirements: 90% line, 85% branch stated in WP12 T12-04 for the NewContentDetector module.
