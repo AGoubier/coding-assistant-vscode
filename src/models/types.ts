@@ -102,6 +102,8 @@ export interface CatalogFileItem {
   installed: boolean;
   updateAvailable: boolean;
   description?: string;
+  isNew?: boolean;
+  isRemoved?: boolean;
 }
 
 export type CatalogItem = SourceItem | CategoryItem | CatalogFileItem;
@@ -136,6 +138,12 @@ export interface UpdateCheckResult {
   hasUpdate: boolean;
   latestSha: string;
   folder: WorkspaceFolder;
+}
+
+export interface NewContentResult {
+  newPaths: string[];
+  removedPaths: string[];
+  sourceUrl: string;
 }
 
 // --- GitHub API response types ---

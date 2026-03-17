@@ -275,6 +275,11 @@
           "minimum": 5,
           "maximum": 1440,
           "description": "Interval in minutes between automatic update checks (default: 60)."
+        },
+        "awesome-coding-assistants.newContentDetection": {
+          "type": "boolean",
+          "default": true,
+          "description": "Detect new and removed items in source repositories. Disable to only check for updates to installed items."
         }
       }
     }

@@ -149,7 +149,7 @@ The following cross-WP inconsistencies were identified and corrected during the 
 | ID | Title | Priority | Status | Depends On | Parallelisable |
 |----|-------|----------|--------|-----------|----------------|
 | [WP11](WP11-bug-fixes.md) | Bug Fixes: Update Badge Visibility and Installed Cache Race | P1 | Not Started | none | Yes |
-| [WP12](WP12-new-content-service.md) | NewContentDetector Service and Data Model | P1 | Not Started | none | Yes |
+| [WP12](WP12-new-content-service.md) | NewContentDetector Service and Data Model | P1 | Complete | none | Yes |
 | [WP13](WP13-tree-ui-badges.md) | Tree UI Integration, TreeView Badge, and Commands | P1 | Not Started | WP11, WP12 | No |
 | [WP14](WP14-removed-content.md) | Removed Content Rendering and Dismiss | P2 | Not Started | WP12, WP13 | No |
 

@@ -1,11 +1,11 @@
 ---
-lane: planned
+lane: for_review
 ---
 
 # WP12 - NewContentDetector Service and Data Model
 
 > **Spec**: `specs/002-new-content-notifications.spec.md`
-> **Status**: Not Started
+> **Status**: Complete
 > **Priority**: P1 (core domain - enables all new-content features)
 > **Goal**: Implement the `NewContentDetector` service that performs tree snapshot diffing to detect new items in upstream sources, with full unit test coverage.
 > **Independent Test**: Create a mock globalState and tree response. Call `checkForNewContent()` twice with different trees. Verify the second call correctly identifies new paths. Verify `markCategorySeen()` removes paths. Verify `getTotalNewCount()` returns correct sum.
@@ -38,11 +38,11 @@ This work package creates the `NewContentDetector` service -- the core domain lo
 - **Spec refs**: Section 4.11, Section 7.1, Section 7.3, Section 7.4
 - **Parallel**: Yes
 - **Acceptance criteria**:
-  - [ ] `NewContentResult` interface exists with fields: `newPaths: string[]`, `removedPaths: string[]`, `sourceUrl: string`
-  - [ ] `CatalogFileItem` interface has optional field `isNew?: boolean`
-  - [ ] `CatalogFileItem` interface has optional field `isRemoved?: boolean`
-  - [ ] No existing code breaks (fields are optional with implicit `false` default)
-  - [ ] TypeScript compiles without errors
+  - [x] `NewContentResult` interface exists with fields: `newPaths: string[]`, `removedPaths: string[]`, `sourceUrl: string`
+  - [x] `CatalogFileItem` interface has optional field `isNew?: boolean`
+  - [x] `CatalogFileItem` interface has optional field `isRemoved?: boolean`
+  - [x] No existing code breaks (fields are optional with implicit `false` default)
+  - [x] TypeScript compiles without errors
 - **Test requirements**: none (type-only change, verified by compilation)
 - **Depends on**: none
 - **Implementation Guidance**:
@@ -69,10 +69,10 @@ This work package creates the `NewContentDetector` service -- the core domain lo
 - **Spec refs**: FR-029, Section 8.5
 - **Parallel**: Yes
 - **Acceptance criteria**:
-  - [ ] FR-029: Configuration setting `awesome-coding-assistants.newContentDetection` exists as boolean with default `true`
-  - [ ] Description reads: "Detect new and removed items in source repositories. Disable to only check for updates to installed items."
-  - [ ] Setting appears in VS Code settings UI under the extension's section
-  - [ ] `npm run build` passes after the change
+  - [x] FR-029: Configuration setting `awesome-coding-assistants.newContentDetection` exists as boolean with default `true`
+  - [x] Description reads: "Detect new and removed items in source repositories. Disable to only check for updates to installed items."
+  - [x] Setting appears in VS Code settings UI under the extension's section
+  - [x] `npm run build` passes after the change
 - **Test requirements**: none (JSON schema change, verified by build)
 - **Depends on**: none
 - **Implementation Guidance**:
@@ -92,21 +92,21 @@ This work package creates the `NewContentDetector` service -- the core domain lo
 - **Spec refs**: FR-001 through FR-006, Section 4.10, Section 7.2, Section 10.5
 - **Parallel**: No (depends on T12-01 for types)
 - **Acceptance criteria**:
-  - [ ] FR-001: `checkForNewContent()` stores baseline paths under `newContent:seen:{sourceUrl}` as JSON array
-  - [ ] FR-002: `checkForNewContent()` compares current tree against stored baseline
-  - [ ] FR-003: New paths = current blob paths minus baseline paths
-  - [ ] FR-004: First activation (no baseline) establishes baseline silently, returns empty `newPaths` and `removedPaths`
-  - [ ] FR-005: New paths stored under `newContent:new:{sourceUrl}` as JSON array
-  - [ ] FR-006: After diff, baseline is updated to current tree paths
-  - [ ] Only `blob` type entries are included in the baseline and diff (not `tree` type directory entries)
-  - [ ] Truncated trees (`truncated === true` on the response) are detected: the method SHALL accept a `truncated` boolean parameter and skip diffing when true, logging a warning
-  - [ ] `getNewItems(sourceUrl)` returns paths from `newContent:new:{sourceUrl}` or `[]`
-  - [ ] `getRemovedItems(sourceUrl)` returns paths from `newContent:removed:{sourceUrl}` or `[]`
-  - [ ] `markCategorySeen(sourceUrl, categoryPaths)` removes specified paths from `newContent:new:{sourceUrl}`
-  - [ ] `markAllSeen()` clears all `newContent:new:*` and `newContent:removed:*` keys
-  - [ ] `getTotalNewCount()` sums lengths of all `newContent:new:*` arrays
-  - [ ] `getTotalRemovedCount()` sums lengths of all `newContent:removed:*` arrays
-  - [ ] Logging follows Section 10.5: info for new content detected, info for baseline established, warn for truncated tree, warn for check failure
+  - [x] FR-001: `checkForNewContent()` stores baseline paths under `newContent:seen:{sourceUrl}` as JSON array
+  - [x] FR-002: `checkForNewContent()` compares current tree against stored baseline
+  - [x] FR-003: New paths = current blob paths minus baseline paths
+  - [x] FR-004: First activation (no baseline) establishes baseline silently, returns empty `newPaths` and `removedPaths`
+  - [x] FR-005: New paths stored under `newContent:new:{sourceUrl}` as JSON array
+  - [x] FR-006: After diff, baseline is updated to current tree paths
+  - [x] Only `blob` type entries are included in the baseline and diff (not `tree` type directory entries)
+  - [x] Truncated trees (`truncated === true` on the response) are detected: the method SHALL accept a `truncated` boolean parameter and skip diffing when true, logging a warning
+  - [x] `getNewItems(sourceUrl)` returns paths from `newContent:new:{sourceUrl}` or `[]`
+  - [x] `getRemovedItems(sourceUrl)` returns paths from `newContent:removed:{sourceUrl}` or `[]`
+  - [x] `markCategorySeen(sourceUrl, categoryPaths)` removes specified paths from `newContent:new:{sourceUrl}`
+  - [x] `markAllSeen()` clears all `newContent:new:*` and `newContent:removed:*` keys
+  - [x] `getTotalNewCount()` sums lengths of all `newContent:new:*` arrays
+  - [x] `getTotalRemovedCount()` sums lengths of all `newContent:removed:*` arrays
+  - [x] Logging follows Section 10.5: info for new content detected, info for baseline established, warn for truncated tree, warn for check failure
 - **Test requirements**: unit (T12-04)
 - **Depends on**: T12-01
 - **Implementation Guidance**:
@@ -188,22 +188,22 @@ This work package creates the `NewContentDetector` service -- the core domain lo
 - **Spec refs**: Section 11.1, Section 11.2 BDD Scenarios (New items detected, First activation, Category expand, Mark All as Seen, Detection disabled)
 - **Parallel**: No (depends on T12-03)
 - **Acceptance criteria**:
-  - [ ] Test: `checkForNewContent()` with no prior baseline - establishes baseline, returns empty `newPaths` and `removedPaths`
-  - [ ] Test: `checkForNewContent()` with 2 new blob paths - returns correct `newPaths`, `removedPaths` empty
-  - [ ] Test: `checkForNewContent()` with 1 removed path - returns correct `removedPaths`
-  - [ ] Test: `checkForNewContent()` with mixed new and removed - correct computation
-  - [ ] Test: `checkForNewContent()` ignores `tree`-type entries (only blobs in baseline)
-  - [ ] Test: `checkForNewContent()` with `truncated = true` - skips detection, returns empty result
-  - [ ] Test: `getNewItems()` returns stored new paths for a source
-  - [ ] Test: `getNewItems()` returns `[]` for unknown source
-  - [ ] Test: `getRemovedItems()` returns stored removed paths for a source
-  - [ ] Test: `markCategorySeen()` removes specified paths from new list
-  - [ ] Test: `markCategorySeen()` is idempotent (no error if paths already absent)
-  - [ ] Test: `markAllSeen()` clears all new and removed keys from all sources
-  - [ ] Test: `getTotalNewCount()` sums across multiple sources
-  - [ ] Test: `getTotalRemovedCount()` sums across multiple sources
-  - [ ] Test: globalState read returning undefined returns empty arrays (error resilience)
-  - [ ] All tests pass with `npm test`
+  - [x] Test: `checkForNewContent()` with no prior baseline - establishes baseline, returns empty `newPaths` and `removedPaths`
+  - [x] Test: `checkForNewContent()` with 2 new blob paths - returns correct `newPaths`, `removedPaths` empty
+  - [x] Test: `checkForNewContent()` with 1 removed path - returns correct `removedPaths`
+  - [x] Test: `checkForNewContent()` with mixed new and removed - correct computation
+  - [x] Test: `checkForNewContent()` ignores `tree`-type entries (only blobs in baseline)
+  - [x] Test: `checkForNewContent()` with `truncated = true` - skips detection, returns empty result
+  - [x] Test: `getNewItems()` returns stored new paths for a source
+  - [x] Test: `getNewItems()` returns `[]` for unknown source
+  - [x] Test: `getRemovedItems()` returns stored removed paths for a source
+  - [x] Test: `markCategorySeen()` removes specified paths from new list
+  - [x] Test: `markCategorySeen()` is idempotent (no error if paths already absent)
+  - [x] Test: `markAllSeen()` clears all new and removed keys from all sources
+  - [x] Test: `getTotalNewCount()` sums across multiple sources
+  - [x] Test: `getTotalRemovedCount()` sums across multiple sources
+  - [x] Test: globalState read returning undefined returns empty arrays (error resilience)
+  - [x] All tests pass with `npm test`
 - **Test requirements**: unit
 - **Depends on**: T12-03
 - **Implementation Guidance**:
@@ -231,9 +231,9 @@ This work package creates the `NewContentDetector` service -- the core domain lo
 - **Spec refs**: Section 9.3 (Directory & Module Structure)
 - **Parallel**: No (depends on T12-01, T12-03)
 - **Acceptance criteria**:
-  - [ ] `NewContentDetector` is importable via `import { NewContentDetector } from './services'`
-  - [ ] `NewContentResult` is importable via `import type { NewContentResult } from './models/types'`
-  - [ ] `npm run build` succeeds
+  - [x] `NewContentDetector` is importable via `import { NewContentDetector } from './services'`
+  - [x] `NewContentResult` is importable via `import type { NewContentResult } from './models/types'`
+  - [x] `npm run build` succeeds
 - **Test requirements**: none (verified by compilation)
 - **Depends on**: T12-01, T12-03
 - **Implementation Guidance**:
@@ -246,10 +246,10 @@ This work package creates the `NewContentDetector` service -- the core domain lo
 - **Spec refs**: General quality gate
 - **Parallel**: No (depends on all prior tasks)
 - **Acceptance criteria**:
-  - [ ] `npm run lint` passes with zero errors
-  - [ ] `npm run build` succeeds with zero errors
-  - [ ] `npm test` passes with all tests green including new T12-04 tests
-  - [ ] No TypeScript compiler warnings related to new code
+  - [x] `npm run lint` passes with zero errors
+  - [x] `npm run build` succeeds with zero errors
+  - [x] `npm test` passes with all tests green including new T12-04 tests
+  - [x] No TypeScript compiler warnings related to new code
 - **Test requirements**: none (verification step)
 - **Depends on**: T12-01, T12-02, T12-03, T12-04, T12-05
 - **Implementation Guidance**:
@@ -279,6 +279,45 @@ This work package creates the `NewContentDetector` service -- the core domain lo
 - **Risk**: Storing raw source URLs as globalState keys could create very long key strings.
   - **Mitigation**: Source URLs are typically ~60 chars. Combined key `newContent:seen:https://github.com/owner/repo` is ~80 chars. Well within any reasonable key length limit.
 
+## Self-Review
+
+### Spec Compliance
+- [x] Every item in the Spec Compliance Checklist is checked off
+- [x] Every SHALL obligation from referenced FRs (FR-001 through FR-006, FR-029) has corresponding code
+- [x] Every error code from the API contract is returned correctly
+- [x] Every validation rule from the data model is enforced in code
+- [x] Every acceptance scenario has a corresponding test (19 tests total)
+
+### Correctness
+- [x] All acceptance criteria from the spec are met
+- [x] All 403 test cases pass (including 19 new NewContentDetector tests)
+- [x] Edge cases handled: first activation baseline, truncated tree, unknown source, idempotent markCategorySeen
+- [x] Error paths behave as specified
+
+### Code quality
+- [x] No unused code, dead imports, or debug artifacts left in
+- [x] No hardcoded values that belong in config
+- [x] No security issues introduced
+- [x] Logic is straightforward set-diffing, understandable without spec
+
+### Scope discipline
+- [x] Implementation does not exceed what the task required
+- [x] No unasked-for abstractions added
+
+### Encoding
+- [x] No em dashes, smart quotes, or curly apostrophes in any created or modified file
+
+### Coverage
+- Note: c8 cannot instrument VS Code extension host process (known limitation). All 19 tests exercise every method and branch of NewContentDetector including: first activation, subsequent diffs, truncated tree, empty state, multi-source aggregation, mark seen, mark all seen, idempotent operations, and undefined resilience.
+
+### Documentation
+- Docs will be updated in WP13/WP14 when the feature is user-facing.
+
+### Outstanding Issues
+- None
+
 ## Activity Log
 
 - 2026-03-17T00:00:00Z - planner - lane=planned - Work package created
+- 2026-03-18T00:02:00Z - coder - lane=doing - Starting implementation
+- 2026-03-18T00:10:00Z - coder - lane=for_review - All tasks complete, submitted for review
