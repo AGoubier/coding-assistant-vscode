@@ -16,6 +16,7 @@ import { installBundleCommand } from './commands/installBundleCommand';
 import { Installer } from './services/installer';
 import { ManifestManager } from './services/manifestManager';
 import { LifecycleManager } from './services/lifecycle';
+import { NewContentDetector } from './services/newContentDetector';
 import type { CatalogFileItem, BundleNodeItem, SourceConfig } from './models/types';
 
 let outputChannel: vscode.LogOutputChannel;
@@ -151,6 +152,37 @@ export function activate(context: vscode.ExtensionContext): void {
   // Inject lifecycle dependencies into tree provider for installed/update badges
   catalogTreeProvider.setLifecycle(manifestManager, lifecycleManager);
 
+  // Initialize new-content detector (WP13)
+  const newContentDetector = new NewContentDetector(context.globalState, outputChannel);
+  catalogTreeProvider.setNewContentDetector(newContentDetector);
+
+  // Track last update count for badge computation
+  let lastUpdateCount = 0;
+
+  // Helper: update TreeView badge with combined new + update counts (Section 4.12)
+  const updateTreeBadge = (): void => {
+    const newCount = newContentDetector.getTotalNewCount();
+    const removedCount = newContentDetector.getTotalRemovedCount();
+    const totalNew = newCount + removedCount;
+    const total = totalNew + lastUpdateCount;
+
+    const badge = total === 0 ? undefined : {
+      value: total,
+      tooltip: totalNew > 0 && lastUpdateCount > 0
+        ? `${totalNew} new, ${lastUpdateCount} updates`
+        : totalNew > 0
+          ? `${totalNew} new item${totalNew > 1 ? 's' : ''}`
+          : `${lastUpdateCount} update${lastUpdateCount > 1 ? 's' : ''} available`,
+    };
+
+    treeView.badge = badge;
+    explorerTreeView.badge = badge;
+    vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.hasNewContent', totalNew > 0);
+  };
+
+  // Wire badge update callback for category expand (FR-023)
+  catalogTreeProvider.setOnNewContentChanged(updateTreeBadge);
+
   // Helper: set hasInstalledItems context based on current manifest state
   const updateHasInstalledContext = async (): Promise<void> => {
     const folders = vscode.workspace.workspaceFolders ?? [];
@@ -183,7 +215,7 @@ export function activate(context: vscode.ExtensionContext): void {
         githubClient,
         manifestManager,
         outputChannel,
-        () => { catalogTreeProvider.refresh(); void updateHasInstalledContext(); },
+        () => { catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
         (source) => catalogTreeProvider.getOrFetchTreePublic(source),
       );
     }),
@@ -194,7 +226,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('awesome-coding-assistants.checkUpdates', () =>
       checkUpdatesCommand(
         lifecycleManager,
-        () => catalogTreeProvider.refresh(),
+        () => { catalogTreeProvider.refresh(); updateTreeBadge(); },
         outputChannel,
       ),
     ),
@@ -211,7 +243,7 @@ export function activate(context: vscode.ExtensionContext): void {
         item,
         lifecycleManager,
         manifestManager,
-        () => { catalogTreeProvider.refresh(); void updateHasInstalledContext(); },
+        () => { catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
         outputChannel,
       );
     }),
@@ -228,7 +260,7 @@ export function activate(context: vscode.ExtensionContext): void {
         item,
         lifecycleManager,
         manifestManager,
-        () => { catalogTreeProvider.refresh(); void updateHasInstalledContext(); },
+        () => { catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
         outputChannel,
       );
     }),
@@ -257,11 +289,37 @@ export function activate(context: vscode.ExtensionContext): void {
       try {
         const results = await lifecycleManager.checkForUpdates();
         const updateCount = results.filter(r => r.hasUpdate).length;
-        if (updateCount > 0) {
+        lastUpdateCount = updateCount;
+
+        // New content detection (FR-002, FR-029)
+        let newContentCount = 0;
+        const cfg2 = vscode.workspace.getConfiguration('awesome-coding-assistants');
+        if (cfg2.get<boolean>('newContentDetection', true)) {
+          const sources = sourceRegistry.getSources();
+          for (const source of sources) {
+            try {
+              const tree = await catalogTreeProvider.getOrFetchTreePublic(source);
+              const result = await newContentDetector.checkForNewContent(
+                source.url, tree.tree, tree.truncated,
+              );
+              newContentCount += result.newPaths.length;
+            } catch (err) {
+              outputChannel.warn(`New content check failed for ${source.url}: ${err}`);
+            }
+          }
+        }
+
+        if (updateCount > 0 || newContentCount > 0) {
           catalogTreeProvider.refresh();
-          vscode.window.showInformationMessage(
-            `${updateCount} update${updateCount > 1 ? 's' : ''} available.`,
-          );
+          updateTreeBadge();
+          const parts: string[] = [];
+          if (newContentCount > 0) {
+            parts.push(`${newContentCount} new item${newContentCount > 1 ? 's' : ''}`);
+          }
+          if (updateCount > 0) {
+            parts.push(`${updateCount} update${updateCount > 1 ? 's' : ''} available`);
+          }
+          vscode.window.showInformationMessage(parts.join(', ') + '.');
         }
       } catch (err) {
         outputChannel.warn(`Auto update check failed: ${err}`);
@@ -275,11 +333,37 @@ export function activate(context: vscode.ExtensionContext): void {
       try {
         const results = await lifecycleManager.checkForUpdates();
         const updateCount = results.filter(r => r.hasUpdate).length;
-        if (updateCount > 0) {
+        lastUpdateCount = updateCount;
+
+        // New content detection (FR-002, FR-029)
+        let newContentCount = 0;
+        const cfg = vscode.workspace.getConfiguration('awesome-coding-assistants');
+        if (cfg.get<boolean>('newContentDetection', true)) {
+          const sources = sourceRegistry.getSources();
+          for (const source of sources) {
+            try {
+              const tree = await catalogTreeProvider.getOrFetchTreePublic(source);
+              const result = await newContentDetector.checkForNewContent(
+                source.url, tree.tree, tree.truncated,
+              );
+              newContentCount += result.newPaths.length;
+            } catch (err) {
+              outputChannel.warn(`New content check failed for ${source.url}: ${err}`);
+            }
+          }
+        }
+
+        if (updateCount > 0 || newContentCount > 0) {
           catalogTreeProvider.refresh();
-          vscode.window.showInformationMessage(
-            `${updateCount} update${updateCount > 1 ? 's' : ''} available.`,
-          );
+          updateTreeBadge();
+          const parts: string[] = [];
+          if (newContentCount > 0) {
+            parts.push(`${newContentCount} new item${newContentCount > 1 ? 's' : ''}`);
+          }
+          if (updateCount > 0) {
+            parts.push(`${updateCount} update${updateCount > 1 ? 's' : ''} available`);
+          }
+          vscode.window.showInformationMessage(parts.join(', ') + '.');
         }
       } catch (err) {
         outputChannel.warn(`Initial update check failed: ${err}`);
@@ -360,7 +444,7 @@ export function activate(context: vscode.ExtensionContext): void {
         manifestManager,
         sourceRegistry,
         outputChannel,
-        () => { catalogTreeProvider.refresh(); void updateHasInstalledContext(); },
+        () => { catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
       );
     }),
   );
@@ -389,6 +473,15 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('awesome-coding-assistants.clearSearch', async () => {
       catalogTreeProvider.setSearchQuery('');
       await vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.searchActive', false);
+    }),
+  );
+
+  // Mark All as Seen command (FR-022, T13-02)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('awesome-coding-assistants.markAllSeen', async () => {
+      await newContentDetector.markAllSeen();
+      catalogTreeProvider.refresh();
+      updateTreeBadge();
     }),
   );
 

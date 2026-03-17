@@ -30,6 +30,7 @@ describe('Extension Test Suite', () => {
       'awesome-coding-assistants.clearCache',
       'awesome-coding-assistants.showAllTools',
       'awesome-coding-assistants.showDetectedTools',
+      'awesome-coding-assistants.markAllSeen',
     ];
 
     for (const cmd of expectedCommands) {

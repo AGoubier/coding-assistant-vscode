@@ -26,6 +26,7 @@ import { classifyItem, detectWorkspaceTools } from '../services/toolDetector';
 import { parseBundle } from '../services/bundleParser';
 import type { ManifestManager } from '../services/manifestManager';
 import type { LifecycleManager } from '../services/lifecycle';
+import type { NewContentDetector } from '../services/newContentDetector';
 
 // Category display labels for tree nodes
 const CATEGORY_LABELS: Record<string, string> = {
@@ -92,6 +93,12 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   private manifestMgr?: ManifestManager;
   private lifecycleMgr?: LifecycleManager;
 
+  // Optional new-content detector (injected after construction for WP13)
+  private newContentDetector?: NewContentDetector;
+
+  // Optional callback fired when new-content state changes (e.g., markCategorySeen)
+  private onNewContentChanged?: () => void;
+
   // Cached set of installed item IDs (sourceUrl#path) for fast tree rendering
   private installedIds = new Set<string>();
 
@@ -132,6 +139,14 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   setLifecycle(manifest: ManifestManager, lifecycle: LifecycleManager): void {
     this.manifestMgr = manifest;
     this.lifecycleMgr = lifecycle;
+  }
+
+  setNewContentDetector(detector: NewContentDetector): void {
+    this.newContentDetector = detector;
+  }
+
+  setOnNewContentChanged(callback: () => void): void {
+    this.onNewContentChanged = callback;
   }
 
   refresh(): void {
@@ -498,7 +513,11 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       const entryMap = this.groupByCategory(tree.tree);
       const entries = entryMap.get(categoryItem.category) || [];
 
-      return entries
+      const newItems = this.newContentDetector
+        ? new Set(this.newContentDetector.getNewItems(categoryItem.source.url))
+        : new Set<string>();
+
+      const items = entries
         .map(entry => {
           const classification = classifyItem(entry.path);
           const name = this.extractItemName(entry.path);
@@ -514,10 +533,24 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
             category: classification.category,
             installed: isInstalled,
             updateAvailable: hasUpdate,
+            isNew: newItems.has(entry.path),
           };
         })
         .filter(item => this.shouldShowTool(item.tool))
         .filter(item => matchesSearch(item, this.searchQuery));
+
+      // Mark new items in this category as seen (FR-021)
+      if (this.newContentDetector && newItems.size > 0) {
+        const categoryPaths = items
+          .filter(item => newItems.has(item.path))
+          .map(item => item.path);
+        if (categoryPaths.length > 0) {
+          void this.newContentDetector.markCategorySeen(categoryItem.source.url, categoryPaths);
+          this.onNewContentChanged?.();
+        }
+      }
+
+      return items;
     } catch (err) {
       this.log.error(`Failed to load category ${categoryItem.category}: ${err}`);
       return [];
@@ -645,6 +678,10 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       treeItem.contextValue = 'catalogItem.installed';
       treeItem.description = 'installed';
       treeItem.iconPath = new vscode.ThemeIcon('check');
+    } else if (item.isNew) {
+      treeItem.contextValue = 'catalogItem.new';
+      treeItem.description = 'new';
+      treeItem.iconPath = new vscode.ThemeIcon('sparkle');
     } else {
       treeItem.contextValue = 'catalogItem.item';
       // Set cached description if available (FR-008: brief description)
@@ -659,10 +696,10 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     }
 
     treeItem.tooltip = `${item.name} (${item.tool})`;
-    if (!item.updateAvailable) {
+    if (!item.updateAvailable && !item.isNew) {
       treeItem.iconPath = this.getToolIcon(item.tool);
     }
-    const status = item.updateAvailable ? ', update available' : item.installed ? ', installed' : '';
+    const status = item.updateAvailable ? ', update available' : item.installed ? ', installed' : item.isNew ? ', new' : '';
     treeItem.accessibilityInformation = { label: `${item.name}, ${item.tool}${status}` };
     return treeItem;
   }

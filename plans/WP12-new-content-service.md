@@ -1,5 +1,5 @@
 ---
-lane: for_review
+lane: done
 ---
 
 # WP12 - NewContentDetector Service and Data Model
@@ -321,3 +321,4 @@ This work package creates the `NewContentDetector` service -- the core domain lo
 - 2026-03-17T00:00:00Z - planner - lane=planned - Work package created
 - 2026-03-18T00:02:00Z - coder - lane=doing - Starting implementation
 - 2026-03-18T00:10:00Z - coder - lane=for_review - All tasks complete, submitted for review
+- 2026-03-18T00:12:00Z - reviewer - lane=done - Approved, all requirements met

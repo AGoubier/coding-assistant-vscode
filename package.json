@@ -145,6 +145,12 @@
         "title": "Clear Search",
         "category": "Awesome Coding Assistants",
         "icon": "$(close)"
+      },
+      {
+        "command": "awesome-coding-assistants.markAllSeen",
+        "title": "Mark All as Seen",
+        "category": "Awesome Coding Assistants",
+        "icon": "$(check-all)"
       }
     ],
     "menus": {
@@ -177,6 +183,11 @@
         {
           "command": "awesome-coding-assistants.clearSearch",
           "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && awesome-coding-assistants.searchActive",
+          "group": "navigation"
+        },
+        {
+          "command": "awesome-coding-assistants.markAllSeen",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && awesome-coding-assistants.hasNewContent",
           "group": "navigation"
         }
       ],

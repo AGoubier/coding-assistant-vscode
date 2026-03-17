@@ -813,4 +813,179 @@ describe('CatalogTreeProvider', () => {
       registry.dispose();
     });
   });
+
+  describe('New content markers (WP13)', () => {
+    it('T13-04: createFileTreeItem with isNew=true should show "new" description and sparkle icon', () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const item = {
+        kind: 'item' as const,
+        source: TEST_SOURCE,
+        path: '.github/agents/coder.agent.md',
+        name: 'coder',
+        tool: 'copilot' as const,
+        category: 'agents' as const,
+        installed: false,
+        updateAvailable: false,
+        isNew: true,
+      };
+
+      const treeItem = provider.getTreeItem(item);
+      assert.strictEqual(treeItem.description, 'new');
+      assert.ok(treeItem.iconPath instanceof vscode.ThemeIcon);
+      assert.strictEqual((treeItem.iconPath as vscode.ThemeIcon).id, 'sparkle');
+      assert.strictEqual(treeItem.contextValue, 'catalogItem.new');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T13-04: isNew=true + installed=true should show "installed" (installed wins)', () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const item = {
+        kind: 'item' as const,
+        source: TEST_SOURCE,
+        path: '.github/agents/coder.agent.md',
+        name: 'coder',
+        tool: 'copilot' as const,
+        category: 'agents' as const,
+        installed: true,
+        updateAvailable: false,
+        isNew: true,
+      };
+
+      const treeItem = provider.getTreeItem(item);
+      assert.strictEqual(treeItem.description, 'installed');
+      assert.strictEqual(treeItem.contextValue, 'catalogItem.installed');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T13-04: isNew=true + updateAvailable=true should show "update available" (update wins)', () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const item = {
+        kind: 'item' as const,
+        source: TEST_SOURCE,
+        path: '.github/agents/coder.agent.md',
+        name: 'coder',
+        tool: 'copilot' as const,
+        category: 'agents' as const,
+        installed: true,
+        updateAvailable: true,
+        isNew: true,
+      };
+
+      const treeItem = provider.getTreeItem(item);
+      assert.strictEqual(treeItem.description, 'update available');
+      assert.strictEqual(treeItem.contextValue, 'catalogItem.updateAvailable');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T13-04: isNew=true should set accessibility label suffix ", new"', () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const item = {
+        kind: 'item' as const,
+        source: TEST_SOURCE,
+        path: '.github/agents/coder.agent.md',
+        name: 'coder',
+        tool: 'copilot' as const,
+        category: 'agents' as const,
+        installed: false,
+        updateAvailable: false,
+        isNew: true,
+      };
+
+      const treeItem = provider.getTreeItem(item);
+      assert.ok(treeItem.accessibilityInformation);
+      assert.ok(treeItem.accessibilityInformation!.label.includes(', new'));
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T13-05: getFileNodes should set isNew=true for items in new-content list', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // Mock NewContentDetector
+      const mockDetector = {
+        getNewItems: (sourceUrl: string) => {
+          if (sourceUrl === TEST_SOURCE.url) {
+            return ['.github/agents/coder.agent.md'];
+          }
+          return [];
+        },
+        getRemovedItems: () => [],
+        markCategorySeen: async () => {},
+      };
+      provider.setNewContentDetector(mockDetector as any);
+
+      const categoryItem = {
+        kind: 'category' as const,
+        source: TEST_SOURCE,
+        category: 'agents' as const,
+        tool: 'copilot' as const,
+      };
+
+      const children = await provider.getChildren(categoryItem);
+      const newItem = (children as any[]).find((c: any) => c.path === '.github/agents/coder.agent.md');
+      assert.ok(newItem, 'Expected to find coder.agent.md in children');
+      assert.strictEqual(newItem.isNew, true);
+
+      // The other agent item should NOT be new
+      const otherItem = (children as any[]).find((c: any) => c.path === '.github/agents/reviewer.agent.md');
+      assert.ok(otherItem, 'Expected to find reviewer.agent.md in children');
+      assert.strictEqual(otherItem.isNew, false);
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T13-06: getFileNodes should call markCategorySeen for new items', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      let seenPaths: string[] = [];
+      const mockDetector = {
+        getNewItems: () => ['.github/agents/coder.agent.md'],
+        getRemovedItems: () => [],
+        markCategorySeen: async (_url: string, paths: string[]) => { seenPaths = paths; },
+      };
+      provider.setNewContentDetector(mockDetector as any);
+
+      let callbackCalled = false;
+      provider.setOnNewContentChanged(() => { callbackCalled = true; });
+
+      const categoryItem = {
+        kind: 'category' as const,
+        source: TEST_SOURCE,
+        category: 'agents' as const,
+        tool: 'copilot' as const,
+      };
+
+      await provider.getChildren(categoryItem);
+
+      assert.ok(seenPaths.includes('.github/agents/coder.agent.md'));
+      assert.strictEqual(callbackCalled, true);
+
+      provider.dispose();
+      registry.dispose();
+    });
+  });
 });
