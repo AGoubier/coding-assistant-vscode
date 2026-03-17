@@ -1,0 +1,7 @@
+{
+  "name": "pre-push-tests",
+  "description": "Runs the test suite before pushing to prevent broken code on remote.",
+  "event": "pre-push",
+  "command": "npm test",
+  "failOnError": true
+}

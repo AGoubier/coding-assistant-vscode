@@ -1,0 +1,8 @@
+{
+  "name": "pre-commit-lint",
+  "description": "Runs ESLint on staged TypeScript and JavaScript files before committing.",
+  "event": "pre-commit",
+  "command": "npx eslint --fix",
+  "filePatterns": ["**/*.ts", "**/*.js"],
+  "failOnError": true
+}

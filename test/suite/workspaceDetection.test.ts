@@ -171,12 +171,15 @@ describe('Workspace Tool Detection (WP08)', () => {
       registry.dispose();
     });
 
-    it('should show all items when no tools detected (empty workspace)', async () => {
+    it('should show all items when no tools detected (safe fallback)', async () => {
       const registry = createMockSourceRegistry([TEST_SOURCE]);
       const github = createMockGitHubClient();
       const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
 
-      // No tools detected = show everything
+      // No tools detected = show everything as safe default
+      // Set a resolved promise so detection is considered complete with empty results
+      (provider as any).detectedToolsPromise = Promise.resolve();
+
       const roots = await provider.getChildren(undefined);
       const categories = await provider.getChildren(roots[0]);
 
@@ -200,7 +203,7 @@ describe('Workspace Tool Detection (WP08)', () => {
 
       // Manually set detected tools to only copilot
       (provider as any).detectedTools = new Set(['copilot']);
-      (provider as any).detectedToolsInitialized = true;
+      (provider as any).detectedToolsPromise = Promise.resolve();
 
       const roots = await provider.getChildren(undefined);
       const categories = await provider.getChildren(roots[0]);
@@ -232,7 +235,7 @@ describe('Workspace Tool Detection (WP08)', () => {
 
       // Manually set detected tools to only claude-code
       (provider as any).detectedTools = new Set(['claude-code']);
-      (provider as any).detectedToolsInitialized = true;
+      (provider as any).detectedToolsPromise = Promise.resolve();
 
       const roots = await provider.getChildren(undefined);
       const categories = await provider.getChildren(roots[0]);
@@ -260,7 +263,7 @@ describe('Workspace Tool Detection (WP08)', () => {
 
       // Both tools detected
       (provider as any).detectedTools = new Set(['copilot', 'claude-code']);
-      (provider as any).detectedToolsInitialized = true;
+      (provider as any).detectedToolsPromise = Promise.resolve();
 
       const roots = await provider.getChildren(undefined);
       const categories = await provider.getChildren(roots[0]);
@@ -284,7 +287,7 @@ describe('Workspace Tool Detection (WP08)', () => {
 
       // Only copilot detected -- should hide 'rules' (claude-only) category
       (provider as any).detectedTools = new Set(['copilot']);
-      (provider as any).detectedToolsInitialized = true;
+      (provider as any).detectedToolsPromise = Promise.resolve();
 
       const roots = await provider.getChildren(undefined);
       const categories = await provider.getChildren(roots[0]);
@@ -316,7 +319,7 @@ describe('Workspace Tool Detection (WP08)', () => {
       // Set detected tools to copilot only, but shouldShowTool should still return true for all
       // when showAllTools is true (via the setting check in shouldShowTool)
       (provider as any).detectedTools = new Set(['copilot']);
-      (provider as any).detectedToolsInitialized = true;
+      (provider as any).detectedToolsPromise = Promise.resolve();
 
       // The default config has showAllTools=false, so claude items should be filtered
       const roots = await provider.getChildren(undefined);
@@ -345,7 +348,7 @@ describe('Workspace Tool Detection (WP08)', () => {
 
       // Set detected tools to copilot only
       (provider as any).detectedTools = new Set(['copilot']);
-      (provider as any).detectedToolsInitialized = true;
+      (provider as any).detectedToolsPromise = Promise.resolve();
 
       // Set showAllTools to true
       const config = vscode.workspace.getConfiguration('awesome-coding-assistants');

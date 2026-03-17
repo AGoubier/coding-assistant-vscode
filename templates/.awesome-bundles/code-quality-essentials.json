@@ -21,7 +21,7 @@
       "required": true
     },
     {
-      "path": ".github/hooks/pre-commit-lint.sh",
+      "path": ".github/hooks/pre-commit-lint.json",
       "tool": "copilot",
       "category": "hooks",
       "required": false

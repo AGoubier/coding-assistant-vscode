@@ -31,11 +31,17 @@ function normalizePath(filePath: string): string {
 /**
  * Classify a file path into tool type and category.
  * Returns { tool: 'unknown', category: 'unknown' } for unrecognized patterns.
+ * Strips a leading 'templates/' prefix so repo items stored under templates/
+ * are classified the same as root-level items.
  * Spec ref: FR-012 (path detection), FR-015 (tool badge)
  */
 export function classifyItem(path: string): ToolClassification {
   const normalized = normalizePath(path);
   const segments = normalized.split('/');
+  // Strip leading 'templates/' so repo items under templates/.github/ etc. are recognised
+  if (segments.length > 1 && segments[0].toLowerCase() === 'templates') {
+    segments.shift();
+  }
   const segLower = segments.map(s => s.toLowerCase());
 
   // Claude Code patterns first (.claude/ prefix is unambiguous)
@@ -49,12 +55,13 @@ export function classifyItem(path: string): ToolClassification {
   }
 
   // Claude Code CLAUDE.md at root (case-insensitive per T08-02 AC)
-  if (normalized.toLowerCase() === 'claude.md') {
+  const strippedPath = segments.join('/');
+  if (strippedPath.toLowerCase() === 'claude.md') {
     return { tool: 'claude-code', category: 'rules' };
   }
 
   // Claude Code .claude/settings.json
-  if (normalized.toLowerCase() === '.claude/settings.json') {
+  if (strippedPath.toLowerCase() === '.claude/settings.json') {
     return { tool: 'claude-code', category: 'rules' };
   }
 

@@ -327,7 +327,7 @@ describe('WP07 - E2E: Browse > Preview > Install', function () {
       // Verify tree item has correct contextValue and description
       const treeItem = treeProvider.getTreeItem(codeReviewItem);
       assert.strictEqual(treeItem.contextValue, 'catalogItem.installed');
-      assert.strictEqual((treeItem as vscode.TreeItem).description, '$(check) installed');
+      assert.strictEqual((treeItem as vscode.TreeItem).description, 'installed');
     } finally {
       Object.defineProperty(vscode.workspace, 'workspaceFolders', {
         value: origFolders,

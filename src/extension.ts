@@ -303,7 +303,13 @@ export function activate(context: vscode.ExtensionContext): void {
   // Cleanup interval on deactivation
   context.subscriptions.push({ dispose: () => { if (autoCheckInterval) { clearInterval(autoCheckInterval); } } });
 
+  // Initialize context key from current config on activation
+  const initialShowAll = vscode.workspace.getConfiguration('awesome-coding-assistants').get<boolean>('showAllTools', false);
+  vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.showAllTools', initialShowAll);
+
   // Show All Tools toggle command (FR-014, T08-04)
+  // Only flips the config setting; the onDidChangeConfiguration listener
+  // handles context key, tree refresh, and user message to avoid double-refresh races.
   const toggleShowAllTools = async () => {
     const config = vscode.workspace.getConfiguration('awesome-coding-assistants');
     const current = config.get<boolean>('showAllTools', false);
@@ -311,11 +317,6 @@ export function activate(context: vscode.ExtensionContext): void {
       ? vscode.ConfigurationTarget.Workspace
       : vscode.ConfigurationTarget.Global;
     await config.update('showAllTools', !current, target);
-    await vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.showAllTools', !current);
-    catalogTreeProvider.refresh();
-    vscode.window.showInformationMessage(
-      current ? 'Filtering by detected tools' : 'Showing all tools',
-    );
   };
   context.subscriptions.push(
     vscode.commands.registerCommand('awesome-coding-assistants.showAllTools', toggleShowAllTools),
@@ -324,13 +325,16 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('awesome-coding-assistants.showDetectedTools', toggleShowAllTools),
   );
 
-  // Listen to showAllTools setting changes to refresh the tree
+  // Listen to showAllTools setting changes to refresh the tree (single handler)
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(e => {
       if (e.affectsConfiguration('awesome-coding-assistants.showAllTools')) {
         const showAll = vscode.workspace.getConfiguration('awesome-coding-assistants').get<boolean>('showAllTools', false);
         vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.showAllTools', showAll);
         catalogTreeProvider.refresh();
+        vscode.window.showInformationMessage(
+          showAll ? 'Showing all tools' : 'Filtering by detected tools',
+        );
       }
     }),
   );

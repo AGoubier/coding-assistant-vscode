@@ -629,7 +629,7 @@ describe('CatalogTreeProvider', () => {
         updateAvailable: false,
       };
       const treeItem = provider.getTreeItem(fileItem);
-      assert.strictEqual(treeItem.description, '$(check) installed');
+      assert.strictEqual(treeItem.description, 'installed');
 
       provider.dispose();
       registry.dispose();

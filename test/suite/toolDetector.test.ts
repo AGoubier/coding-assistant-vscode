@@ -177,5 +177,44 @@ describe('toolDetector', () => {
         assert.strictEqual(result.tool, 'unknown');
       });
     });
+
+    // --- templates/ prefix stripping ---
+
+    describe('templates prefix', () => {
+      it('should classify templates/.github/agents/ as copilot agents', () => {
+        const result = classifyItem('templates/.github/agents/code-reviewer.agent.md');
+        assert.strictEqual(result.tool, 'copilot');
+        assert.strictEqual(result.category, 'agents');
+      });
+
+      it('should classify templates/.claude/commands/ as claude-code commands', () => {
+        const result = classifyItem('templates/.claude/commands/review.md');
+        assert.strictEqual(result.tool, 'claude-code');
+        assert.strictEqual(result.category, 'commands');
+      });
+
+      it('should classify templates/.claude/rules/ as claude-code rules', () => {
+        const result = classifyItem('templates/.claude/rules/project-rules.md');
+        assert.strictEqual(result.tool, 'claude-code');
+        assert.strictEqual(result.category, 'rules');
+      });
+
+      it('should classify templates/CLAUDE.md as claude-code rules', () => {
+        const result = classifyItem('templates/CLAUDE.md');
+        assert.strictEqual(result.tool, 'claude-code');
+        assert.strictEqual(result.category, 'rules');
+      });
+
+      it('should classify templates/.github/chatmodes/ as copilot modes', () => {
+        const result = classifyItem('templates/.github/chatmodes/debug.chatmode.md');
+        assert.strictEqual(result.tool, 'copilot');
+        assert.strictEqual(result.category, 'modes');
+      });
+
+      it('should return unknown for templates/src/index.ts', () => {
+        const result = classifyItem('templates/src/index.ts');
+        assert.strictEqual(result.tool, 'unknown');
+      });
+    });
   });
 });

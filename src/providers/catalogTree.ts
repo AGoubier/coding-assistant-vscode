@@ -37,8 +37,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   commands: 'Commands',
   rules: 'Rules',
   modes: 'Modes',
-  plugins: 'Plugins',
-  workflows: 'Workflows',
 };
 
 // Error tree item shown when a source fails to load
@@ -108,7 +106,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
 
   // Cached detected workspace tools for filtering (FR-013, FR-014)
   private detectedTools: Set<string> = new Set();
-  private detectedToolsInitialized = false;
+  private detectedToolsPromise: Promise<void> | null = null;
 
   // Cache parsed bundles per source URL
   private bundleCache = new Map<string, Bundle[]>();
@@ -140,7 +138,10 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     this.treeCache.clear();
     this.descriptionCache.clear();
     this.pendingDescriptions.clear();
-    this.detectedToolsInitialized = false;
+    // Reset detection so it re-runs on next getChildren call.
+    // The promise-based pattern in ensureDetectedTools() is safe against
+    // concurrent callers: all share the same promise instance.
+    this.detectedToolsPromise = null;
     this.bundleCache.clear();
     this.refreshInstalledCache();
     this._onDidChangeTreeData.fire(undefined);
@@ -191,26 +192,35 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
 
   /**
    * Refresh the detected workspace tools cache.
+   * Uses a shared promise so concurrent callers all wait for the same detection.
    * FR-013: auto-detect which AI tools are in the workspace.
    */
-  private async ensureDetectedTools(): Promise<void> {
-    if (this.detectedToolsInitialized) {
-      return;
+  private ensureDetectedTools(): Promise<void> {
+    if (!this.detectedToolsPromise) {
+      this.detectedToolsPromise = this.doDetectTools();
     }
-    this.detectedToolsInitialized = true;
-    this.detectedTools.clear();
+    return this.detectedToolsPromise;
+  }
+
+  private async doDetectTools(): Promise<void> {
+    // Build into a new set, then swap atomically.
+    // This prevents concurrent readers from seeing an empty intermediate state
+    // between clear() and detection completing.
+    const newTools = new Set<string>();
 
     const folders = vscode.workspace.workspaceFolders ?? [];
     for (const folder of folders) {
       try {
         const tools = await detectWorkspaceTools(folder);
         for (const t of tools) {
-          this.detectedTools.add(t.tool);
+          newTools.add(t.tool);
         }
       } catch {
         // If detection fails, we simply don't filter
       }
     }
+    this.detectedTools = newTools;
+    this.log.info(`Detected workspace tools: ${[...this.detectedTools].join(', ') || '(none)'}`);
   }
 
   /**
@@ -222,7 +232,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     if (showAll) {
       return true;
     }
-    // If no tools detected, show everything
+    // If no tools detected, show everything (safe default)
     if (this.detectedTools.size === 0) {
       return true;
     }
@@ -632,7 +642,8 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       treeItem.iconPath = new vscode.ThemeIcon('cloud-download');
     } else if (item.installed) {
       treeItem.contextValue = 'catalogItem.installed';
-      treeItem.description = '$(check) installed';
+      treeItem.description = 'installed';
+      treeItem.iconPath = new vscode.ThemeIcon('check');
     } else {
       treeItem.contextValue = 'catalogItem.item';
       // Set cached description if available (FR-008: brief description)
@@ -807,7 +818,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   private getCategoryIcon(category: string): { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon {
     const knownCategories = [
       'agents', 'instructions', 'skills', 'prompts',
-      'hooks', 'commands', 'rules', 'modes', 'plugins', 'workflows',
+      'hooks', 'commands', 'rules', 'modes',
     ];
     if (knownCategories.includes(category)) {
       const lightPath = vscode.Uri.joinPath(this.extensionUri, 'resources', 'icons', `cat-${category}-light.svg`);
