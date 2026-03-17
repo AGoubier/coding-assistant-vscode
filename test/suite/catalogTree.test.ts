@@ -988,4 +988,181 @@ describe('CatalogTreeProvider', () => {
       registry.dispose();
     });
   });
+
+  describe('Removed content rendering (WP14)', () => {
+    it('T14-01: getFileNodes should merge synthetic removed items into the correct category', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const mockDetector = {
+        getNewItems: () => [],
+        getRemovedItems: (sourceUrl: string) => {
+          if (sourceUrl === TEST_SOURCE.url) {
+            return ['.github/agents/deleted-agent.agent.md'];
+          }
+          return [];
+        },
+        markCategorySeen: async () => {},
+      };
+      provider.setNewContentDetector(mockDetector as any);
+
+      const categoryItem = {
+        kind: 'category' as const,
+        source: TEST_SOURCE,
+        category: 'agents' as const,
+        tool: 'copilot' as const,
+      };
+
+      const children = await provider.getChildren(categoryItem);
+      const removedItem = (children as any[]).find((c: any) => c.path === '.github/agents/deleted-agent.agent.md');
+      assert.ok(removedItem, 'Expected synthetic removed item in agents category');
+      assert.strictEqual(removedItem.isRemoved, true);
+      assert.strictEqual(removedItem.kind, 'item');
+      assert.strictEqual(removedItem.category, 'agents');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T14-01: getFileNodes should NOT add removed items to wrong categories', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const mockDetector = {
+        getNewItems: () => [],
+        getRemovedItems: () => ['.github/agents/deleted-agent.agent.md'],
+        markCategorySeen: async () => {},
+      };
+      provider.setNewContentDetector(mockDetector as any);
+
+      // Ask for prompts category - the removed agent should NOT appear here
+      const categoryItem = {
+        kind: 'category' as const,
+        source: TEST_SOURCE,
+        category: 'prompts' as const,
+        tool: 'copilot' as const,
+      };
+
+      const children = await provider.getChildren(categoryItem);
+      const removedItem = (children as any[]).find((c: any) => c.path === '.github/agents/deleted-agent.agent.md');
+      assert.strictEqual(removedItem, undefined, 'Removed agent should NOT appear in prompts category');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T14-02: createFileTreeItem with isRemoved=true, installed=false shows "removed upstream"', () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const item = {
+        kind: 'item' as const,
+        source: TEST_SOURCE,
+        path: '.github/agents/deleted.agent.md',
+        name: 'deleted',
+        tool: 'copilot' as const,
+        category: 'agents' as const,
+        installed: false,
+        updateAvailable: false,
+        isRemoved: true,
+      };
+
+      const treeItem = provider.getTreeItem(item);
+      assert.strictEqual(treeItem.description, 'removed upstream');
+      assert.strictEqual(treeItem.contextValue, 'catalogItem.removed');
+      assert.ok(treeItem.iconPath instanceof vscode.ThemeIcon);
+      const icon = treeItem.iconPath as vscode.ThemeIcon;
+      assert.strictEqual(icon.id, 'warning');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T14-02: createFileTreeItem with isRemoved=true, installed=true shows "removed upstream - installed"', () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const item = {
+        kind: 'item' as const,
+        source: TEST_SOURCE,
+        path: '.github/agents/deleted.agent.md',
+        name: 'deleted',
+        tool: 'copilot' as const,
+        category: 'agents' as const,
+        installed: true,
+        updateAvailable: false,
+        isRemoved: true,
+      };
+
+      const treeItem = provider.getTreeItem(item);
+      assert.strictEqual(treeItem.description, 'removed upstream - installed');
+      assert.strictEqual(treeItem.contextValue, 'catalogItem.removedInstalled');
+      assert.ok(treeItem.iconPath instanceof vscode.ThemeIcon);
+      const icon = treeItem.iconPath as vscode.ThemeIcon;
+      assert.strictEqual(icon.id, 'warning');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T14-02: isRemoved=true should set accessibility label suffix ", removed upstream"', () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const item = {
+        kind: 'item' as const,
+        source: TEST_SOURCE,
+        path: '.github/agents/deleted.agent.md',
+        name: 'deleted',
+        tool: 'copilot' as const,
+        category: 'agents' as const,
+        installed: false,
+        updateAvailable: false,
+        isRemoved: true,
+      };
+
+      const treeItem = provider.getTreeItem(item);
+      assert.ok(treeItem.accessibilityInformation);
+      assert.ok(
+        treeItem.accessibilityInformation!.label.includes(', removed upstream'),
+        `Expected accessibility label to include ", removed upstream" but got: ${treeItem.accessibilityInformation!.label}`,
+      );
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T14-01: regular (non-removed) items remain unaffected when removed items exist', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const mockDetector = {
+        getNewItems: () => [],
+        getRemovedItems: () => ['.github/agents/deleted-agent.agent.md'],
+        markCategorySeen: async () => {},
+      };
+      provider.setNewContentDetector(mockDetector as any);
+
+      const categoryItem = {
+        kind: 'category' as const,
+        source: TEST_SOURCE,
+        category: 'agents' as const,
+        tool: 'copilot' as const,
+      };
+
+      const children = await provider.getChildren(categoryItem);
+      const regularItem = (children as any[]).find((c: any) => c.path === '.github/agents/coder.agent.md');
+      assert.ok(regularItem, 'Regular item should still be present');
+      assert.strictEqual(regularItem.isRemoved, undefined, 'Regular item should not have isRemoved');
+
+      provider.dispose();
+      registry.dispose();
+    });
+  });
 });

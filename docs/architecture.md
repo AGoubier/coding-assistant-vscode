@@ -32,6 +32,7 @@ Extension Host (src/extension.ts)
   |     +-- AuthManager - SecretStorage token management
   |     +-- ToolDetector - workspace tool detection
   |     +-- BundleParser - parses and validates bundle manifest JSON from source repos
+  |     +-- NewContentDetector - tree snapshot diffing for new/removed item detection
   |
   +-- Models (src/models/)
   |     +-- types.ts - shared TypeScript interfaces
@@ -68,6 +69,7 @@ Extension Host (src/extension.ts)
 11. CatalogTreeProvider discovers bundles from `bundles/*.json` in source repos and displays them under a "Bundles" category
 12. On install bundle: each item is installed sequentially with progress, supporting cross-source references and optional/required items
 13. Search/filter: CatalogTreeProvider stores a search query and applies `matchesSearch()` to filter items by name, path, tool, and category when rendering the tree
+14. New content detection: NewContentDetector compares current tree entries against a globalState baseline; new paths and removed paths are stored in globalState keys (`newContent:new:{url}`, `newContent:removed:{url}`). CatalogTreeProvider merges removed items as synthetic entries and marks new items with a sparkle icon. The TreeView badge shows combined new + removed + update counts.
 
 ## Extension Activation
 
@@ -95,6 +97,9 @@ The extension activates lazily. On activation:
 21. Listens for workspace folder changes and configuration changes to refresh tool detection and filtering
 22. Registers installBundle command for one-click bundle installation with progress and cross-source support
 23. Registers search command (InputBox-based keyword search) and clearSearch command for catalog filtering
+24. Initializes NewContentDetector (global state-backed tree snapshot diffing) and injects into CatalogTreeProvider
+25. During auto-check, compares source trees against baselines to detect new and removed items; updates TreeView badge and shows notification
+26. Registers markAllSeen command to clear all new/removed content markers and reset badge
 
 ## Security
 

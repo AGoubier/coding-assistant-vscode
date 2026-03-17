@@ -17,6 +17,7 @@
 | `awesome-coding-assistants.installBundle` | Install Bundle | Install all items in a practice bundle |
 | `awesome-coding-assistants.search` | Search Customizations | Open search input to filter the catalog tree by keyword |
 | `awesome-coding-assistants.clearSearch` | Clear Search | Remove the active search filter and restore the full tree |
+| `awesome-coding-assistants.markAllSeen` | Mark All as Seen | Dismiss all new/removed content markers and reset badge |
 
 All commands are fully implemented:
 - **refresh**: Invalidates all caches, reloads master index, and refreshes the catalog tree
@@ -32,6 +33,7 @@ All commands are fully implemented:
 - **installBundle**: Installs all items in a practice bundle sequentially with progress notification. Handles cross-source references, optional/required items, and cancellation.
 - **search**: Opens an InputBox for keyword search. Filters the catalog tree to show only matching items based on name, path, tool type, and category. Uses AND logic for multi-word queries. Sets `awesome-coding-assistants.searchActive` context key.
 - **clearSearch**: Clears the active search filter, restores the full unfiltered tree, and resets the `searchActive` context key.
+- **markAllSeen**: Clears all `newContent:new:*` and `newContent:removed:*` globalState keys, resets the TreeView badge, and refreshes the tree. Available when `awesome-coding-assistants.hasNewContent` context key is true.
 
 ## Extension API
 

@@ -159,25 +159,25 @@ export function activate(context: vscode.ExtensionContext): void {
   // Track last update count for badge computation
   let lastUpdateCount = 0;
 
-  // Helper: update TreeView badge with combined new + update counts (Section 4.12)
+  // Helper: update TreeView badge with combined new + removed + update counts (Section 4.12)
   const updateTreeBadge = (): void => {
     const newCount = newContentDetector.getTotalNewCount();
     const removedCount = newContentDetector.getTotalRemovedCount();
-    const totalNew = newCount + removedCount;
-    const total = totalNew + lastUpdateCount;
+    const total = newCount + removedCount + lastUpdateCount;
 
-    const badge = total === 0 ? undefined : {
-      value: total,
-      tooltip: totalNew > 0 && lastUpdateCount > 0
-        ? `${totalNew} new, ${lastUpdateCount} updates`
-        : totalNew > 0
-          ? `${totalNew} new item${totalNew > 1 ? 's' : ''}`
-          : `${lastUpdateCount} update${lastUpdateCount > 1 ? 's' : ''} available`,
-    };
-
-    treeView.badge = badge;
-    explorerTreeView.badge = badge;
-    vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.hasNewContent', totalNew > 0);
+    if (total === 0) {
+      treeView.badge = undefined;
+      explorerTreeView.badge = undefined;
+    } else {
+      const parts: string[] = [];
+      if (newCount > 0) { parts.push(`${newCount} new`); }
+      if (removedCount > 0) { parts.push(`${removedCount} removed`); }
+      if (lastUpdateCount > 0) { parts.push(`${lastUpdateCount} update${lastUpdateCount > 1 ? 's' : ''}`); }
+      const badge = { value: total, tooltip: parts.join(', ') };
+      treeView.badge = badge;
+      explorerTreeView.badge = badge;
+    }
+    vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.hasNewContent', (newCount + removedCount) > 0);
   };
 
   // Wire badge update callback for category expand (FR-023)
@@ -293,6 +293,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
         // New content detection (FR-002, FR-029)
         let newContentCount = 0;
+        let removedContentCount = 0;
         const cfg2 = vscode.workspace.getConfiguration('awesome-coding-assistants');
         if (cfg2.get<boolean>('newContentDetection', true)) {
           const sources = sourceRegistry.getSources();
@@ -303,18 +304,22 @@ export function activate(context: vscode.ExtensionContext): void {
                 source.url, tree.tree, tree.truncated,
               );
               newContentCount += result.newPaths.length;
+              removedContentCount += result.removedPaths.length;
             } catch (err) {
               outputChannel.warn(`New content check failed for ${source.url}: ${err}`);
             }
           }
         }
 
-        if (updateCount > 0 || newContentCount > 0) {
+        if (updateCount > 0 || newContentCount > 0 || removedContentCount > 0) {
           catalogTreeProvider.refresh();
           updateTreeBadge();
           const parts: string[] = [];
           if (newContentCount > 0) {
             parts.push(`${newContentCount} new item${newContentCount > 1 ? 's' : ''}`);
+          }
+          if (removedContentCount > 0) {
+            parts.push(`${removedContentCount} removed`);
           }
           if (updateCount > 0) {
             parts.push(`${updateCount} update${updateCount > 1 ? 's' : ''} available`);
@@ -337,6 +342,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
         // New content detection (FR-002, FR-029)
         let newContentCount = 0;
+        let removedContentCount = 0;
         const cfg = vscode.workspace.getConfiguration('awesome-coding-assistants');
         if (cfg.get<boolean>('newContentDetection', true)) {
           const sources = sourceRegistry.getSources();
@@ -347,18 +353,22 @@ export function activate(context: vscode.ExtensionContext): void {
                 source.url, tree.tree, tree.truncated,
               );
               newContentCount += result.newPaths.length;
+              removedContentCount += result.removedPaths.length;
             } catch (err) {
               outputChannel.warn(`New content check failed for ${source.url}: ${err}`);
             }
           }
         }
 
-        if (updateCount > 0 || newContentCount > 0) {
+        if (updateCount > 0 || newContentCount > 0 || removedContentCount > 0) {
           catalogTreeProvider.refresh();
           updateTreeBadge();
           const parts: string[] = [];
           if (newContentCount > 0) {
             parts.push(`${newContentCount} new item${newContentCount > 1 ? 's' : ''}`);
+          }
+          if (removedContentCount > 0) {
+            parts.push(`${removedContentCount} removed`);
           }
           if (updateCount > 0) {
             parts.push(`${updateCount} update${updateCount > 1 ? 's' : ''} available`);

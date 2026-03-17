@@ -517,7 +517,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
         ? new Set(this.newContentDetector.getNewItems(categoryItem.source.url))
         : new Set<string>();
 
-      const items = entries
+      const items: CatalogFileItem[] = entries
         .map(entry => {
           const classification = classifyItem(entry.path);
           const name = this.extractItemName(entry.path);
@@ -547,6 +547,31 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
         if (categoryPaths.length > 0) {
           void this.newContentDetector.markCategorySeen(categoryItem.source.url, categoryPaths);
           this.onNewContentChanged?.();
+        }
+      }
+
+      // Merge removed items as synthetic entries (FR-009)
+      if (this.newContentDetector) {
+        const removedPaths = this.newContentDetector.getRemovedItems(categoryItem.source.url);
+        for (const removedPath of removedPaths) {
+          const classification = classifyItem(removedPath);
+          if (classification.category === categoryItem.category) {
+            const name = this.extractItemName(removedPath);
+            const isInstalled = this.installedIds.has(
+              `${categoryItem.source.url}#${removedPath}`,
+            );
+            items.push({
+              kind: 'item' as const,
+              source: categoryItem.source,
+              path: removedPath,
+              name,
+              tool: classification.tool,
+              category: classification.category,
+              installed: isInstalled,
+              updateAvailable: false,
+              isRemoved: true,
+            });
+          }
         }
       }
 
@@ -674,7 +699,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       treeItem.contextValue = 'catalogItem.updateAvailable';
       treeItem.description = 'update available';
       treeItem.iconPath = new vscode.ThemeIcon('cloud-download');
-    } else if (item.installed) {
+    } else if (item.installed && !item.isRemoved) {
       treeItem.contextValue = 'catalogItem.installed';
       treeItem.description = 'installed';
       treeItem.iconPath = new vscode.ThemeIcon('check');
@@ -682,6 +707,15 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       treeItem.contextValue = 'catalogItem.new';
       treeItem.description = 'new';
       treeItem.iconPath = new vscode.ThemeIcon('sparkle');
+    } else if (item.isRemoved) {
+      if (item.installed) {
+        treeItem.contextValue = 'catalogItem.removedInstalled';
+        treeItem.description = 'removed upstream - installed';
+      } else {
+        treeItem.contextValue = 'catalogItem.removed';
+        treeItem.description = 'removed upstream';
+      }
+      treeItem.iconPath = new vscode.ThemeIcon('warning', new vscode.ThemeColor('list.warningForeground'));
     } else {
       treeItem.contextValue = 'catalogItem.item';
       // Set cached description if available (FR-008: brief description)
@@ -696,10 +730,14 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     }
 
     treeItem.tooltip = `${item.name} (${item.tool})`;
-    if (!item.updateAvailable && !item.isNew) {
+    if (!item.updateAvailable && !item.isNew && !item.isRemoved) {
       treeItem.iconPath = this.getToolIcon(item.tool);
     }
-    const status = item.updateAvailable ? ', update available' : item.installed ? ', installed' : item.isNew ? ', new' : '';
+    const status = item.updateAvailable ? ', update available'
+      : item.installed && !item.isRemoved ? ', installed'
+      : item.isNew ? ', new'
+      : item.isRemoved ? ', removed upstream'
+      : '';
     treeItem.accessibilityInformation = { label: `${item.name}, ${item.tool}${status}` };
     return treeItem;
   }

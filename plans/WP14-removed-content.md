@@ -1,11 +1,11 @@
 ---
-lane: planned
+lane: doing
 ---
 
 # WP14 - Removed Content Rendering and Dismiss
 
 > **Spec**: `specs/002-new-content-notifications.spec.md`
-> **Status**: Not Started
+> **Status**: Complete
 > **Priority**: P2 (incremental - US-06 removed items are less critical than new items)
 > **Goal**: Render items removed from upstream sources as synthetic tree items with "removed upstream" markers, handle the installed vs. not-installed distinction, and ensure "Mark All as Seen" dismisses removed items.
 > **Independent Test**: Remove a file from a test source tree fixture. Run the new-content check. Verify the removed item appears in the correct category with "removed upstream" description and warning icon. If installed, verify `contextValue` is `catalogItem.removedInstalled` and the uninstall action is available. Run "Mark All as Seen" and verify the removed item disappears.
@@ -280,3 +280,29 @@ This work package extends the tree UI to render items that have been removed fro
 ## Activity Log
 
 - 2026-03-17T00:00:00Z - planner - lane=planned - Work package created
+- 2026-03-18T00:35:00Z - coder - lane=doing - Starting implementation
+- 2026-03-18T01:00:00Z - coder - lane=doing - T14-01 and T14-02 implemented (merge removed items, render markers)
+- 2026-03-18T01:30:00Z - coder - lane=doing - T14-03 badge tooltip, T14-04 notification, T14-05 unit tests, T14-06 integration tests, T14-07 build/test verified (419 passing)
+
+## Self-Review
+
+### Spec Compliance
+- [x] FR-009: Removed items merged into getFileNodes() for correct category
+- [x] FR-018: Removed not-installed items show "removed upstream" + warning icon
+- [x] FR-019: Removed installed items show "removed upstream - installed" + contextValue removedInstalled
+- [x] FR-020: Removed not-installed items contextValue "catalogItem.removed"
+- [x] FR-011: Badge value includes removed count
+- [x] FR-012: Badge tooltip segments: "N new, N removed, N updates"
+- [x] FR-013: Badge hidden when all counts are 0
+- [x] FR-007/Section 6: Notification message includes removed count
+- [x] Section 10.4: Accessibility label includes ", removed upstream"
+- [x] Priority order: updateAvailable > installed (non-removed) > isNew > isRemoved > default
+
+### Correctness
+- [x] All 419 tests pass
+- [x] Build succeeds
+- [x] Lint has zero new errors (pre-existing warnings only)
+
+### Scope Discipline
+- [x] No unrelated changes
+- [x] No over-engineering

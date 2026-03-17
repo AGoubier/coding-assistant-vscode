@@ -13,6 +13,7 @@ import { CatalogTreeProvider } from '../../src/providers/catalogTree.js';
 import { SourceRegistry } from '../../src/services/sourceRegistry.js';
 import { LifecycleManager } from '../../src/services/lifecycle.js';
 import { FetchMocker, loadFixture, loadJsonFixture } from '../helpers/e2e.js';
+import { NewContentDetector } from '../../src/services/newContentDetector.js';
 import {
   createMockExtensionContext,
   createMockLogOutputChannel,
@@ -333,6 +334,153 @@ describe('WP07 - E2E: Browse > Preview > Install', function () {
         value: origFolders,
         configurable: true,
       });
+    }
+  });
+});
+
+describe('WP14 - E2E: Removed content detection', function () {
+  this.timeout(30000);
+
+  let log: ReturnType<typeof createMockLogOutputChannel>;
+  let ctx: vscode.ExtensionContext;
+  let detector: NewContentDetector;
+
+  beforeEach(() => {
+    log = createMockLogOutputChannel();
+    ctx = createMockExtensionContext();
+    detector = new NewContentDetector(ctx.globalState, log);
+  });
+
+  it('checkForNewContent detects removed items and getRemovedItems returns them', async () => {
+    const baseTree = [
+      { path: '.github/agents/coder.agent.md', mode: '100644', type: 'blob' as const, sha: 'a1', url: '' },
+      { path: '.github/agents/reviewer.agent.md', mode: '100644', type: 'blob' as const, sha: 'a2', url: '' },
+    ];
+    const sourceUrl = 'https://github.com/test/removed-test';
+
+    // Establish baseline
+    const result1 = await detector.checkForNewContent(sourceUrl, baseTree, false);
+    assert.strictEqual(result1.removedPaths.length, 0, 'First check establishes baseline');
+
+    // Now tree V2 has one item removed
+    const treeV2 = [
+      { path: '.github/agents/coder.agent.md', mode: '100644', type: 'blob' as const, sha: 'a1', url: '' },
+    ];
+    const result2 = await detector.checkForNewContent(sourceUrl, treeV2, false);
+    assert.deepStrictEqual(result2.removedPaths, ['.github/agents/reviewer.agent.md']);
+
+    // getRemovedItems should return the same
+    const removed = detector.getRemovedItems(sourceUrl);
+    assert.deepStrictEqual(removed, ['.github/agents/reviewer.agent.md']);
+  });
+
+  it('markAllSeen clears removed items', async () => {
+    const baseTree = [
+      { path: '.github/agents/coder.agent.md', mode: '100644', type: 'blob' as const, sha: 'a1', url: '' },
+      { path: '.github/agents/reviewer.agent.md', mode: '100644', type: 'blob' as const, sha: 'a2', url: '' },
+    ];
+    const sourceUrl = 'https://github.com/test/removed-clear';
+
+    // Establish baseline then remove one
+    await detector.checkForNewContent(sourceUrl, baseTree, false);
+    await detector.checkForNewContent(sourceUrl, [baseTree[0]], false);
+
+    assert.strictEqual(detector.getRemovedItems(sourceUrl).length, 1);
+    assert.strictEqual(detector.getTotalRemovedCount(), 1);
+
+    // Mark all seen
+    await detector.markAllSeen();
+
+    assert.strictEqual(detector.getRemovedItems(sourceUrl).length, 0);
+    assert.strictEqual(detector.getTotalRemovedCount(), 0);
+  });
+
+  it('getTotalRemovedCount reflects removed items across sources', async () => {
+    const tree1 = [
+      { path: '.github/agents/a.agent.md', mode: '100644', type: 'blob' as const, sha: 'a1', url: '' },
+    ];
+    const tree2 = [
+      { path: '.claude/rules/b.md', mode: '100644', type: 'blob' as const, sha: 'b1', url: '' },
+    ];
+    const url1 = 'https://github.com/test/repo1';
+    const url2 = 'https://github.com/test/repo2';
+
+    // Establish baselines
+    await detector.checkForNewContent(url1, tree1, false);
+    await detector.checkForNewContent(url2, tree2, false);
+
+    // Remove both items
+    await detector.checkForNewContent(url1, [], false);
+    await detector.checkForNewContent(url2, [], false);
+
+    assert.strictEqual(detector.getTotalRemovedCount(), 2);
+  });
+
+  it('removed installed item renders with contextValue removedInstalled', async () => {
+    const fetchMocker = new FetchMocker();
+    const fsStore = new E2eFsStore();
+    const mockFs = fsStore.createMockFs();
+    const authManager = new AuthManager(ctx, log);
+    const cacheManager = new CacheManager(ctx, log);
+    const githubClient = new GitHubClient(authManager, cacheManager, log);
+    const manifestManager = new ManifestManager(log, mockFs);
+
+    const treeFixture = loadJsonFixture<GitHubTreeResponse>('api/tree.json');
+    const defaultSource: SourceConfig = {
+      url: 'https://github.com/jlacube/awesome-coding-assistants',
+      name: 'Awesome Coding Assistants',
+      branch: 'main',
+    };
+
+    fetchMocker.addJsonRoute(
+      /api\.github\.com\/repos\/.*\/git\/trees/,
+      200,
+      treeFixture,
+      { etag: '"tree-etag-1"' },
+    );
+    fetchMocker.addRoute({ url: /raw\.githubusercontent\.com\//, status: 200, body: '# Mock' });
+    fetchMocker.addJsonRoute(/api\.github\.com\/repos\/.*\/commits\?/, 200, [{ sha: 'sha_v1' }]);
+    fetchMocker.addRoute({ url: /api\.github\.com\/repos\//, status: 200, body: '{}' });
+    fetchMocker.install();
+
+    try {
+      const sourceRegistry = new SourceRegistry(githubClient, log);
+      const treeProvider = new CatalogTreeProvider(
+        sourceRegistry, githubClient, log, vscode.Uri.file('/e2e-ext'),
+      );
+
+      // Mock detector that returns a removed path that is also installed
+      const removedPath = '.github/agents/code-review.agent.md';
+      const mockDetector = {
+        getNewItems: () => [],
+        getRemovedItems: (url: string) =>
+          url === defaultSource.url ? [removedPath] : [],
+        markCategorySeen: async () => {},
+      };
+      treeProvider.setNewContentDetector(mockDetector as any);
+
+      // Mark the item as installed
+      const ids = (treeProvider as any).installedIds as Set<string>;
+      ids.add(`${defaultSource.url}#${removedPath}`);
+
+      const roots = await treeProvider.getChildren();
+      const categories = await treeProvider.getChildren(roots[0]);
+      const agentsCat = categories.find(c => c.kind === 'category' && c.category === 'agents');
+      assert.ok(agentsCat);
+
+      const items = await treeProvider.getChildren(agentsCat) as CatalogFileItem[];
+      const removedItem = items.find(i => i.path === removedPath && i.isRemoved);
+      assert.ok(removedItem, 'Should find removed installed item');
+      assert.strictEqual(removedItem.installed, true);
+
+      const treeItem = treeProvider.getTreeItem(removedItem);
+      assert.strictEqual(treeItem.contextValue, 'catalogItem.removedInstalled');
+      assert.strictEqual(treeItem.description, 'removed upstream - installed');
+
+      treeProvider.dispose();
+      sourceRegistry.dispose();
+    } finally {
+      fetchMocker.restore();
     }
   });
 });

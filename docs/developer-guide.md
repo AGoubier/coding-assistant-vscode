@@ -69,6 +69,7 @@ awesome-coding-assistants/
       sourceRegistry.ts  # Source config management and master index
       toolDetector.ts    # File path to tool/category classification + workspace scanning (WP08)
       bundleParser.ts    # Bundle manifest parsing and validation (WP09)
+      newContentDetector.ts # Tree snapshot diffing for new/removed item detection (WP12)
     models/              # TypeScript interfaces and types
       types.ts           # All shared type definitions
       errors.ts          # Custom error classes (8 error codes)

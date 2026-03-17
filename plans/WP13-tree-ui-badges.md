@@ -1,5 +1,5 @@
 ---
-lane: for_review
+lane: done
 ---
 
 # WP13 - Tree UI Integration, TreeView Badge, and Commands
@@ -458,3 +458,4 @@ This work package integrates `NewContentDetector` into the extension lifecycle, 
 - 2026-03-17T00:00:00Z - planner - lane=planned - Work package created
 - 2026-03-18T00:15:00Z - coder - lane=doing - Starting implementation
 - 2026-03-18T00:30:00Z - coder - lane=for_review - All tasks complete, submitted for review
+- 2026-03-18T00:32:00Z - reviewer - lane=done - Approved, all requirements met

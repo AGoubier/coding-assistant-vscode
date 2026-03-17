@@ -51,6 +51,12 @@ Each source object:
 - **Range**: 5 - 1440
 - **Description**: Interval in minutes between automatic update checks.
 
+### `awesome-coding-assistants.newContentDetection`
+
+- **Type**: boolean
+- **Default**: `true`
+- **Description**: Enable detection of new and removed items in source repositories. When enabled, the extension compares source trees against a stored baseline during auto-checks and highlights new/removed items in the catalog tree with a badge count.
+
 ## Environment Variables
 
 No environment variables are required. GitHub authentication is handled via VS Code SecretStorage (managed by the "Add GitHub Token" command).

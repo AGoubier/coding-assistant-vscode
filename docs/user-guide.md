@@ -32,6 +32,7 @@ Features are being implemented incrementally. Current status:
 - [x] Smart tool detection (auto-filter catalog by workspace tools)
 - [x] Practice bundles (one-click install of curated item collections)
 - [x] Search and filter (keyword search across all sources)
+- [x] New content detection (badge and markers for new/removed items)
 - [ ] Import/export
 
 ## Browsing Customizations
@@ -224,6 +225,36 @@ When no AI tool markers are found in the workspace, the catalog shows all items 
 
 The extension automatically refreshes tool detection when workspace folders are added or removed.
 
+## New Content Detection
+
+The extension detects new and removed items in your configured sources and highlights them in the catalog tree.
+
+### How It Works
+
+When the extension auto-checks for updates (on activation and at configurable intervals), it compares the current source tree against a stored baseline. New items (added since the last check) and removed items (present in the baseline but no longer in the source) are tracked.
+
+### Badge and Notifications
+
+- A **badge** appears on the Catalog view icon showing the combined count of new items, removed items, and available updates.
+- The badge tooltip breaks down the counts: e.g., "2 new, 1 removed, 3 updates".
+- An information notification appears when changes are detected: e.g., "3 new items, 1 removed, 2 updates available."
+
+### New Item Markers
+
+When you expand a category, new items appear with a **sparkle icon** and "new" description. Expanding a category automatically marks those items as seen, reducing the badge count.
+
+### Removed Item Markers
+
+Items that have been removed from the upstream source appear as synthetic entries with a **warning icon** and "removed upstream" description. If a removed item is installed locally, it shows "removed upstream - installed" and you can uninstall it. Removed items that are not installed are informational only and cannot be clicked.
+
+### Mark All as Seen
+
+To dismiss all new and removed item markers at once, click **Mark All as Seen** in the Catalog view title bar. This clears all new/removed tracking data and resets the badge.
+
+### Configuration
+
+- `awesome-coding-assistants.newContentDetection` (default: `true`) -- Enable or disable new content detection.
+
 ## Practice Bundles
 
 Org leads can define named collections of customizations ("practice bundles") in source repos. Users can install all items in a bundle with one click.
@@ -272,6 +303,7 @@ Access commands via Cmd/Ctrl+Shift+P and search for "Awesome Coding Assistants":
 | Install Bundle | Install all items in a practice bundle |
 | Search Customizations | Search the catalog by keyword |
 | Clear Search | Remove the active search filter |
+| Mark All as Seen | Dismiss all new/removed content markers |
 
 ## Search and Filter
 
