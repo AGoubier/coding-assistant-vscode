@@ -1,5 +1,5 @@
 ---
-lane: planned
+lane: for_review
 ---
 
 # WP11 - Bug Fixes: Update Badge Visibility and Installed Cache Race
@@ -168,3 +168,5 @@ This work package fixes two existing bugs that affect tree badge rendering. Thes
 ## Activity Log
 
 - 2026-03-17T00:00:00Z - planner - lane=planned - Work package created
+- 2026-03-18T00:00:00Z - coder - lane=doing - Starting implementation
+- 2026-03-18T00:01:00Z - coder - lane=for_review - All tasks complete, submitted for review
