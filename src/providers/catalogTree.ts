@@ -171,20 +171,21 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       return;
     }
     const folders = vscode.workspace.workspaceFolders ?? [];
-    this.installedIds.clear();
+    const newIds = new Set<string>();
     // Fire-and-forget async read; if manifest is unavailable we just have no badges
     Promise.all(
       folders.map(async (f) => {
         try {
           const m = await this.manifestMgr!.readManifest(f);
           for (const entry of m.installations) {
-            this.installedIds.add(entry.id);
+            newIds.add(entry.id);
           }
         } catch {
           // ignore
         }
       }),
     ).then(() => {
+      this.installedIds = newIds; // atomic swap
       // Re-fire to update any tree items that were rendered before cache was ready
       this._onDidChangeTreeData.fire(undefined);
     });
@@ -638,7 +639,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     // Set context value for menu contributions
     if (item.updateAvailable) {
       treeItem.contextValue = 'catalogItem.updateAvailable';
-      treeItem.description = '$(cloud-download) update available';
+      treeItem.description = 'update available';
       treeItem.iconPath = new vscode.ThemeIcon('cloud-download');
     } else if (item.installed) {
       treeItem.contextValue = 'catalogItem.installed';

@@ -672,4 +672,145 @@ describe('CatalogTreeProvider', () => {
       registry.dispose();
     });
   });
+
+  describe('Bug fixes (WP11)', () => {
+    it('T11-01: update-available description should not contain codicon syntax', () => {
+      const registry = createMockSourceRegistry([]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const fileItem = {
+        kind: 'item' as const,
+        source: TEST_SOURCE,
+        path: '.github/agents/coder.agent.md',
+        name: 'coder',
+        tool: 'copilot' as const,
+        category: 'agents' as const,
+        installed: true,
+        updateAvailable: true,
+      };
+      const treeItem = provider.getTreeItem(fileItem);
+      assert.strictEqual(treeItem.description, 'update available');
+      assert.ok(!String(treeItem.description).includes('$('), 'description must not contain codicon syntax');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T11-01: update-available icon should be cloud-download ThemeIcon', () => {
+      const registry = createMockSourceRegistry([]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const fileItem = {
+        kind: 'item' as const,
+        source: TEST_SOURCE,
+        path: '.github/agents/coder.agent.md',
+        name: 'coder',
+        tool: 'copilot' as const,
+        category: 'agents' as const,
+        installed: true,
+        updateAvailable: true,
+      };
+      const treeItem = provider.getTreeItem(fileItem);
+      assert.ok(treeItem.iconPath instanceof vscode.ThemeIcon);
+      assert.strictEqual((treeItem.iconPath as vscode.ThemeIcon).id, 'cloud-download');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T11-02: installedIds is never cleared to empty during refresh', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // Mock workspace folders so refreshInstalledCache can iterate them
+      const origFolders = vscode.workspace.workspaceFolders;
+      const mockFolder = { uri: vscode.Uri.file('/tmp/test'), name: 'test', index: 0 };
+      Object.defineProperty(vscode.workspace, 'workspaceFolders', {
+        value: [mockFolder], configurable: true,
+      });
+
+      // Manually seed the installedIds to simulate a pre-existing cache
+      const ids = (provider as unknown as { installedIds: Set<string> }).installedIds;
+      ids.add('https://github.com/test/repo#.github/agents/coder.agent.md');
+      assert.strictEqual(ids.size, 1, 'precondition: installedIds should have 1 entry');
+
+      // Create a slow mock manifest manager
+      const mockManifest = {
+        readManifest: async () => {
+          await new Promise(resolve => setTimeout(resolve, 50));
+          return {
+            version: '1.0',
+            installations: [
+              { id: 'https://github.com/test/repo#.github/agents/coder.agent.md' },
+            ],
+          };
+        },
+      };
+      const mockLifecycle = { hasUpdate: () => false };
+      provider.setLifecycle(
+        mockManifest as unknown as import('../../src/services/manifestManager').ManifestManager,
+        mockLifecycle as unknown as import('../../src/services/lifecycle').LifecycleManager,
+      );
+
+      // Call refresh() which triggers refreshInstalledCache()
+      provider.refresh();
+
+      // Immediately after refresh(), installedIds should NOT be empty
+      // With atomic swap, the old set is still referenced until the new one is ready
+      const idsAfterRefresh = (provider as unknown as { installedIds: Set<string> }).installedIds;
+      assert.ok(idsAfterRefresh.size > 0,
+        'installedIds should retain stale data during async refresh (atomic swap, not clear())');
+
+      // Wait for async manifest read to complete
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // After swap completes, the new set should be in place
+      const idsAfterComplete = (provider as unknown as { installedIds: Set<string> }).installedIds;
+      assert.ok(idsAfterComplete.has('https://github.com/test/repo#.github/agents/coder.agent.md'),
+        'installedIds should contain expected ID after refresh completes');
+
+      // Restore original workspace folders
+      Object.defineProperty(vscode.workspace, 'workspaceFolders', {
+        value: origFolders, configurable: true,
+      });
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T11-02: _onDidChangeTreeData should fire after atomic swap', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient();
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      const mockManifest = {
+        readManifest: async () => ({
+          version: '1.0',
+          installations: [
+            { id: 'https://github.com/test/repo#.github/agents/coder.agent.md' },
+          ],
+        }),
+      };
+      const mockLifecycle = { hasUpdate: () => false };
+      provider.setLifecycle(
+        mockManifest as unknown as import('../../src/services/manifestManager').ManifestManager,
+        mockLifecycle as unknown as import('../../src/services/lifecycle').LifecycleManager,
+      );
+
+      // Track fires that happen after initial refresh fire
+      let fireCount = 0;
+      provider.onDidChangeTreeData(() => { fireCount++; });
+
+      provider.refresh();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // refresh() fires once immediately, then once more after async installed cache completes
+      assert.ok(fireCount >= 2, `Expected at least 2 fires (immediate + after cache), got ${fireCount}`);
+
+      provider.dispose();
+      registry.dispose();
+    });
+  });
 });
