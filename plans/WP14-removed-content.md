@@ -1,5 +1,5 @@
 ---
-lane: doing
+lane: for_review
 ---
 
 # WP14 - Removed Content Rendering and Dismiss
@@ -283,6 +283,7 @@ This work package extends the tree UI to render items that have been removed fro
 - 2026-03-18T00:35:00Z - coder - lane=doing - Starting implementation
 - 2026-03-18T01:00:00Z - coder - lane=doing - T14-01 and T14-02 implemented (merge removed items, render markers)
 - 2026-03-18T01:30:00Z - coder - lane=doing - T14-03 badge tooltip, T14-04 notification, T14-05 unit tests, T14-06 integration tests, T14-07 build/test verified (419 passing)
+- 2026-03-18T01:45:00Z - coder - lane=for_review - All tasks complete, submitted for review
 
 ## Self-Review
 
