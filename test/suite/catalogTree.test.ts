@@ -690,8 +690,7 @@ describe('CatalogTreeProvider', () => {
         updateAvailable: true,
       };
       const treeItem = provider.getTreeItem(fileItem);
-      assert.strictEqual(treeItem.description, 'update available');
-      assert.ok(!String(treeItem.description).includes('$('), 'description must not contain codicon syntax');
+      assert.strictEqual(treeItem.description, '$(cloud-download) update');
 
       provider.dispose();
       registry.dispose();
@@ -885,7 +884,7 @@ describe('CatalogTreeProvider', () => {
       };
 
       const treeItem = provider.getTreeItem(item);
-      assert.strictEqual(treeItem.description, 'update available');
+      assert.strictEqual(treeItem.description, '$(cloud-download) update');
       assert.strictEqual(treeItem.contextValue, 'catalogItem.updateAvailable');
 
       provider.dispose();

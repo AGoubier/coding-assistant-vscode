@@ -697,8 +697,8 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     // Set context value for menu contributions
     if (item.updateAvailable) {
       treeItem.contextValue = 'catalogItem.updateAvailable';
-      treeItem.description = 'update available';
-      treeItem.iconPath = new vscode.ThemeIcon('cloud-download');
+      treeItem.description = '$(cloud-download) update';
+      treeItem.iconPath = new vscode.ThemeIcon('cloud-download', new vscode.ThemeColor('list.warningForeground'));
     } else if (item.installed && !item.isRemoved) {
       treeItem.contextValue = 'catalogItem.installed';
       treeItem.description = 'installed';
