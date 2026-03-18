@@ -226,7 +226,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('awesome-coding-assistants.checkUpdates', () =>
       checkUpdatesCommand(
         lifecycleManager,
-        () => { catalogTreeProvider.refresh(); updateTreeBadge(); },
+        (count: number) => { lastUpdateCount = count; catalogTreeProvider.refresh(); updateTreeBadge(); },
         outputChannel,
       ),
     ),

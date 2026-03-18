@@ -11,7 +11,7 @@ import type { LifecycleManager } from '../services/lifecycle';
  */
 export async function checkUpdatesCommand(
   lifecycle: LifecycleManager,
-  refreshTree: () => void,
+  refreshTree: (updateCount: number) => void,
   log: vscode.LogOutputChannel,
 ): Promise<void> {
   const folders = vscode.workspace.workspaceFolders;
@@ -38,7 +38,7 @@ export async function checkUpdatesCommand(
         const updateCount = results.filter(r => r.hasUpdate).length;
 
         // Refresh tree to show update badges
-        refreshTree();
+        refreshTree(updateCount);
 
         if (updateCount > 0) {
           vscode.window.showInformationMessage(`Found ${updateCount} update${updateCount > 1 ? 's' : ''}.`);
