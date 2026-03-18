@@ -1,5 +1,5 @@
 ---
-lane: for_review
+lane: done
 ---
 
 # WP11 - Bug Fixes: Update Badge Visibility and Installed Cache Race
@@ -170,3 +170,102 @@ This work package fixes two existing bugs that affect tree badge rendering. Thes
 - 2026-03-17T00:00:00Z - planner - lane=planned - Work package created
 - 2026-03-18T00:00:00Z - coder - lane=doing - Starting implementation
 - 2026-03-18T00:01:00Z - coder - lane=for_review - All tasks complete, submitted for review
+- 2026-03-18T02:00:00Z - reviewer - lane=done - Verdict: Approved with Findings (2 WARNs)
+
+## Review
+
+> **Reviewed by**: Reviewer Agent
+> **Date**: 2026-03-18
+> **Verdict**: Approved with Findings
+> **review_status**:
+
+### Summary
+WP11 is approved. Both bug fixes (codicon literal in description, installed cache race condition) are correctly implemented. All 4 unit tests verify the requirements. 419 tests pass, build succeeds, no new lint errors. Two WARNs: missing Spec Compliance Checklist (process expectation) and unchecked acceptance criteria checkboxes.
+
+### Review Feedback
+
+No blocking changes required. WARNs are recorded for tracking.
+
+### Findings
+
+#### [PASS] - Spec Adherence: FR-024 (No codicon syntax in description)
+- **Requirement**: FR-024 - createFileTreeItem() SHALL NOT use codicon syntax in description
+- **Status**: Compliant
+- **Detail**: `description` is exactly `'update available'`. No `$(...)` patterns exist in any description assignment.
+- **Evidence**: `src/providers/catalogTree.ts` line 700
+
+#### [PASS] - Spec Adherence: FR-025 (Update icon via iconPath only)
+- **Requirement**: FR-025 - Update visual SHALL rely solely on `treeItem.iconPath = new vscode.ThemeIcon('cloud-download')`
+- **Status**: Compliant
+- **Detail**: `iconPath` is set to `new vscode.ThemeIcon('cloud-download')` on line 701.
+- **Evidence**: `src/providers/catalogTree.ts` line 701
+
+#### [PASS] - Spec Adherence: FR-026 (Atomic swap for installedIds)
+- **Requirement**: FR-026 - refreshInstalledCache() SHALL NOT clear installedIds before async completes; SHALL build new Set and atomically swap
+- **Status**: Compliant
+- **Detail**: Code builds local `newIds = new Set<string>()`, populates it in Promise.all, then assigns `this.installedIds = newIds` in `.then()`. No `this.installedIds.clear()` call exists.
+- **Evidence**: `src/providers/catalogTree.ts` lines 190-205
+
+#### [PASS] - Spec Adherence: FR-027 (fire() only after atomic swap)
+- **Requirement**: FR-027 - `_onDidChangeTreeData.fire()` SHALL fire only after the atomic swap
+- **Status**: Compliant
+- **Detail**: `.fire(undefined)` call is inside `.then()` callback, immediately after `this.installedIds = newIds`.
+- **Evidence**: `src/providers/catalogTree.ts` lines 203-206
+
+#### [PASS] - Test Coverage
+- **Requirement**: T11-03, T11-04 - Unit tests for both bug fixes
+- **Status**: Compliant
+- **Detail**: 4 tests in `describe('Bug fixes (WP11)')` block. Tests verify: description = 'update available', no codicon syntax, icon is ThemeIcon('cloud-download'), installedIds never empty during async refresh, _onDidChangeTreeData fires >= 2 times. All 419 tests pass.
+- **Evidence**: `test/suite/catalogTree.test.ts` lines 676-837
+
+#### [PASS] - Scope Discipline
+- **Requirement**: Only files in declared scope modified
+- **Status**: Compliant
+- **Detail**: Only `src/providers/catalogTree.ts`, `test/suite/catalogTree.test.ts`, and `plans/WP11-bug-fixes.md` were touched. No scope creep.
+
+#### [PASS] - Architecture Adherence
+- **Status**: Compliant
+- **Detail**: Changes are minimal and targeted to the methods specified in the WP. No new abstractions, no new files, no structural changes.
+
+#### [PASS] - Non-Functional: Security
+- **Status**: Compliant
+- **Detail**: No user input handling, no external data processing, no secrets. Bug fix is internal state management only.
+
+#### [PASS] - Performance
+- **Status**: Compliant
+- **Detail**: Atomic swap is O(1) reference assignment. No new allocations in hot paths. The `newIds` Set is built exactly once during refresh.
+
+#### [PASS] - Encoding (UTF-8)
+- **Status**: Compliant
+- **Detail**: Zero non-ASCII characters in modified files. No em dashes, smart quotes, or curly apostrophes.
+
+#### [WARN] - Process Compliance: Spec Compliance Checklist
+- **Requirement**: Coder must complete Step 2b Spec Compliance Checklist for each task
+- **Status**: Missing
+- **Detail**: No Spec Compliance Checklist section exists in the WP file. Acceptance criteria checkboxes are all unchecked `[ ]`.
+
+#### [WARN] - Process Compliance: Activity Log
+- **Requirement**: Activity log should record quality gate results
+- **Status**: Partial
+- **Detail**: Activity log does not record explicit `npm test` / `npm run lint` / `npm run build` pass results. Only records lane transitions.
+
+### Statistics
+| Dimension | Pass | Warn | Fail |
+|-----------|------|------|------|
+| Process Compliance | 0 | 2 | 0 |
+| Spec Adherence | 4 | 0 | 0 |
+| Data Model | N/A | N/A | N/A |
+| API / Interface | N/A | N/A | N/A |
+| Architecture | 1 | 0 | 0 |
+| Test Coverage | 1 | 0 | 0 |
+| Non-Functional | 1 | 0 | 0 |
+| Performance | 1 | 0 | 0 |
+| Documentation | N/A | N/A | N/A |
+| Success Criteria | N/A | N/A | N/A |
+| Coverage Thresholds | N/A | N/A | N/A |
+| Scope Discipline | 1 | 0 | 0 |
+| Encoding (UTF-8) | 1 | 0 | 0 |
+
+### Recommended Actions
+1. (WARN) Add a Self-Review / Spec Compliance Checklist section to WP11 and check off acceptance criteria boxes. This is a process hygiene item, not blocking.
+2. (WARN) Record quality gate pass results in future activity logs.
