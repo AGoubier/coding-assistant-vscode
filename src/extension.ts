@@ -101,7 +101,7 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
   );
 
-  // Refresh command (T03-06): invalidate caches and reload tree
+  // Refresh command (T03-06): invalidate caches, reload tree, and check for updates
   context.subscriptions.push(
     vscode.commands.registerCommand('awesome-coding-assistants.refresh', async () => {
       await vscode.window.withProgress(
@@ -114,6 +114,12 @@ export function activate(context: vscode.ExtensionContext): void {
           catalogTreeProvider.refresh();
           updateNoSourcesContext();
         },
+      );
+      // Also check for updates (combines refresh + checkUpdates into one action)
+      await checkUpdatesCommand(
+        lifecycleManager,
+        (count: number) => { lastUpdateCount = count; catalogTreeProvider.refresh(); updateTreeBadge(); },
+        outputChannel,
       );
     }),
   );

@@ -161,11 +161,6 @@
           "group": "navigation"
         },
         {
-          "command": "awesome-coding-assistants.checkUpdates",
-          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/",
-          "group": "navigation"
-        },
-        {
           "command": "awesome-coding-assistants.showAllTools",
           "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && !awesome-coding-assistants.showAllTools",
           "group": "navigation"
