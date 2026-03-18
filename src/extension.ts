@@ -3,7 +3,7 @@ import { AuthManager } from './services/authManager';
 import { CacheManager } from './services/cacheManager';
 import { GitHubClient } from './services/githubClient';
 import { SourceRegistry } from './services/sourceRegistry';
-import { CatalogTreeProvider } from './providers/catalogTree';
+import { CatalogTreeProvider, CatalogTreeDecorationProvider } from './providers/catalogTree';
 import { PreviewProvider, PREVIEW_SCHEME } from './providers/previewProvider';
 import { previewCommand } from './commands/previewCommand';
 import { installCommand } from './commands/installCommand';
@@ -57,6 +57,11 @@ export function activate(context: vscode.ExtensionContext): void {
     showCollapseAll: true,
   });
   context.subscriptions.push(explorerTreeView);
+
+  // Register file decoration provider for coloring tree items with updates
+  const treeDecorationProvider = new CatalogTreeDecorationProvider();
+  context.subscriptions.push(vscode.window.registerFileDecorationProvider(treeDecorationProvider));
+  context.subscriptions.push(treeDecorationProvider);
 
   // Set initial noSources context key for welcome view
   const updateNoSourcesContext = (): void => {
@@ -178,6 +183,8 @@ export function activate(context: vscode.ExtensionContext): void {
       explorerTreeView.badge = badge;
     }
     vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.hasNewContent', (newCount + removedCount) > 0);
+    // Refresh tree item decorations (coloring for update-available ancestors)
+    treeDecorationProvider.fireChange();
   };
 
   // Wire badge update callback for category expand (FR-023)

@@ -669,6 +669,11 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     treeItem.tooltip = item.source.url;
     treeItem.iconPath = new vscode.ThemeIcon('repo');
     treeItem.accessibilityInformation = { label: `Source repository: ${label}` };
+    // Assign resourceUri for FileDecorationProvider coloring
+    const updateCount = this.getSourceUpdateCount(item.source.url);
+    if (updateCount > 0) {
+      treeItem.resourceUri = vscode.Uri.parse(`awesome-ca-tree:/${encodeURIComponent(item.source.url)}?state=has-updates&count=${updateCount}`);
+    }
     return treeItem;
   }
 
@@ -685,6 +690,11 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     if (item.filteredCount !== undefined) {
       treeItem.description = `${item.filteredCount} match${item.filteredCount === 1 ? '' : 'es'}`;
     }
+    // Assign resourceUri for FileDecorationProvider coloring
+    const updateCount = this.getCategoryUpdateCount(item.source.url, item.category);
+    if (updateCount > 0) {
+      treeItem.resourceUri = vscode.Uri.parse(`awesome-ca-tree:/${encodeURIComponent(item.source.url)}/${encodeURIComponent(item.category)}?state=has-updates&count=${updateCount}`);
+    }
     return treeItem;
   }
 
@@ -697,8 +707,9 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     // Set context value for menu contributions
     if (item.updateAvailable) {
       treeItem.contextValue = 'catalogItem.updateAvailable';
-      treeItem.description = '$(cloud-download) update';
+      treeItem.description = 'update';
       treeItem.iconPath = new vscode.ThemeIcon('cloud-download', new vscode.ThemeColor('list.warningForeground'));
+      treeItem.resourceUri = vscode.Uri.parse(`awesome-ca-tree:/${encodeURIComponent(item.source.url)}/${encodeURIComponent(item.category)}/${encodeURIComponent(item.path)}?state=update`);
     } else if (item.installed && !item.isRemoved) {
       treeItem.contextValue = 'catalogItem.installed';
       treeItem.description = 'installed';
@@ -952,5 +963,86 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
 
   dispose(): void {
     this._onDidChangeTreeData.dispose();
+  }
+
+  /**
+   * Count how many update-available items exist for a given source URL.
+   */
+  private getSourceUpdateCount(sourceUrl: string): number {
+    if (!this.lifecycleMgr) { return 0; }
+    let count = 0;
+    for (const id of this.installedIds) {
+      if (id.startsWith(sourceUrl + '#') && this.lifecycleMgr.hasUpdate(id)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /**
+   * Count how many update-available items exist for a given source + category.
+   */
+  private getCategoryUpdateCount(sourceUrl: string, category: CategoryType): number {
+    if (!this.lifecycleMgr) { return 0; }
+    let count = 0;
+    for (const id of this.installedIds) {
+      if (!id.startsWith(sourceUrl + '#')) { continue; }
+      if (!this.lifecycleMgr.hasUpdate(id)) { continue; }
+      const path = id.slice(sourceUrl.length + 1);
+      const classification = classifyItem(path);
+      if (classification.category === category) {
+        count++;
+      }
+    }
+    return count;
+  }
+}
+
+// URI scheme for tree item decorations
+const TREE_DECORATION_SCHEME = 'awesome-ca-tree';
+
+/**
+ * FileDecorationProvider that colors tree item labels when updates are available.
+ * Uses the awesome-ca-tree: URI scheme assigned to tree items via resourceUri.
+ * Color intensity decreases per hierarchy level: item > category > source.
+ */
+export class CatalogTreeDecorationProvider implements vscode.FileDecorationProvider {
+  private readonly _onDidChangeFileDecorations = new vscode.EventEmitter<vscode.Uri | vscode.Uri[] | undefined>();
+  readonly onDidChangeFileDecorations = this._onDidChangeFileDecorations.event;
+
+  provideFileDecoration(uri: vscode.Uri): vscode.FileDecoration | undefined {
+    if (uri.scheme !== TREE_DECORATION_SCHEME) { return undefined; }
+
+    const params = new URLSearchParams(uri.query);
+    const state = params.get('state');
+    if (!state) { return undefined; }
+
+    if (state === 'update') {
+      // Item-level: full warning color
+      return {
+        color: new vscode.ThemeColor('list.warningForeground'),
+        tooltip: 'Update available',
+      };
+    }
+
+    if (state === 'has-updates') {
+      const count = parseInt(params.get('count') || '0', 10);
+      // Category/source-level: dimmer highlight via editorInfo color
+      return {
+        badge: String(count),
+        color: new vscode.ThemeColor('charts.yellow'),
+        tooltip: `${count} update${count > 1 ? 's' : ''} available`,
+      };
+    }
+
+    return undefined;
+  }
+
+  fireChange(): void {
+    this._onDidChangeFileDecorations.fire(undefined);
+  }
+
+  dispose(): void {
+    this._onDidChangeFileDecorations.dispose();
   }
 }

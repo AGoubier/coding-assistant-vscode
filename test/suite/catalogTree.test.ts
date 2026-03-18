@@ -690,7 +690,7 @@ describe('CatalogTreeProvider', () => {
         updateAvailable: true,
       };
       const treeItem = provider.getTreeItem(fileItem);
-      assert.strictEqual(treeItem.description, '$(cloud-download) update');
+      assert.strictEqual(treeItem.description, 'update');
 
       provider.dispose();
       registry.dispose();
@@ -884,7 +884,7 @@ describe('CatalogTreeProvider', () => {
       };
 
       const treeItem = provider.getTreeItem(item);
-      assert.strictEqual(treeItem.description, '$(cloud-download) update');
+      assert.strictEqual(treeItem.description, 'update');
       assert.strictEqual(treeItem.contextValue, 'catalogItem.updateAvailable');
 
       provider.dispose();
