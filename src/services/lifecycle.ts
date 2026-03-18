@@ -133,6 +133,13 @@ export class LifecycleManager {
   }
 
   /**
+   * Returns the number of cached updates still pending.
+   */
+  getUpdateCount(): number {
+    return this.updateResults.size;
+  }
+
+  /**
    * Apply an upstream update: re-download the file(s) and update the manifest entry.
    * FR-031: Update action.
    */

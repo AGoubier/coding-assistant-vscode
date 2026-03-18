@@ -250,7 +250,7 @@ export function activate(context: vscode.ExtensionContext): void {
         item,
         lifecycleManager,
         manifestManager,
-        () => { catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
+        () => { lastUpdateCount = lifecycleManager.getUpdateCount(); catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
         outputChannel,
       );
     }),
@@ -267,7 +267,7 @@ export function activate(context: vscode.ExtensionContext): void {
         item,
         lifecycleManager,
         manifestManager,
-        () => { catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
+        () => { lastUpdateCount = lifecycleManager.getUpdateCount(); catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
         outputChannel,
       );
     }),
