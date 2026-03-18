@@ -113,7 +113,7 @@ export class GitHubClient {
     const url = `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/commits?path=${encodeURIComponent(path)}&per_page=1&sha=${branch}`;
     const cacheKey = `${source.url}:commits:${path}`;
 
-    const result = await this.fetchWithCache(url, cacheKey, source, true);
+    const result = await this.fetchWithCache(url, cacheKey, source, true, true);
     const commits = JSON.parse(result) as GitHubCommit[];
 
     if (!commits || commits.length === 0) {
@@ -153,12 +153,15 @@ export class GitHubClient {
     cacheKey: string,
     source: SourceConfig,
     isApiRequest: boolean,
+    forceRevalidate = false,
   ): Promise<string> {
-    // Check cache first
-    const cached = await this.cache.getCached(cacheKey);
-    if (cached) {
-      this.log.trace(`Cache hit for: ${cacheKey}`);
-      return cached.body;
+    // Check cache first (skip if caller requires fresh data)
+    if (!forceRevalidate) {
+      const cached = await this.cache.getCached(cacheKey);
+      if (cached) {
+        this.log.trace(`Cache hit for: ${cacheKey}`);
+        return cached.body;
+      }
     }
 
     // Build headers with conditional request if we have an ETag
