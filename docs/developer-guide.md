@@ -107,6 +107,7 @@ awesome-coding-assistants/
       accessibility.test.ts # Accessibility: labels, tooltips, command palette (WP07)
       workspaceDetection.test.ts # Workspace tool detection, filtering, toggle, badges (WP08)
       search.test.ts             # Search and filter tests: matchesSearch, filtered tree, state (WP10)
+      newContentDetector.test.ts # New content detector: snapshot diffing, mark seen (WP12)
   dist/                  # Bundled extension output (esbuild)
   out/                   # TypeScript compiled output (for tests)
   resources/

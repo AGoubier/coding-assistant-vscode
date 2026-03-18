@@ -13,7 +13,8 @@
 | `awesome-coding-assistants.addToken` | Add GitHub Token | Store a personal access token in SecretStorage |
 | `awesome-coding-assistants.removeToken` | Remove GitHub Token | Delete a stored token from SecretStorage |
 | `awesome-coding-assistants.clearCache` | Clear Cache | Purge all cached data |
-| `awesome-coding-assistants.showAllTools` | Toggle Show All Tools | Toggle tool filter on/off |
+| `awesome-coding-assistants.showAllTools` | Show All Tools | Show all tools regardless of workspace detection |
+| `awesome-coding-assistants.showDetectedTools` | Show Detected Tools Only | Re-enable filtering by detected tools (complementary toggle to showAllTools) |
 | `awesome-coding-assistants.installBundle` | Install Bundle | Install all items in a practice bundle |
 | `awesome-coding-assistants.search` | Search Customizations | Open search input to filter the catalog tree by keyword |
 | `awesome-coding-assistants.clearSearch` | Clear Search | Remove the active search filter and restore the full tree |
@@ -26,12 +27,13 @@ All commands are fully implemented:
 - **checkUpdates**: Checks all installed items for upstream updates via SHA comparison, updates tree badges
 - **update**: Opens diff view of installed vs upstream content, applies update on accept
 - **uninstall**: Confirms, deletes installed file(s), removes manifest entry, refreshes tree
-- **addToken**: Prompts for token name and value, stores in SecretStorage
+- **addToken**: Prompts for token name and value, stores in SecretStorage. Accepts an optional string argument to pre-fill the token name InputBox.
 - **removeToken**: Shows QuickPick of stored tokens, deletes selected
 - **clearCache**: Purges all cached API responses
-- **showAllTools**: Toggles `showAllTools` workspace setting, refreshes catalog tree, shows confirmation message
+- **showAllTools**: Sets `showAllTools` workspace setting to true, refreshes catalog tree, shows confirmation message
+- **showDetectedTools**: Sets `showAllTools` workspace setting to false, refreshes catalog tree, shows confirmation message
 - **installBundle**: Installs all items in a practice bundle sequentially with progress notification. Handles cross-source references, optional/required items, and cancellation.
-- **search**: Opens an InputBox for keyword search. Filters the catalog tree to show only matching items based on name, path, tool type, and category. Uses AND logic for multi-word queries. Sets `awesome-coding-assistants.searchActive` context key.
+- **search**: Opens an InputBox for keyword search. Filters the catalog tree to show only matching items based on name, path, tool type, category, and description. Uses AND logic for multi-word queries. Sets `awesome-coding-assistants.searchActive` context key.
 - **clearSearch**: Clears the active search filter, restores the full unfiltered tree, and resets the `searchActive` context key.
 - **markAllSeen**: Clears all `newContent:new:*` and `newContent:removed:*` globalState keys, resets the TreeView badge, and refreshes the tree. Available when `awesome-coding-assistants.hasNewContent` context key is true.
 
@@ -70,8 +72,10 @@ Classifies file paths into tool type and category, and detects which AI tools ar
 | `detectWorkspaceTools` | `(folder: WorkspaceFolder) => Promise<DetectedTool[]>` | Scans workspace folder for tool marker files/directories. Returns array of `{ tool, confidence }`. |
 
 **classifyItem recognized patterns:**
-- Copilot: `.github/agents/*.agent.md`, `.github/instructions/*.instructions.md`, `.github/skills/*`, `.github/prompts/*.prompt.md`, `.github/hooks/*`, `.github/chatmodes/*`, `.github/plugins/*`, `.github/workflows/*`
-- Claude Code: `.claude/agents/*.md`, `.claude/rules/*.md`, `.claude/commands/*.md`, `.claude/hooks/*`, `CLAUDE.md`, `.claude/settings.json`
+- Copilot: `.github/agents/*.agent.md`, `.github/instructions/*.instructions.md`, `.github/skills/*`, `.github/prompts/*.prompt.md`, `.github/hooks/*.json`, `.github/chatmodes/*`
+- Claude Code: `.claude/agents/*`, `.claude/rules/*`, `.claude/commands/*`, `.claude/hooks/*`, `CLAUDE.md`, `.claude/settings.json`
+
+**Additional ToolType values**: The `ToolType` union also includes `kiro`, `kilocode`, and `opencode` (icon-ready but without classification patterns yet).
 
 **detectWorkspaceTools markers:**
 
@@ -86,7 +90,7 @@ Returns an empty array if no tool markers are found.
 
 ### CatalogTreeProvider
 
-Implements `vscode.TreeDataProvider<TreeElement>` for the main catalog tree view.
+Implements `vscode.TreeDataProvider<TreeElement>` for the main catalog tree view. The same provider instance powers both the Activity Bar catalog view (`awesomeCodingAssistants.catalog`) and an Explorer panel view (`awesomeCodingAssistants.explorerCatalog`). Both views share the same data and badges.
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
@@ -102,7 +106,7 @@ Implements `vscode.TreeDataProvider<TreeElement>` for the main catalog tree view
 matchesSearch(item: CatalogFileItem, query: string): boolean
 ```
 
-Determines whether a catalog item matches a keyword query. Matches against name, path, tool type, and category fields. Multi-word queries use AND logic (all words must match). Empty queries match everything. Case-insensitive.
+Determines whether a catalog item matches a keyword query. Matches against name, path, tool type, category, and description fields. Multi-word queries use AND logic (all words must match). Empty queries match everything. Case-insensitive.
 
 File item descriptions are fetched lazily via `GitHubClient.getFileContent()` on first access, extracting the first non-heading, non-frontmatter line. Descriptions are cached per file path and do not block tree rendering.
 
@@ -117,6 +121,9 @@ File item descriptions are fetched lazily via `GitHubClient.getFileContent()` on
 | `catalogItem.updateAvailable` | An installed item with an update available |
 | `bundleItem` | A practice bundle node (supports "Install Bundle" action) |
 | `bundleFileItem` | A file item within a practice bundle |
+| `catalogItem.new` | A newly detected item (not yet seen by user) |
+| `catalogItem.removed` | An item removed from upstream source (not installed) |
+| `catalogItem.removedInstalled` | A removed item that is still installed locally |
 
 ## Preview Provider
 

@@ -6,7 +6,7 @@ Awesome Coding Assistants is a VS Code extension that lets you discover, install
 
 ## Getting Started
 
-After installing the extension, you will see an "Awesome Coding Assistants" icon in the Activity Bar (left sidebar). Click it to open the Catalog view.
+After installing the extension, you will see an "Awesome Coding Assistants" icon in the Activity Bar (left sidebar). Click it to open the Catalog view. You can also find a collapsed "Awesome Coding Assistants" view in the Explorer panel.
 
 ### Initial Setup
 
@@ -42,7 +42,7 @@ Features are being implemented incrementally. Current status:
 The catalog tree view displays customizations in a hierarchy:
 
 1. **Source nodes** - Each configured repository appears as a top-level node
-2. **Category nodes** - Expanding a source shows categories (Agents, Instructions, Skills, Prompts, Hooks, Commands, Rules, Modes, Plugins, Workflows)
+2. **Category nodes** - Expanding a source shows categories (Agents, Instructions, Skills, Prompts, Hooks, Commands, Rules, Modes)
 3. **Item nodes** - Expanding a category shows individual customization items
 
 Items display tool badges:
@@ -211,9 +211,9 @@ If tool markers are found, the catalog tree only displays items compatible with 
 
 To see all available items regardless of workspace detection:
 
-1. Click the **filter icon** in the Catalog view title bar, or run "Toggle Show All Tools" from the Command Palette
+1. Click the **filter icon** in the Catalog view title bar, or run "Show All Tools" from the Command Palette
 2. A notification confirms: "Showing all tools"
-3. Click again to re-enable filtering: "Filtering by detected tools"
+3. Click again (now labeled "Show Detected Tools Only") to re-enable filtering: "Filtering by detected tools"
 
 The toggle persists as a workspace-level setting (`awesome-coding-assistants.showAllTools`).
 
@@ -235,7 +235,7 @@ When the extension auto-checks for updates (on activation and at configurable in
 
 ### Badge and Notifications
 
-- A **badge** appears on the Catalog view icon showing the combined count of new items, removed items, and available updates.
+- A **badge** appears on both the Catalog Activity Bar icon and the Explorer panel view, showing the combined count of new items, removed items, and available updates.
 - The badge tooltip breaks down the counts: e.g., "2 new, 1 removed, 3 updates".
 - An information notification appears when changes are detected: e.g., "3 new items, 1 removed, 2 updates available."
 
@@ -299,7 +299,7 @@ Access commands via Cmd/Ctrl+Shift+P and search for "Awesome Coding Assistants":
 | Add GitHub Token | Store a GitHub personal access token |
 | Remove GitHub Token | Remove a stored token |
 | Clear Cache | Clear all cached data |
-| Toggle Show All Tools | Show/hide items for all tools |
+| Toggle Show All Tools | Show/hide items for all tools ("Show All Tools" / "Show Detected Tools Only") |
 | Install Bundle | Install all items in a practice bundle |
 | Search Customizations | Search the catalog by keyword |
 | Clear Search | Remove the active search filter |
@@ -319,6 +319,7 @@ Use the Search command to quickly find customizations across all configured sour
 ### What is Searched
 
 - Item name (e.g., "TypeScript Best Practices")
+- Item description
 - File path (e.g., `.github/agents/typescript-review.agent.md`)
 - Tool type ("copilot" or "claude-code")
 - Category ("agents", "prompts", "rules", etc.)

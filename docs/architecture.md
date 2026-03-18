@@ -17,6 +17,7 @@ Extension Host (src/extension.ts)
   |     +-- previewCommand - opens item content in read-only editor
   |     +-- tokenCommands - addToken, removeToken handlers
   |     +-- cacheCommands - clearCache handler
+  |     +-- installBundleCommand - installs all items in a bundle sequentially
   |
   +-- Providers (src/providers/)
   |     +-- CatalogTreeProvider - TreeDataProvider for the catalog view
@@ -78,7 +79,7 @@ The extension activates lazily. On activation:
 2. Initializes AuthManager, CacheManager, and GitHubClient services
 3. Initializes SourceRegistry (reads configured sources, listens for config changes)
 4. Initializes CatalogTreeProvider (lazy-loading tree view for browsing customizations)
-5. Registers the tree view via `createTreeView` for programmatic access
+5. Registers tree views via `createTreeView` for programmatic access: Activity Bar catalog (`awesomeCodingAssistants.catalog`) and Explorer panel catalog (`awesomeCodingAssistants.explorerCatalog`), both powered by the same CatalogTreeProvider
 6. Sets `awesome-coding-assistants.noSources` context key for the welcome view
 7. Loads master index from configurable URL (silently falls back on failure)
 8. Wires token management commands (addToken, removeToken) to AuthManager
@@ -92,7 +93,7 @@ The extension activates lazily. On activation:
 16. Wires update command to show diff and apply updates
 17. Wires uninstall command to delete files and clean up manifest
 18. Schedules automatic update checks on activation (configurable interval)
-19. Registers showAllTools toggle command to switch between filtered and full catalog views
+19. Registers showAllTools and showDetectedTools toggle commands to switch between filtered and full catalog views
 20. Runs workspace tool detection on tree load (scans for `.github/agents/`, `CLAUDE.md`, etc.) and caches results per folder
 21. Listens for workspace folder changes and configuration changes to refresh tool detection and filtering
 22. Registers installBundle command for one-click bundle installation with progress and cross-source support
