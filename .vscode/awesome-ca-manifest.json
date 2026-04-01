@@ -1,0 +1,109 @@
+{
+  "version": "1.0",
+  "installations": [
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/coder.agent.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "main",
+      "itemPath": ".github/agents/coder.agent.md",
+      "targetPaths": [
+        ".github/agents/coder.agent.md"
+      ],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "9e12e4bbb40fd6566e1e9162615336ab2e6ddb83",
+      "installedAt": "2026-04-01T12:31:07.839Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/ideation.agent.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "main",
+      "itemPath": ".github/agents/ideation.agent.md",
+      "targetPaths": [
+        ".github/agents/ideation.agent.md"
+      ],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "9e12e4bbb40fd6566e1e9162615336ab2e6ddb83",
+      "installedAt": "2026-04-01T12:31:13.103Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/orchestrator.agent.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "main",
+      "itemPath": ".github/agents/orchestrator.agent.md",
+      "targetPaths": [
+        ".github/agents/orchestrator.agent.md"
+      ],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "f6c68f5f9318d77b7c8ffe0e49474d4b983f9dfa",
+      "installedAt": "2026-04-01T12:31:15.092Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/planner.agent.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "main",
+      "itemPath": ".github/agents/planner.agent.md",
+      "targetPaths": [
+        ".github/agents/planner.agent.md"
+      ],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "9e12e4bbb40fd6566e1e9162615336ab2e6ddb83",
+      "installedAt": "2026-04-01T12:31:19.132Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/reviewer.agent.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "main",
+      "itemPath": ".github/agents/reviewer.agent.md",
+      "targetPaths": [
+        ".github/agents/reviewer.agent.md"
+      ],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "9e12e4bbb40fd6566e1e9162615336ab2e6ddb83",
+      "installedAt": "2026-04-01T12:31:25.751Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/spec-architect.agent.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "main",
+      "itemPath": ".github/agents/spec-architect.agent.md",
+      "targetPaths": [
+        ".github/agents/spec-architect.agent.md"
+      ],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "9e12e4bbb40fd6566e1e9162615336ab2e6ddb83",
+      "installedAt": "2026-04-01T12:31:28.771Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/prompts/commit-changes.prompt.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "main",
+      "itemPath": ".github/prompts/commit-changes.prompt.md",
+      "targetPaths": [
+        ".github/prompts/commit-changes.prompt.md"
+      ],
+      "tool": "copilot",
+      "category": "prompts",
+      "commitSha": "ab0224769d5c909831fb83e43edf701f24dbd494",
+      "installedAt": "2026-04-01T12:31:32.188Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/semantic-commit/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "main",
+      "itemPath": ".github/skills/semantic-commit/SKILL.md",
+      "targetPaths": [
+        ".github/skills/semantic-commit/SKILL.md"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "ab0224769d5c909831fb83e43edf701f24dbd494",
+      "installedAt": "2026-04-01T12:31:37.250Z"
+    }
+  ]
+}
