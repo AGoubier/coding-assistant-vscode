@@ -161,6 +161,17 @@ describe('toolDetector', () => {
         const result = classifyItem('.github/dependabot.yml');
         assert.strictEqual(result.tool, 'unknown');
       });
+
+      it('should return unknown for .gitkeep placeholder files', () => {
+        assert.strictEqual(classifyItem('.github/skills/.gitkeep').tool, 'unknown');
+        assert.strictEqual(classifyItem('.github/agents/.gitkeep').tool, 'unknown');
+        assert.strictEqual(classifyItem('.claude/rules/.gitkeep').tool, 'unknown');
+      });
+
+      it('should return unknown for .gitignore files inside categories', () => {
+        assert.strictEqual(classifyItem('.github/skills/.gitignore').tool, 'unknown');
+        assert.strictEqual(classifyItem('.github/prompts/.gitignore').tool, 'unknown');
+      });
     });
 
     // --- Edge cases ---

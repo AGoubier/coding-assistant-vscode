@@ -42,6 +42,13 @@ export function classifyItem(path: string): ToolClassification {
   if (segments.length > 1 && segments[0].toLowerCase() === 'templates') {
     segments.shift();
   }
+
+  // Ignore placeholder files that are never catalog items
+  const filename = segments[segments.length - 1].toLowerCase();
+  if (filename === '.gitkeep' || filename === '.gitignore') {
+    return { tool: 'unknown', category: 'unknown' };
+  }
+
   const segLower = segments.map(s => s.toLowerCase());
 
   // Claude Code patterns first (.claude/ prefix is unambiguous)
