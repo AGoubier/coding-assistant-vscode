@@ -619,11 +619,13 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
         continue;
       }
 
-      // For directory-type categories (skills), deduplicate by parent folder
+      // For directory-type categories (skills), deduplicate by skill root folder
+      // A skill is the directory directly under .github/skills/ (index 2),
+      // regardless of how many subfolders exist beneath it.
       if (classification.category === 'skills') {
         const segments = entry.path.split('/');
         if (segments.length >= 4) {
-          const dirKey = segments.slice(0, -1).join('/');
+          const dirKey = segments.slice(0, 3).join('/');
           if (seenSkillDirs.has(dirKey)) {
             continue;
           }
@@ -642,10 +644,10 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   private extractItemName(path: string): string {
     const segments = path.split('/');
 
-    // For directory-type categories (skills), use the parent folder name
-    // Pattern: .github/skills/<folder-name>/<file>
+    // For directory-type categories (skills), use the skill root folder name
+    // Pattern: .github/skills/<skill-name>/... (may have subfolders)
     if (segments.length >= 4 && segments[1]?.toLowerCase() === 'skills') {
-      return segments[segments.length - 2];
+      return segments[2];
     }
 
     const filename = segments[segments.length - 1];

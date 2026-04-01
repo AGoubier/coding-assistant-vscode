@@ -248,6 +248,44 @@ describe('CatalogTreeProvider', () => {
       provider.dispose();
       registry.dispose();
     });
+
+    it('should not treat skill subfolders as separate skills', async () => {
+      const treeWithSkillSubfolders: GitHubTreeResponse = {
+        sha: 'abc', url: '', tree: [
+          { path: '.github/skills/semantic-commit/SKILL.md', mode: '100644', type: 'blob', sha: 's1', url: '' },
+          { path: '.github/skills/semantic-commit/templates/example.md', mode: '100644', type: 'blob', sha: 's2', url: '' },
+          { path: '.github/skills/semantic-commit/lib/helpers.md', mode: '100644', type: 'blob', sha: 's3', url: '' },
+          { path: '.github/skills/other-skill/SKILL.md', mode: '100644', type: 'blob', sha: 's4', url: '' },
+        ], truncated: false,
+      };
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(treeWithSkillSubfolders);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // Expand source to populate cache
+      const sourceItem = { kind: 'source' as const, source: TEST_SOURCE };
+      await provider.getChildren(sourceItem);
+
+      const categoryItem = {
+        kind: 'category' as const,
+        source: TEST_SOURCE,
+        category: 'skills' as const,
+        tool: 'copilot' as const,
+      };
+      const children = await provider.getChildren(categoryItem);
+
+      // Should have exactly 2 skills, not 3 or 4
+      const names = (children as { name: string }[]).map(c => c.name);
+      assert.strictEqual(children.length, 2, `Expected 2 skills but got ${children.length}: ${names.join(', ')}`);
+      assert.ok(names.includes('semantic-commit'), 'Should include semantic-commit skill');
+      assert.ok(names.includes('other-skill'), 'Should include other-skill');
+      // Ensure subfolder names are NOT present as skill names
+      assert.ok(!names.includes('templates'), 'Subfolder "templates" should not appear as a skill');
+      assert.ok(!names.includes('lib'), 'Subfolder "lib" should not appear as a skill');
+
+      provider.dispose();
+      registry.dispose();
+    });
   });
 
   describe('getTreeItem', () => {
