@@ -1,8 +1,8 @@
 # Awesome Coding Assistants - Specification
 
-> **Source brief**: `ideas/001-awesome-coding-assistants.md`
+> **Source brief**: `.sdd/ideas/001-awesome-coding-assistants.md`
 > **Feature branch**: `001-awesome-coding-assistants`
-> **Status**: Draft
+> **Status**: Validated
 > **Version**: 1.0
 
 ---

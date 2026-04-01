@@ -1,8 +1,8 @@
 # New Content Notifications - Specification
 
-> **Source brief**: `ideas/002-new-content-notifications.md`
+> **Source brief**: `.sdd/ideas/002-new-content-notifications.md`
 > **Feature branch**: `002-new-content-notifications`
-> **Status**: Draft
+> **Status**: Validated
 > **Version**: 1.0
 
 ---
