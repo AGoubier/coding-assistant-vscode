@@ -2,7 +2,7 @@
   "name": "awesome-coding-assistants",
   "displayName": "Awesome Coding Assistants",
   "description": "Universal browser, installer, and lifecycle manager for AI coding assistant customizations across multiple tools.",
-  "version": "0.3.4",
+  "version": "0.3.6",
   "publisher": "jlacube",
   "icon": "resources/icon.png",
   "license": "MIT",
