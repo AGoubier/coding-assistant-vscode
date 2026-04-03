@@ -13,11 +13,13 @@ import { uninstallCommand } from './commands/uninstallCommand';
 import { addTokenCommand, removeTokenCommand } from './commands/tokenCommands';
 import { clearCacheCommand } from './commands/cacheCommands';
 import { installBundleCommand } from './commands/installBundleCommand';
+import { installCategoryCommand } from './commands/installCategoryCommand';
+import { installSourceCommand } from './commands/installSourceCommand';
 import { Installer } from './services/installer';
 import { ManifestManager } from './services/manifestManager';
 import { LifecycleManager } from './services/lifecycle';
 import { NewContentDetector } from './services/newContentDetector';
-import type { CatalogFileItem, BundleNodeItem, SourceConfig } from './models/types';
+import type { CatalogFileItem, BundleNodeItem, CategoryItem, SourceItem, SourceConfig } from './models/types';
 
 let outputChannel: vscode.LogOutputChannel;
 
@@ -468,6 +470,44 @@ export function activate(context: vscode.ExtensionContext): void {
         sourceRegistry,
         outputChannel,
         () => { catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
+      );
+    }),
+  );
+
+  // Install Category command - install all items in a category (e.g., all Agents)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('awesome-coding-assistants.installCategory', (item?: CategoryItem) => {
+      if (!item || !('kind' in item) || item.kind !== 'category') {
+        outputChannel.info('Install Category command invoked without a valid category item');
+        return;
+      }
+      return installCategoryCommand(
+        item,
+        installer,
+        githubClient,
+        manifestManager,
+        outputChannel,
+        () => { catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
+        (source) => catalogTreeProvider.getOrFetchTreePublic(source),
+      );
+    }),
+  );
+
+  // Install Source command - install all items from a whole repo
+  context.subscriptions.push(
+    vscode.commands.registerCommand('awesome-coding-assistants.installSource', (item?: SourceItem) => {
+      if (!item || !('kind' in item) || item.kind !== 'source') {
+        outputChannel.info('Install Source command invoked without a valid source item');
+        return;
+      }
+      return installSourceCommand(
+        item,
+        installer,
+        githubClient,
+        manifestManager,
+        outputChannel,
+        () => { catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
+        (source) => catalogTreeProvider.getOrFetchTreePublic(source),
       );
     }),
   );

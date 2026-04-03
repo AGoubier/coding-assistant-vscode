@@ -151,6 +151,18 @@
         "title": "Mark All as Seen",
         "category": "Awesome Coding Assistants",
         "icon": "$(check-all)"
+      },
+      {
+        "command": "awesome-coding-assistants.installCategory",
+        "title": "Install All in Category",
+        "category": "Awesome Coding Assistants",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "awesome-coding-assistants.installSource",
+        "title": "Install All from Source",
+        "category": "Awesome Coding Assistants",
+        "icon": "$(cloud-download)"
       }
     ],
     "menus": {
@@ -216,6 +228,16 @@
           "command": "awesome-coding-assistants.installBundle",
           "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && viewItem == bundleItem",
           "group": "inline"
+        },
+        {
+          "command": "awesome-coding-assistants.installCategory",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && viewItem == catalogItem.category",
+          "group": "inline@2"
+        },
+        {
+          "command": "awesome-coding-assistants.installSource",
+          "when": "view =~ /^awesomeCodingAssistants\\.(catalog|explorerCatalog)$/ && viewItem == catalogItem.source",
+          "group": "inline@2"
         }
       ]
     },
