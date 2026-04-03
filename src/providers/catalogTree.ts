@@ -669,8 +669,10 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       label,
       vscode.TreeItemCollapsibleState.Collapsed,
     );
-    treeItem.contextValue = 'catalogItem.source';
-    treeItem.tooltip = item.source.url;
+    // Use allInstalled variant to hide download button when nothing new to install
+    const allInstalled = this.isSourceAllInstalled(item.source);
+    treeItem.contextValue = allInstalled ? 'catalogItem.source.allInstalled' : 'catalogItem.source';
+    treeItem.tooltip = item.source.url + (item.source.branch ? ` (${item.source.branch})` : '');
     treeItem.iconPath = new vscode.ThemeIcon('repo');
     treeItem.accessibilityInformation = { label: `Source repository: ${label}` };
     // Assign resourceUri for FileDecorationProvider coloring
@@ -687,7 +689,9 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       label,
       vscode.TreeItemCollapsibleState.Collapsed,
     );
-    treeItem.contextValue = 'catalogItem.category';
+    // Use allInstalled variant to hide download button when nothing new to install
+    const allInstalled = this.isCategoryAllInstalled(item.source, item.category);
+    treeItem.contextValue = allInstalled ? 'catalogItem.category.allInstalled' : 'catalogItem.category';
     treeItem.tooltip = `${label} (${item.tool})`;
     treeItem.iconPath = this.getCategoryIcon(item.category);
     treeItem.accessibilityInformation = { label: `Category: ${label}, tool: ${item.tool}` };
@@ -967,6 +971,68 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
 
   dispose(): void {
     this._onDidChangeTreeData.dispose();
+  }
+
+  /**
+   * Check if all visible items for a source are already installed.
+   * Uses the tree cache (populated during getChildren).
+   */
+  private isSourceAllInstalled(source: SourceConfig): boolean {
+    if (this.installedIds.size === 0) {
+      return false;
+    }
+    const key = sourceKey(source);
+    const tree = this.treeCache.get(key);
+    if (!tree) {
+      return false;
+    }
+    const entryMap = this.groupByCategory(tree.tree);
+    let total = 0;
+    let installed = 0;
+    for (const [, entries] of entryMap) {
+      for (const entry of entries) {
+        const classification = classifyItem(entry.path);
+        if (!this.shouldShowTool(classification.tool)) {
+          continue;
+        }
+        total++;
+        const entryId = `${source.url}#${entry.path}`;
+        if (this.installedIds.has(entryId)) {
+          installed++;
+        }
+      }
+    }
+    return total > 0 && installed >= total;
+  }
+
+  /**
+   * Check if all visible items in a category are already installed.
+   */
+  private isCategoryAllInstalled(source: SourceConfig, category: CategoryType): boolean {
+    if (this.installedIds.size === 0) {
+      return false;
+    }
+    const key = sourceKey(source);
+    const tree = this.treeCache.get(key);
+    if (!tree) {
+      return false;
+    }
+    const entryMap = this.groupByCategory(tree.tree);
+    const entries = entryMap.get(category) || [];
+    let total = 0;
+    let installed = 0;
+    for (const entry of entries) {
+      const classification = classifyItem(entry.path);
+      if (!this.shouldShowTool(classification.tool)) {
+        continue;
+      }
+      total++;
+      const entryId = `${source.url}#${entry.path}`;
+      if (this.installedIds.has(entryId)) {
+        installed++;
+      }
+    }
+    return total > 0 && installed >= total;
   }
 
   /**
