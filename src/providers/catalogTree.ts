@@ -21,7 +21,7 @@ import type {
   Bundle,
 } from '../models/types';
 import { GitHubClient } from '../services/githubClient';
-import { SourceRegistry } from '../services/sourceRegistry';
+import { SourceRegistry, sourceKey } from '../services/sourceRegistry';
 import { classifyItem, detectWorkspaceTools } from '../services/toolDetector';
 import { parseBundle } from '../services/bundleParser';
 import type { ManifestManager } from '../services/manifestManager';
@@ -435,7 +435,8 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
    * Discover and cache bundles from the bundles/ directory in a source repo.
    */
   private async discoverBundles(source: SourceConfig): Promise<Bundle[]> {
-    const cached = this.bundleCache.get(source.url);
+    const key = sourceKey(source);
+    const cached = this.bundleCache.get(key);
     if (cached) {
       return cached;
     }
@@ -446,7 +447,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     );
 
     if (bundleEntries.length === 0) {
-      this.bundleCache.set(source.url, []);
+      this.bundleCache.set(key, []);
       return [];
     }
 
@@ -461,7 +462,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       }
     }
 
-    this.bundleCache.set(source.url, bundles);
+    this.bundleCache.set(key, bundles);
     return bundles;
   }
 
@@ -583,13 +584,14 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   }
 
   private async getOrFetchTree(source: SourceConfig): Promise<GitHubTreeResponse> {
-    const cached = this.treeCache.get(source.url);
+    const key = sourceKey(source);
+    const cached = this.treeCache.get(key);
     if (cached) {
       return cached;
     }
 
     const tree = await this.github.getRepoTree(source);
-    this.treeCache.set(source.url, tree);
+    this.treeCache.set(key, tree);
     return tree;
   }
 

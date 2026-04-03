@@ -18,6 +18,14 @@ const DEFAULT_SOURCE: SourceConfig = {
   branch: 'main',
 };
 
+/**
+ * Composite key for deduplicating sources: same URL on different branches
+ * are treated as distinct sources.
+ */
+export function sourceKey(source: SourceConfig): string {
+  return `${source.url}@${source.branch || 'main'}`;
+}
+
 export class SourceRegistry {
   private readonly github: GitHubClient;
   private readonly log: vscode.LogOutputChannel;
@@ -32,9 +40,12 @@ export class SourceRegistry {
     this.log = log;
 
     this.configListener = vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration(`${SETTING_SECTION}.${SETTING_SOURCES}`) ||
-          e.affectsConfiguration(`${SETTING_SECTION}.${SETTING_INDEX_URL}`)) {
-        this.cachedMasterIndex = undefined;
+      const sourcesChanged = e.affectsConfiguration(`${SETTING_SECTION}.${SETTING_SOURCES}`);
+      const indexChanged = e.affectsConfiguration(`${SETTING_SECTION}.${SETTING_INDEX_URL}`);
+      if (sourcesChanged || indexChanged) {
+        if (indexChanged) {
+          this.cachedMasterIndex = undefined;
+        }
         this._onDidChange.fire();
         this.log.info('Source configuration changed');
       }
@@ -50,30 +61,21 @@ export class SourceRegistry {
     const config = vscode.workspace.getConfiguration(SETTING_SECTION);
     const userSources = config.get<SourceConfig[]>(SETTING_SOURCES, []);
 
-    // If user has no sources and no index, return default
-    const indexUrl = config.get<string>(SETTING_INDEX_URL, '');
-    if (userSources.length === 0 && !indexUrl && !this.cachedMasterIndex) {
-      return [DEFAULT_SOURCE];
-    }
-
-    // Merge: index sources first, then user sources (user wins on URL collision)
+    // Merge: default first, then index, then user (last wins on url+branch collision)
     const merged = new Map<string, SourceConfig>();
 
-    // Add master index sources if available
-    if (this.cachedMasterIndex) {
+    // Base: master index if loaded, otherwise default source as baseline
+    if (this.cachedMasterIndex && this.cachedMasterIndex.length > 0) {
       for (const source of this.cachedMasterIndex) {
-        merged.set(source.url, source);
+        merged.set(sourceKey(source), source);
       }
+    } else {
+      merged.set(sourceKey(DEFAULT_SOURCE), DEFAULT_SOURCE);
     }
 
-    // Add user sources (overwrite index entries on collision)
+    // Add user sources (overwrite index/default entries on collision)
     for (const source of userSources) {
-      merged.set(source.url, source);
-    }
-
-    // If nothing after merge and no user sources, return default
-    if (merged.size === 0) {
-      return [DEFAULT_SOURCE];
+      merged.set(sourceKey(source), source);
     }
 
     return Array.from(merged.values());
@@ -91,7 +93,7 @@ export class SourceRegistry {
 
     // Prevent duplicates - check all visible sources (including default and index)
     const allSources = this.getSources();
-    const exists = allSources.some(s => s.url === source.url);
+    const exists = allSources.some(s => sourceKey(s) === sourceKey(source));
     if (exists) {
       this.log.info(`Source already configured: ${source.url}`);
       return;
