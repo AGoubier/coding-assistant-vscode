@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { AuthManager } from './services/authManager';
 import { CacheManager } from './services/cacheManager';
 import { GitHubClient } from './services/githubClient';
-import { SourceRegistry } from './services/sourceRegistry';
+import { SourceRegistry, sourceKey } from './services/sourceRegistry';
 import { CatalogTreeProvider, CatalogTreeDecorationProvider } from './providers/catalogTree';
 import { PreviewProvider, PREVIEW_SCHEME } from './providers/previewProvider';
 import { previewCommand } from './commands/previewCommand';
@@ -316,12 +316,12 @@ export function activate(context: vscode.ExtensionContext): void {
             try {
               const tree = await catalogTreeProvider.getOrFetchTreePublic(source);
               const result = await newContentDetector.checkForNewContent(
-                source.url, tree.tree, tree.truncated,
+                sourceKey(source), tree.tree, tree.truncated,
               );
               newContentCount += result.newPaths.length;
               removedContentCount += result.removedPaths.length;
             } catch (err) {
-              outputChannel.warn(`New content check failed for ${source.url}: ${err}`);
+              outputChannel.warn(`New content check failed for ${sourceKey(source)}: ${err}`);
             }
           }
         }
@@ -365,12 +365,12 @@ export function activate(context: vscode.ExtensionContext): void {
             try {
               const tree = await catalogTreeProvider.getOrFetchTreePublic(source);
               const result = await newContentDetector.checkForNewContent(
-                source.url, tree.tree, tree.truncated,
+                sourceKey(source), tree.tree, tree.truncated,
               );
               newContentCount += result.newPaths.length;
               removedContentCount += result.removedPaths.length;
             } catch (err) {
-              outputChannel.warn(`New content check failed for ${source.url}: ${err}`);
+              outputChannel.warn(`New content check failed for ${sourceKey(source)}: ${err}`);
             }
           }
         }

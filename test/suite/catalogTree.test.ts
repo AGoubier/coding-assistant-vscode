@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { CatalogTreeProvider } from '../../src/providers/catalogTree';
-import { SourceRegistry } from '../../src/services/sourceRegistry';
+import { SourceRegistry, sourceKey } from '../../src/services/sourceRegistry';
 import { GitHubClient } from '../../src/services/githubClient';
 import { createMockLogOutputChannel } from '../helpers/mocks';
 import type { SourceConfig, GitHubTreeResponse, GitHubTreeEntry, ValidationResult, CatalogItem } from '../../src/models/types';
@@ -962,7 +962,7 @@ describe('CatalogTreeProvider', () => {
       // Mock NewContentDetector
       const mockDetector = {
         getNewItems: (sourceUrl: string) => {
-          if (sourceUrl === TEST_SOURCE.url) {
+          if (sourceUrl === sourceKey(TEST_SOURCE)) {
             return ['.github/agents/coder.agent.md'];
           }
           return [];
@@ -1035,7 +1035,7 @@ describe('CatalogTreeProvider', () => {
       const mockDetector = {
         getNewItems: () => [],
         getRemovedItems: (sourceUrl: string) => {
-          if (sourceUrl === TEST_SOURCE.url) {
+          if (sourceUrl === sourceKey(TEST_SOURCE)) {
             return ['.github/agents/deleted-agent.agent.md'];
           }
           return [];

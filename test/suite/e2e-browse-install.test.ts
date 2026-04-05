@@ -10,7 +10,7 @@ import { CacheManager } from '../../src/services/cacheManager.js';
 import { Installer } from '../../src/services/installer.js';
 import { ManifestManager, VscFs } from '../../src/services/manifestManager.js';
 import { CatalogTreeProvider } from '../../src/providers/catalogTree.js';
-import { SourceRegistry } from '../../src/services/sourceRegistry.js';
+import { SourceRegistry, sourceKey } from '../../src/services/sourceRegistry.js';
 import { LifecycleManager } from '../../src/services/lifecycle.js';
 import { FetchMocker, loadFixture, loadJsonFixture } from '../helpers/e2e.js';
 import { NewContentDetector } from '../../src/services/newContentDetector.js';
@@ -454,7 +454,7 @@ describe('WP14 - E2E: Removed content detection', function () {
       const mockDetector = {
         getNewItems: () => [],
         getRemovedItems: (url: string) =>
-          url === defaultSource.url ? [removedPath] : [],
+          url === sourceKey(defaultSource) ? [removedPath] : [],
         markCategorySeen: async () => {},
       };
       treeProvider.setNewContentDetector(mockDetector as any);

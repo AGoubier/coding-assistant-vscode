@@ -515,7 +515,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       const entries = entryMap.get(categoryItem.category) || [];
 
       const newItems = this.newContentDetector
-        ? new Set(this.newContentDetector.getNewItems(categoryItem.source.url))
+        ? new Set(this.newContentDetector.getNewItems(sourceKey(categoryItem.source)))
         : new Set<string>();
 
       const items: CatalogFileItem[] = entries
@@ -546,14 +546,14 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
           .filter(item => newItems.has(item.path))
           .map(item => item.path);
         if (categoryPaths.length > 0) {
-          void this.newContentDetector.markCategorySeen(categoryItem.source.url, categoryPaths);
+          void this.newContentDetector.markCategorySeen(sourceKey(categoryItem.source), categoryPaths);
           this.onNewContentChanged?.();
         }
       }
 
       // Merge removed items as synthetic entries (FR-009)
       if (this.newContentDetector) {
-        const removedPaths = this.newContentDetector.getRemovedItems(categoryItem.source.url);
+        const removedPaths = this.newContentDetector.getRemovedItems(sourceKey(categoryItem.source));
         for (const removedPath of removedPaths) {
           const classification = classifyItem(removedPath);
           if (classification.category === categoryItem.category) {

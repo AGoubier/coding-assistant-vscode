@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.7] - 2026-04-05
+
+### Fixed
+
+- New content notifications no longer count multiple times when the same repository is listed with different branches. Each branch now maintains its own independent baseline.
+- Multiple files within the same skill directory (e.g., SKILL.md, README.md, templates/) now count as a single notification instead of one per file.
+- "Mark all seen" now properly clears notifications without them reappearing on the next auto-check.
+
 ## [0.3.4] - 2026-04-01
 
 ### Fixed

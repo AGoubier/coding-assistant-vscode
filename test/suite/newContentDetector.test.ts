@@ -256,4 +256,187 @@ describe('WP12 - NewContentDetector', () => {
       assert.deepStrictEqual(detector.getRemovedItems('nonexistent'), []);
     });
   });
+
+  describe('cross-branch isolation', () => {
+    const REPO_URL = 'https://github.com/test/repo';
+    const MAIN_KEY = `${REPO_URL}@main`;
+    const PREVIEW_KEY = `${REPO_URL}@preview`;
+
+    const MAIN_TREE: GitHubTreeEntry[] = [
+      { path: '.github/agents/a.agent.md', mode: '100644', type: 'blob', sha: 'a1', url: '' },
+      { path: '.github/agents/b.agent.md', mode: '100644', type: 'blob', sha: 'b1', url: '' },
+    ];
+
+    const PREVIEW_TREE: GitHubTreeEntry[] = [
+      { path: '.github/agents/a.agent.md', mode: '100644', type: 'blob', sha: 'a1', url: '' },
+      { path: '.github/agents/x.agent.md', mode: '100644', type: 'blob', sha: 'x1', url: '' },
+      { path: '.github/prompts/y.prompt.md', mode: '100644', type: 'blob', sha: 'y1', url: '' },
+    ];
+
+    it('should not cross-contaminate baselines between branches', async () => {
+      // Establish baselines for both branches
+      await detector.checkForNewContent(MAIN_KEY, MAIN_TREE, false);
+      await detector.checkForNewContent(PREVIEW_KEY, PREVIEW_TREE, false);
+
+      // Both should have empty new/removed since it is first check
+      assert.deepStrictEqual(detector.getNewItems(MAIN_KEY), []);
+      assert.deepStrictEqual(detector.getNewItems(PREVIEW_KEY), []);
+
+      // Now add a file to main only
+      const MAIN_V2: GitHubTreeEntry[] = [
+        ...MAIN_TREE,
+        { path: '.github/agents/c.agent.md', mode: '100644', type: 'blob', sha: 'c1', url: '' },
+      ];
+      await detector.checkForNewContent(MAIN_KEY, MAIN_V2, false);
+
+      // Main should show 1 new, preview should show 0
+      assert.strictEqual(detector.getNewItems(MAIN_KEY).length, 1);
+      assert.deepStrictEqual(detector.getNewItems(PREVIEW_KEY), []);
+      assert.strictEqual(detector.getTotalNewCount(), 1);
+    });
+
+    it('should maintain separate baselines when same repo has different branches', async () => {
+      await detector.checkForNewContent(MAIN_KEY, MAIN_TREE, false);
+      await detector.checkForNewContent(PREVIEW_KEY, PREVIEW_TREE, false);
+
+      // Verify baselines are stored separately
+      const mainBaseline = globalState.get<string[]>(`newContent:seen:${MAIN_KEY}`);
+      const previewBaseline = globalState.get<string[]>(`newContent:seen:${PREVIEW_KEY}`);
+      assert.strictEqual(mainBaseline!.length, 2);
+      assert.strictEqual(previewBaseline!.length, 3);
+    });
+
+    it('should not count cross-branch differences as new content', async () => {
+      // Establish both baselines
+      await detector.checkForNewContent(MAIN_KEY, MAIN_TREE, false);
+      await detector.checkForNewContent(PREVIEW_KEY, PREVIEW_TREE, false);
+
+      // Re-check both branches (no changes)
+      await detector.checkForNewContent(MAIN_KEY, MAIN_TREE, false);
+      await detector.checkForNewContent(PREVIEW_KEY, PREVIEW_TREE, false);
+
+      // No new content should be detected
+      assert.strictEqual(detector.getTotalNewCount(), 0);
+      assert.strictEqual(detector.getTotalRemovedCount(), 0);
+    });
+
+    it('markAllSeen should not cause re-detection on next check', async () => {
+      // Establish baselines
+      await detector.checkForNewContent(MAIN_KEY, MAIN_TREE, false);
+      await detector.checkForNewContent(PREVIEW_KEY, PREVIEW_TREE, false);
+
+      // Add new content to main
+      const MAIN_V2: GitHubTreeEntry[] = [
+        ...MAIN_TREE,
+        { path: '.github/agents/new.agent.md', mode: '100644', type: 'blob', sha: 'n1', url: '' },
+      ];
+      await detector.checkForNewContent(MAIN_KEY, MAIN_V2, false);
+      assert.strictEqual(detector.getTotalNewCount(), 1);
+
+      // Mark all seen
+      await detector.markAllSeen();
+      assert.strictEqual(detector.getTotalNewCount(), 0);
+
+      // Re-check - baseline was already updated to V2, so no new content
+      await detector.checkForNewContent(MAIN_KEY, MAIN_V2, false);
+      assert.strictEqual(detector.getTotalNewCount(), 0);
+    });
+  });
+
+  describe('skill path deduplication', () => {
+    it('should count multiple files in the same skill as 1 new item', async () => {
+      const baseTree: GitHubTreeEntry[] = [
+        { path: '.github/agents/a.agent.md', mode: '100644', type: 'blob', sha: 'a1', url: '' },
+      ];
+
+      const treeWithSkill: GitHubTreeEntry[] = [
+        ...baseTree,
+        { path: '.github/skills/my-skill/SKILL.md', mode: '100644', type: 'blob', sha: 's1', url: '' },
+        { path: '.github/skills/my-skill/README.md', mode: '100644', type: 'blob', sha: 's2', url: '' },
+        { path: '.github/skills/my-skill/templates/code.md', mode: '100644', type: 'blob', sha: 's3', url: '' },
+      ];
+
+      await detector.checkForNewContent(SOURCE_URL, baseTree, false);
+      const result = await detector.checkForNewContent(SOURCE_URL, treeWithSkill, false);
+
+      // 3 new files in same skill directory should count as 1
+      assert.strictEqual(result.newPaths.length, 1);
+      assert.ok(result.newPaths[0].startsWith('.github/skills/my-skill/'));
+    });
+
+    it('should count different skills as separate items', async () => {
+      const baseTree: GitHubTreeEntry[] = [
+        { path: '.github/agents/a.agent.md', mode: '100644', type: 'blob', sha: 'a1', url: '' },
+      ];
+
+      const treeWithSkills: GitHubTreeEntry[] = [
+        ...baseTree,
+        { path: '.github/skills/skill-a/SKILL.md', mode: '100644', type: 'blob', sha: 's1', url: '' },
+        { path: '.github/skills/skill-a/README.md', mode: '100644', type: 'blob', sha: 's2', url: '' },
+        { path: '.github/skills/skill-b/SKILL.md', mode: '100644', type: 'blob', sha: 's3', url: '' },
+      ];
+
+      await detector.checkForNewContent(SOURCE_URL, baseTree, false);
+      const result = await detector.checkForNewContent(SOURCE_URL, treeWithSkills, false);
+
+      // 2 different skills should count as 2
+      assert.strictEqual(result.newPaths.length, 2);
+    });
+
+    it('should deduplicate skill paths in removed count too', async () => {
+      const treeWithSkill: GitHubTreeEntry[] = [
+        { path: '.github/agents/a.agent.md', mode: '100644', type: 'blob', sha: 'a1', url: '' },
+        { path: '.github/skills/my-skill/SKILL.md', mode: '100644', type: 'blob', sha: 's1', url: '' },
+        { path: '.github/skills/my-skill/README.md', mode: '100644', type: 'blob', sha: 's2', url: '' },
+        { path: '.github/skills/my-skill/templates/code.md', mode: '100644', type: 'blob', sha: 's3', url: '' },
+      ];
+
+      const baseTree: GitHubTreeEntry[] = [
+        { path: '.github/agents/a.agent.md', mode: '100644', type: 'blob', sha: 'a1', url: '' },
+      ];
+
+      await detector.checkForNewContent(SOURCE_URL, treeWithSkill, false);
+      const result = await detector.checkForNewContent(SOURCE_URL, baseTree, false);
+
+      // 3 removed files in same skill directory should count as 1
+      assert.strictEqual(result.removedPaths.length, 1);
+    });
+
+    it('should handle templates/.github/skills/ paths', async () => {
+      const baseTree: GitHubTreeEntry[] = [
+        { path: '.github/agents/a.agent.md', mode: '100644', type: 'blob', sha: 'a1', url: '' },
+      ];
+
+      const treeWithTemplateSkill: GitHubTreeEntry[] = [
+        ...baseTree,
+        { path: 'templates/.github/skills/my-skill/SKILL.md', mode: '100644', type: 'blob', sha: 's1', url: '' },
+        { path: 'templates/.github/skills/my-skill/README.md', mode: '100644', type: 'blob', sha: 's2', url: '' },
+      ];
+
+      await detector.checkForNewContent(SOURCE_URL, baseTree, false);
+      const result = await detector.checkForNewContent(SOURCE_URL, treeWithTemplateSkill, false);
+
+      // 2 files in same template skill should count as 1
+      assert.strictEqual(result.newPaths.length, 1);
+    });
+
+    it('should not deduplicate non-skill paths', async () => {
+      const baseTree: GitHubTreeEntry[] = [
+        { path: '.github/agents/a.agent.md', mode: '100644', type: 'blob', sha: 'a1', url: '' },
+      ];
+
+      const treeWithMultipleAgents: GitHubTreeEntry[] = [
+        ...baseTree,
+        { path: '.github/agents/b.agent.md', mode: '100644', type: 'blob', sha: 'b1', url: '' },
+        { path: '.github/agents/c.agent.md', mode: '100644', type: 'blob', sha: 'c1', url: '' },
+        { path: '.github/prompts/p.prompt.md', mode: '100644', type: 'blob', sha: 'p1', url: '' },
+      ];
+
+      await detector.checkForNewContent(SOURCE_URL, baseTree, false);
+      const result = await detector.checkForNewContent(SOURCE_URL, treeWithMultipleAgents, false);
+
+      // Non-skill paths should each count individually
+      assert.strictEqual(result.newPaths.length, 3);
+    });
+  });
 });
