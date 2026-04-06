@@ -2,58 +2,6 @@
   "version": "1.0",
   "installations": [
     {
-      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/coder.agent.md",
-      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
-      "sourceBranch": "main",
-      "itemPath": ".github/agents/coder.agent.md",
-      "targetPaths": [
-        ".github/agents/coder.agent.md"
-      ],
-      "tool": "copilot",
-      "category": "agents",
-      "commitSha": "9e12e4bbb40fd6566e1e9162615336ab2e6ddb83",
-      "installedAt": "2026-04-01T12:31:07.839Z"
-    },
-    {
-      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/ideation.agent.md",
-      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
-      "sourceBranch": "main",
-      "itemPath": ".github/agents/ideation.agent.md",
-      "targetPaths": [
-        ".github/agents/ideation.agent.md"
-      ],
-      "tool": "copilot",
-      "category": "agents",
-      "commitSha": "9e12e4bbb40fd6566e1e9162615336ab2e6ddb83",
-      "installedAt": "2026-04-01T12:31:13.103Z"
-    },
-    {
-      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/orchestrator.agent.md",
-      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
-      "sourceBranch": "main",
-      "itemPath": ".github/agents/orchestrator.agent.md",
-      "targetPaths": [
-        ".github/agents/orchestrator.agent.md"
-      ],
-      "tool": "copilot",
-      "category": "agents",
-      "commitSha": "f6c68f5f9318d77b7c8ffe0e49474d4b983f9dfa",
-      "installedAt": "2026-04-01T12:31:15.092Z"
-    },
-    {
-      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/planner.agent.md",
-      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
-      "sourceBranch": "main",
-      "itemPath": ".github/agents/planner.agent.md",
-      "targetPaths": [
-        ".github/agents/planner.agent.md"
-      ],
-      "tool": "copilot",
-      "category": "agents",
-      "commitSha": "9e12e4bbb40fd6566e1e9162615336ab2e6ddb83",
-      "installedAt": "2026-04-01T12:31:19.132Z"
-    },
-    {
       "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/reviewer.agent.md",
       "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
       "sourceBranch": "main",
@@ -67,22 +15,113 @@
       "installedAt": "2026-04-01T12:31:25.751Z"
     },
     {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/brainstorming.agent.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/agents/brainstorming.agent.md",
+      "targetPaths": [
+        ".github/agents/brainstorming.agent.md"
+      ],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "860bd081da58d624ece22592ae8ba902837682c3",
+      "installedAt": "2026-04-06T09:38:01.187Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/coder.agent.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/agents/coder.agent.md",
+      "targetPaths": [
+        ".github/agents/coder.agent.md"
+      ],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "4b2ee53da906e08580ef40dbc6ef4d0f804c1b0f",
+      "installedAt": "2026-04-06T09:38:01.748Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/docs-agent.agent.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/agents/docs-agent.agent.md",
+      "targetPaths": [
+        ".github/agents/docs-agent.agent.md"
+      ],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "706ab3de2eb8cc50afb0c862bf9dab1a3ea65da6",
+      "installedAt": "2026-04-06T09:38:02.252Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/ideation.agent.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/agents/ideation.agent.md",
+      "targetPaths": [
+        ".github/agents/ideation.agent.md"
+      ],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "de0eb28f053a09b13cbe17a6969a54c14d721e50",
+      "installedAt": "2026-04-06T09:38:02.988Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/orchestrator.agent.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/agents/orchestrator.agent.md",
+      "targetPaths": [
+        ".github/agents/orchestrator.agent.md"
+      ],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "6460fe568b732ffa0653c8dcf2364b819eb39000",
+      "installedAt": "2026-04-06T09:38:03.541Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/planner.agent.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/agents/planner.agent.md",
+      "targetPaths": [
+        ".github/agents/planner.agent.md"
+      ],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "39c7fdcb9e0bc0959c223abc299bafb66c272830",
+      "installedAt": "2026-04-06T09:38:04.112Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/review-coordinator.agent.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/agents/review-coordinator.agent.md",
+      "targetPaths": [
+        ".github/agents/review-coordinator.agent.md"
+      ],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "b811ed08827cd9b93991ae0ba4cde08812c57c1b",
+      "installedAt": "2026-04-06T09:38:04.679Z"
+    },
+    {
       "id": "https://github.com/jlacube/awesome-coding-assistants#.github/agents/spec-architect.agent.md",
       "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
-      "sourceBranch": "main",
+      "sourceBranch": "preview",
       "itemPath": ".github/agents/spec-architect.agent.md",
       "targetPaths": [
         ".github/agents/spec-architect.agent.md"
       ],
       "tool": "copilot",
       "category": "agents",
-      "commitSha": "9e12e4bbb40fd6566e1e9162615336ab2e6ddb83",
-      "installedAt": "2026-04-01T12:31:28.771Z"
+      "commitSha": "5ebbf0cd7e258fc39d21360f67bc5516c0dfd964",
+      "installedAt": "2026-04-06T09:38:05.197Z"
     },
     {
       "id": "https://github.com/jlacube/awesome-coding-assistants#.github/prompts/commit-changes.prompt.md",
       "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
-      "sourceBranch": "main",
+      "sourceBranch": "preview",
       "itemPath": ".github/prompts/commit-changes.prompt.md",
       "targetPaths": [
         ".github/prompts/commit-changes.prompt.md"
@@ -90,20 +129,553 @@
       "tool": "copilot",
       "category": "prompts",
       "commitSha": "ab0224769d5c909831fb83e43edf701f24dbd494",
-      "installedAt": "2026-04-01T12:31:32.188Z"
+      "installedAt": "2026-04-06T09:38:05.769Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/CODER-SKILL-CONTRACT.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/CODER-SKILL-CONTRACT.md",
+      "targetPaths": [
+        ".github/skills/CODER-SKILL-CONTRACT.md"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "e0b9058d952b40daa4c3062952fc426098fe8fd3",
+      "installedAt": "2026-04-06T09:38:06.300Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/DOC-SKILL-CONTRACT.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/DOC-SKILL-CONTRACT.md",
+      "targetPaths": [
+        ".github/skills/DOC-SKILL-CONTRACT.md"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "c26df38e9270fa226b10569704c41a163c222816",
+      "installedAt": "2026-04-06T09:38:06.814Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/PLAN-SKILL-CONTRACT.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/PLAN-SKILL-CONTRACT.md",
+      "targetPaths": [
+        ".github/skills/PLAN-SKILL-CONTRACT.md"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "267ea8933439a8cf32e881a685d2dfb772198508",
+      "installedAt": "2026-04-06T09:38:07.347Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/SPEC-SKILL-CONTRACT.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/SPEC-SKILL-CONTRACT.md",
+      "targetPaths": [
+        ".github/skills/SPEC-SKILL-CONTRACT.md"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "aea721fea60e35c03a5ccd69d857833c9b9c898f",
+      "installedAt": "2026-04-06T09:38:07.908Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/code-debug/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/code-debug/SKILL.md",
+      "targetPaths": [
+        ".github/skills/code-debug"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "1fd56975b3d49c124f0117b170a78dc0c6e4593a",
+      "installedAt": "2026-04-06T09:38:08.420Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/code-env-setup/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/code-env-setup/SKILL.md",
+      "targetPaths": [
+        ".github/skills/code-env-setup"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "39a1663a671a0f1544f29f23bd38184c001039c9",
+      "installedAt": "2026-04-06T09:38:08.976Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/code-implementation/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/code-implementation/SKILL.md",
+      "targetPaths": [
+        ".github/skills/code-implementation"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "39652174eef033cbaf4c8be5b7cf59e2e55b28f8",
+      "installedAt": "2026-04-06T09:38:09.615Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/code-integration-tests/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/code-integration-tests/SKILL.md",
+      "targetPaths": [
+        ".github/skills/code-integration-tests"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "1974e51e0c80229948d7ed68e6124ce4d998dc21",
+      "installedAt": "2026-04-06T09:38:10.182Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/code-unit-tests/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/code-unit-tests/SKILL.md",
+      "targetPaths": [
+        ".github/skills/code-unit-tests"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "1974e51e0c80229948d7ed68e6124ce4d998dc21",
+      "installedAt": "2026-04-06T09:38:10.766Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/doc-api-reference/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/doc-api-reference/SKILL.md",
+      "targetPaths": [
+        ".github/skills/doc-api-reference"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "abcf8c8ec817e61feaf00f57964a6348186b823f",
+      "installedAt": "2026-04-06T09:38:11.381Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/doc-architecture/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/doc-architecture/SKILL.md",
+      "targetPaths": [
+        ".github/skills/doc-architecture"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "948a77613054e750ca352ce4b6469e43788ede53",
+      "installedAt": "2026-04-06T09:38:11.933Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/doc-changelog/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/doc-changelog/SKILL.md",
+      "targetPaths": [
+        ".github/skills/doc-changelog"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "406eb3813431dafa4282c0926e1916144a713b74",
+      "installedAt": "2026-04-06T09:38:12.454Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/doc-developer-guide/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/doc-developer-guide/SKILL.md",
+      "targetPaths": [
+        ".github/skills/doc-developer-guide"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "2acf439c2364678527e4bcdc86d8a744964ee679",
+      "installedAt": "2026-04-06T09:38:12.987Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/doc-inline-code/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/doc-inline-code/SKILL.md",
+      "targetPaths": [
+        ".github/skills/doc-inline-code"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "8a442811854d3c6a136e582906d75563ba7881f0",
+      "installedAt": "2026-04-06T09:38:13.532Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/doc-user-guide/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/doc-user-guide/SKILL.md",
+      "targetPaths": [
+        ".github/skills/doc-user-guide"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "a762443b089b4c665fbcb76eaa43acaeace3a22a",
+      "installedAt": "2026-04-06T09:38:14.041Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/plan-acceptance/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/plan-acceptance/SKILL.md",
+      "targetPaths": [
+        ".github/skills/plan-acceptance"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "33f8870fcfef31eca50263edc2a99e9138b375fa",
+      "installedAt": "2026-04-06T09:38:14.563Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/plan-api-contracts/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/plan-api-contracts/SKILL.md",
+      "targetPaths": [
+        ".github/skills/plan-api-contracts"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "efcfb9aaa8e3b40bc05a3b6b440d78033065ff5f",
+      "installedAt": "2026-04-06T09:38:15.119Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/plan-cross-wp-validation/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/plan-cross-wp-validation/SKILL.md",
+      "targetPaths": [
+        ".github/skills/plan-cross-wp-validation"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "2a012b051ef378e270183ec680961b29bcaa6a39",
+      "installedAt": "2026-04-06T09:38:15.799Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/plan-data-schemas/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/plan-data-schemas/SKILL.md",
+      "targetPaths": [
+        ".github/skills/plan-data-schemas"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "c7db2ae42f577f98b7723336a2a93bde3decfd58",
+      "installedAt": "2026-04-06T09:38:16.587Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/plan-decomposition/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/plan-decomposition/SKILL.md",
+      "targetPaths": [
+        ".github/skills/plan-decomposition"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "99d695c383b8341033e8e961155f28557e496fa5",
+      "installedAt": "2026-04-06T09:38:17.174Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/plan-error-catalogs/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/plan-error-catalogs/SKILL.md",
+      "targetPaths": [
+        ".github/skills/plan-error-catalogs"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "af82a1502c85f6a122147319355489d38a8be744",
+      "installedAt": "2026-04-06T09:38:17.725Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/plan-interface-contracts/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/plan-interface-contracts/SKILL.md",
+      "targetPaths": [
+        ".github/skills/plan-interface-contracts"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "c7db2ae42f577f98b7723336a2a93bde3decfd58",
+      "installedAt": "2026-04-06T09:38:18.383Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/plan-state-machines/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/plan-state-machines/SKILL.md",
+      "targetPaths": [
+        ".github/skills/plan-state-machines"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "efcfb9aaa8e3b40bc05a3b6b440d78033065ff5f",
+      "installedAt": "2026-04-06T09:38:18.961Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/research/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/research/SKILL.md",
+      "targetPaths": [
+        ".github/skills/research"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "056f6de6ecdcbf137654abed8777cf88b6245299",
+      "installedAt": "2026-04-06T09:38:19.524Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/review-architecture/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/review-architecture/SKILL.md",
+      "targetPaths": [
+        ".github/skills/review-architecture"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "fc9b2ddf06cd8ef5e2b589c2e25c4c57131ff1b7",
+      "installedAt": "2026-04-06T09:38:20.128Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/review-deps/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/review-deps/SKILL.md",
+      "targetPaths": [
+        ".github/skills/review-deps"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "ac75fce67583e5f50b61038119d5a53a82bda93a",
+      "installedAt": "2026-04-06T09:38:20.652Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/review-docs/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/review-docs/SKILL.md",
+      "targetPaths": [
+        ".github/skills/review-docs"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "3ee5f060025a2d9fe8a579e8fdfbbf8e9e73ef7a",
+      "installedAt": "2026-04-06T09:38:21.202Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/review-performance/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/review-performance/SKILL.md",
+      "targetPaths": [
+        ".github/skills/review-performance"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "3ee5f060025a2d9fe8a579e8fdfbbf8e9e73ef7a",
+      "installedAt": "2026-04-06T09:38:21.780Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/review-quality/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/review-quality/SKILL.md",
+      "targetPaths": [
+        ".github/skills/review-quality"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "9a66a391b63591660174b4e71a892377b6fa4f0c",
+      "installedAt": "2026-04-06T09:38:22.359Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/review-security/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/review-security/SKILL.md",
+      "targetPaths": [
+        ".github/skills/review-security"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "45c92062a7bd85a0fe97464296d1a82a29f85089",
+      "installedAt": "2026-04-06T09:38:22.925Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/review-spec-completeness/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/review-spec-completeness/SKILL.md",
+      "targetPaths": [
+        ".github/skills/review-spec-completeness"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "bec0402212800a491365863901a5dc8487dce4a1",
+      "installedAt": "2026-04-06T09:38:23.459Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/review-spec/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/review-spec/SKILL.md",
+      "targetPaths": [
+        ".github/skills/review-spec"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "fdf0d24d4a260c6be08667b8d5024ae770ab4b83",
+      "installedAt": "2026-04-06T09:38:23.967Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/review-tests/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/review-tests/SKILL.md",
+      "targetPaths": [
+        ".github/skills/review-tests"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "f23bc6cc8e9a8466e46ba1d59d2fd03eb0f4de31",
+      "installedAt": "2026-04-06T09:38:24.542Z"
     },
     {
       "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/semantic-commit/SKILL.md",
       "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
-      "sourceBranch": "main",
+      "sourceBranch": "preview",
       "itemPath": ".github/skills/semantic-commit/SKILL.md",
       "targetPaths": [
-        ".github/skills/semantic-commit/SKILL.md"
+        ".github/skills/semantic-commit"
       ],
       "tool": "copilot",
       "category": "skills",
       "commitSha": "ab0224769d5c909831fb83e43edf701f24dbd494",
-      "installedAt": "2026-04-01T12:31:37.250Z"
+      "installedAt": "2026-04-06T09:38:25.140Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/spec-api-design/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/spec-api-design/SKILL.md",
+      "targetPaths": [
+        ".github/skills/spec-api-design"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "01346a26825708610b1b86e97b703df30a2def86",
+      "installedAt": "2026-04-06T09:38:25.669Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/spec-architecture/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/spec-architecture/SKILL.md",
+      "targetPaths": [
+        ".github/skills/spec-architecture"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "4433a68558edead432d1426b551f34a57e2f3dde",
+      "installedAt": "2026-04-06T09:38:26.288Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/spec-data-model/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/spec-data-model/SKILL.md",
+      "targetPaths": [
+        ".github/skills/spec-data-model"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "01346a26825708610b1b86e97b703df30a2def86",
+      "installedAt": "2026-04-06T09:38:26.905Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/spec-requirements/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/spec-requirements/SKILL.md",
+      "targetPaths": [
+        ".github/skills/spec-requirements"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "2496c0a69539d3f132ff1b46da5f3b2153360641",
+      "installedAt": "2026-04-06T09:38:27.507Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/spec-security/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/spec-security/SKILL.md",
+      "targetPaths": [
+        ".github/skills/spec-security"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "daa343726aca265cc0d75ea9bfd294dd3b7a7164",
+      "installedAt": "2026-04-06T09:38:28.072Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/spec-test-strategy/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/spec-test-strategy/SKILL.md",
+      "targetPaths": [
+        ".github/skills/spec-test-strategy"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "21b86628864fdd87425a0d7e9973a035b8539cb9",
+      "installedAt": "2026-04-06T09:38:28.649Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/spec-traceability/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/spec-traceability/SKILL.md",
+      "targetPaths": [
+        ".github/skills/spec-traceability"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "21b86628864fdd87425a0d7e9973a035b8539cb9",
+      "installedAt": "2026-04-06T09:38:29.192Z"
+    },
+    {
+      "id": "https://github.com/jlacube/awesome-coding-assistants#.github/skills/spec-user-stories/SKILL.md",
+      "sourceUrl": "https://github.com/jlacube/awesome-coding-assistants",
+      "sourceBranch": "preview",
+      "itemPath": ".github/skills/spec-user-stories/SKILL.md",
+      "targetPaths": [
+        ".github/skills/spec-user-stories"
+      ],
+      "tool": "copilot",
+      "category": "skills",
+      "commitSha": "2496c0a69539d3f132ff1b46da5f3b2153360641",
+      "installedAt": "2026-04-06T09:38:29.731Z"
     }
   ]
 }
