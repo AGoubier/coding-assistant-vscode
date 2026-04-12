@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.9] - 2026-04-12
+
+### Fixed
+
+- Fixed phantom updates remaining after accepting all changes when the same repository is configured on multiple branches. Manifest entry IDs now include the branch (`url@branch#path`), preventing cross-branch ID collisions.
+- Existing manifest entries with the old ID format are automatically migrated on first read.
+- Notification badge now only appears on the extension's own activity bar icon, no longer on the Explorer icon.
+- Badge count and orange update decorations now clear immediately after install/update actions, without requiring a manual refresh.
+
+## [0.3.8] - 2026-04-12
+
+### Fixed
+
+- Fixed duplicate update notifications when the same repository is configured on multiple branches. Cache keys for file content and commit SHA lookups now include the branch, preventing cross-branch cache pollution.
+
 ## [0.3.7] - 2026-04-05
 
 ### Fixed
