@@ -235,3 +235,110 @@ WP14 adds the P2 removed-content rendering. It builds on WP13's tree UI changes 
 - All 29 FRs from spec 002 are assigned to exactly one task across all WPs. No orphan FRs. No duplicate assignments.
 - Dependency graph is acyclic: WP11 -> WP13; WP12 -> WP13 -> WP14. No circular dependencies.
 - Coverage requirements: 90% line, 85% branch stated in WP12 T12-04 for the NewContentDetector module.
+
+---
+
+# Plan Index - Folder Segregation and Onboarding (Spec 003)
+
+> **Spec**: `specs/003-folder-segregation-and-onboarding.spec.md`
+> **Generated**: 2025-07-20
+
+## Work Packages
+
+| ID | Title | Priority | Status | Depends On | Parallelisable |
+|----|-------|----------|--------|-----------|----------------|
+| [WP15](WP15-folder-detection.md) | Folder Detection, Path Utilities, and Type Extensions | P1 | For Review | none | Yes |
+| [WP16](WP16-folder-tree-display.md) | Catalog Tree Folder Display | P1 | Not Started | WP15 | No |
+| [WP17](WP17-folder-install-conflicts.md) | Folder-Aware Installation and Conflict Resolution | P1 | Not Started | WP15, WP16 | No |
+| [WP18](WP18-folder-search.md) | Search Across Folders | P1 | Not Started | WP16 | Yes (with WP17) |
+| [WP19](WP19-index-url-migration.md) | Index URL Migration and Multi-Index Merge | P1 | Not Started | none | Yes |
+| [WP20](WP20-onboarding-walkthrough.md) | Onboarding Walkthrough and Enterprise Configuration | P1 | Not Started | WP19 | No |
+
+## MVP Scope (Spec 003)
+
+All 6 work packages are P1 MVP. The spec defines all 35 FRs as P1 priority with 12 user stories, all MVP.
+
+- **Folder feature track** (WP15-WP18): Per-folder segregation in source repos -- detection, tree display, installation, search.
+- **Onboarding track** (WP19-WP20): Multi-index URL support with backward-compatible migration and interactive onboarding walkthrough.
+
+## Dependency & Execution Summary (Spec 003)
+
+```
+WP15 (Folder Detection) ---> WP16 (Tree Display) ---> WP17 (Install + Conflicts)
+                                    |                         
+                                    +---> WP18 (Search)       
+
+WP19 (Index URL Migration) ---> WP20 (Onboarding Walkthrough)
+```
+
+- **Two independent tracks**: Folder track (WP15-WP18) and Onboarding track (WP19-WP20) have no cross-dependencies and can be worked in parallel.
+- **Folder track critical path**: WP15 -> WP16 -> WP17. WP18 can run in parallel with WP17 (both depend on WP16, not each other).
+- **Onboarding track critical path**: WP19 -> WP20.
+- **Parallelization**: WP15 and WP19 can start simultaneously. WP17 and WP18 can run concurrently after WP16 completes.
+
+## Sequencing Notes (Spec 003)
+
+**Track A - Folder Segregation (WP15, WP16, WP17, WP18)**:
+
+**Phase 1 - Foundation (WP15)**: Type extensions (FolderDetectionResult, FolderItem), folder detection (detectFolders, groupByFolder), path utilities (formatFolderName, stripFolderPrefix), and templates/ stripping removal from classifyItem(). No user-visible changes yet.
+
+**Phase 2 - Display (WP16)**: Integrates folder detection into CatalogTreeProvider. Adds FolderItem to TreeElement union, getFolderNodes() method, modified getChildren() for Source > Folder > Category > Item hierarchy, Default virtual folder, empty folder hiding. First user-visible change: folder nodes appear in the tree.
+
+**Phase 3a - Installation (WP17)**: Folder prefix stripping at install time, full-path manifest tracking, folder-aware update/uninstall, cross-folder conflict detection and quick-pick resolution UI.
+
+**Phase 3b - Search (WP18, parallel with WP17)**: Search filtering respects folder hierarchy. Folders with zero matches are hidden during search. hasAnySearchMatch() updated for folder-prefix-stripped classification.
+
+**Track B - Onboarding (WP19, WP20)**:
+
+**Phase 1 - Migration (WP19)**: indexUrl setting schema change from string to array, normalizeIndexUrls() backward-compatible coercion, loadMultipleIndexes() with parallel fetch and union merge, partial failure handling, cache invalidation.
+
+**Phase 2 - Walkthrough (WP20)**: Walkthrough media files, package.json contributes.walkthroughs declaration, openWalkthrough command handler, error handling, VSIX packaging verification.
+
+## Task Index (Spec 003)
+
+| Task ID | Summary | Work Package | Parallel? |
+|---------|---------|--------------|----------|
+| T15-01 | Add FolderDetectionResult and FolderItem types | WP15 | No |
+| T15-02 | Implement detectFolders() function | WP15 | No |
+| T15-03 | Implement groupByFolder() function | WP15 | Yes |
+| T15-04 | Implement formatFolderName() function | WP15 | Yes |
+| T15-05 | Implement stripFolderPrefix() function | WP15 | Yes |
+| T15-06 | Remove templates/ prefix stripping from classifyItem() | WP15 | No |
+| T15-07 | Update existing classifyItem() tests for templates/ change | WP15 | No |
+| T15-08 | Unit tests for folder detection, grouping, formatting, stripping | WP15 | No |
+| T16-01 | Update TreeElement union and getTreeItem() for FolderItem | WP16 | No |
+| T16-02 | Implement getFolderNodes() method | WP16 | No |
+| T16-03 | Modify getChildren() for folder hierarchy | WP16 | No |
+| T16-04 | Update getCategoryNodes() for folder-scoped entries | WP16 | No |
+| T16-05 | Update getFileNodes() for folder-scoped classification | WP16 | No |
+| T16-06 | Folder rendering error handling | WP16 | Yes |
+| T16-07 | Unit tests for folder tree display | WP16 | No |
+| T17-01 | Modify install command for folder prefix stripping | WP17 | No |
+| T17-02 | Update manifest entry creation with full source path | WP17 | Yes |
+| T17-03 | Update lifecycle operations for folder-aware manifest | WP17 | Yes |
+| T17-04 | Implement detectCrossFolderConflict() function | WP17 | No |
+| T17-05 | Implement resolveConflict() quick-pick UI | WP17 | Yes |
+| T17-06 | Integrate conflict detection into install flow | WP17 | No |
+| T17-07 | Unit and integration tests for folder-aware installation | WP17 | No |
+| T18-01 | Modify folder-level getChildren() for search filtering | WP18 | No |
+| T18-02 | Category-level search within folder context | WP18 | Yes |
+| T18-03 | Update hasAnySearchMatch() for folder-aware sources | WP18 | Yes |
+| T18-04 | Search preserves folder context in results | WP18 | Yes |
+| T18-05 | Unit tests for folder search | WP18 | No |
+| T19-01 | Change indexUrl setting schema in package.json | WP19 | No |
+| T19-02 | Implement normalizeIndexUrls() function | WP19 | No |
+| T19-03 | Implement loadMultipleIndexes() function | WP19 | No |
+| T19-04 | Modify loadMasterIndex() for multi-URL support | WP19 | No |
+| T19-05 | Partial and total failure handling | WP19 | Yes |
+| T19-06 | Cache invalidation on indexUrl setting change | WP19 | Yes |
+| T19-07 | Add error catalog entries for index operations | WP19 | Yes |
+| T19-08 | Unit tests for index URL migration and multi-index merge | WP19 | No |
+| T20-01 | Create walkthrough media markdown files | WP20 | Yes |
+| T20-02 | Add contributes.walkthroughs to package.json | WP20 | No |
+| T20-03 | Register openWalkthrough command in package.json | WP20 | Yes |
+| T20-04 | Implement openWalkthrough command handler | WP20 | No |
+| T20-05 | Error handling for openWalkthrough command | WP20 | Yes |
+| T20-06 | Ensure walkthrough media files are bundled in VSIX | WP20 | Yes |
+| T20-07 | Unit tests for openWalkthrough command | WP20 | No |
+
+**Total (Spec 003)**: 6 work packages, 42 tasks
