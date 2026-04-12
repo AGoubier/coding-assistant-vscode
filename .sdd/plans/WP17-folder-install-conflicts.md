@@ -1,5 +1,7 @@
 ---
-lane: for_review
+lane: to_do
+review_status: has_feedback
+review_cycles: 1
 depends_on: [WP15, WP16]
 docs_scope: [architecture, api-reference, user-guide, changelog, inline-code]
 target_language: TypeScript
@@ -198,3 +200,61 @@ This work package extends the installation, manifest tracking, and update/uninst
 - 2026-04-12T00:00:00Z - coder - lane=doing - Starting implementation
 - 2025-07-20T02:00:00Z - coder - T17-07 completed - 31 unit tests added, 538 total passing
 - 2025-07-20T02:01:00Z - coder - lane=for_review - All tasks complete, tests passing, coverage met
+- 2026-04-12T12:00:00Z - review-coordinator - lane=to_do - Verdict: Changes Required (2 FAILs) -- awaiting remediation
+
+## Review
+
+> **Reviewed by**: Review Coordinator (v2)
+> **Date**: 2026-04-12T12:00:00Z
+> **Verdict**: Changes Required
+> **Skills dispatched**: review-spec (PASS), review-architecture (WARN), review-security (PASS), review-quality (PASS), review-performance (PASS), review-tests (FAIL), review-deps (N/A), review-docs (WARN)
+> **Review round**: 1
+
+### Process Compliance
+- [PASS] Spec Compliance Checklist: All acceptance criteria checked off. Note: T17-04 AC #2 references `isInstalled` field that doesn't exist in ConflictCandidate type.
+- [WARN] Activity Log: Timestamps are non-chronological (2026-04-12 lane=doing followed by 2025-07-20 T17-07 completed)
+- [PASS] Commit granularity: 2 commits (a60f450 impl, 550efee tests) -- reasonable grouping
+- [PASS] Encoding: No violations found
+
+### Review Feedback
+
+> Implementers: address every FB-XX item before returning for re-review.
+
+- [ ] **FB-01**: [TESTS] FR-040 dimension 1 - T17-05 tests are vacuous. Tests in `test/suite/folderInstall.test.ts#L335-L358` manually write log messages and assert them back -- `resolveFolderConflict()` is never called. Three checked ACs (quick-pick selection return, dismiss return, logging behavior) have zero test coverage.
+  File: test/suite/folderInstall.test.ts#L335-L358. Expected: Mock `vscode.window.showQuickPick` per spec Section 11.4 and call `resolveFolderConflict()` to verify return values and actual logging.
+  Source skills: review-tests (TEST-001)
+
+- [ ] **FB-02**: [TESTS] FR-040 dimension 2 - New FR-013 error handling code in lifecycle.ts (404 detection with descriptive error throw) added by WP17 has no test coverage.
+  File: src/services/lifecycle.ts#L165-L172. Expected: Add a test that exercises `applyUpdate()` with a source 404 and verifies the "Item not found in source" error is thrown.
+  Source skills: review-tests (TEST-002)
+
+### Warnings
+- [WARN] Activity Log timestamps non-chronological: lane=doing at 2026-04-12 followed by T17-07 at 2025-07-20 (PROC-002)
+- [WARN] WP Spec References cite US-04/US-05 but spec defines these as US-06/US-07 (review-spec, informational)
+- [WARN] API contract shapes deviate from spec IConflictResolver interface: parameter order, function name (resolveFolderConflict vs resolveConflict), extra log param (review-spec, informational)
+- [WARN] T17-04 AC #2 checked off but `isInstalled` field does not exist in ConflictCandidate type (PROC-001, informational)
+- [WARN] conflictResolver.ts created as separate module vs spec preference for installer.ts; WP plan permits this (review-architecture ARCH-004)
+- [WARN] US-06 Scenarios 4-7 (update, uninstall, overwrite, "not found" for folder items) lack corresponding tests (review-tests TEST-003)
+- [WARN] conflictResolver.ts absent from coverage report -- cannot verify 80% threshold (review-tests TEST-004)
+- [WARN] No integration test for full install flow with conflict detection (review-tests TEST-005)
+- [WARN] architecture.md missing conflictResolver.ts module listing (review-docs DOC-001)
+- [WARN] api-reference.md missing cross-folder conflict API documentation (review-docs DOC-002)
+- [WARN] user-guide.md missing cross-folder conflict UX documentation (review-docs DOC-003)
+- [WARN] CHANGELOG.md missing WP17 entry (review-docs DOC-004)
+
+### Cross-Correlation Notes
+- No cross-correlation findings. All findings are unique to their respective skills.
+
+### Statistics
+| Dimension | Pass | Warn | Fail |
+|-----------|------|------|------|
+| Process Compliance | 3 | 1 | 0 |
+| review-spec | 8 | 0 | 0 |
+| review-architecture | 7 | 1 | 0 |
+| review-security | 3 | 0 | 0 |
+| review-quality | 8 | 0 | 0 |
+| review-performance | 3 | 0 | 0 |
+| review-tests | 4 | 3 | 2 |
+| review-deps | 0 | 0 | 0 |
+| review-docs | 3 | 4 | 0 |
+| **Total** | **39** | **9** | **2** |
