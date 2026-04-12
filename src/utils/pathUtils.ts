@@ -100,6 +100,31 @@ export function parseGitHubUrl(url: string): { owner: string; repo: string } | u
   return { owner: match[1], repo: match[2] };
 }
 
+/**
+ * Format a raw folder name for display.
+ * Replaces dashes and underscores with spaces, converts to title case, and trims.
+ * Returns the raw name unchanged if the result would be empty.
+ */
+export function formatFolderName(rawName: string): string {
+  const result = rawName
+    .replace(/[-_]/g, ' ')
+    .replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .trim();
+  return result.length === 0 ? rawName : result;
+}
+
+/**
+ * Strip a folder prefix from an item path if the first segment is a known folder.
+ * Used by the installer and tree provider to compute workspace-relative paths.
+ */
+export function stripFolderPrefix(itemPath: string, folders: Set<string>): string {
+  const slash = itemPath.indexOf('/');
+  if (slash > 0 && folders.has(itemPath.substring(0, slash))) {
+    return itemPath.substring(slash + 1);
+  }
+  return itemPath;
+}
+
 const ALLOWED_DOMAINS = new Set([
   'github.com',
   'api.github.com',

@@ -115,7 +115,21 @@ export interface CatalogFileItem {
   isRemoved?: boolean;
 }
 
-export type CatalogItem = SourceItem | CategoryItem | CatalogFileItem;
+export interface FolderItem {
+  kind: 'folder';
+  source: SourceConfig;
+  folderName: string;
+  displayName: string;
+  isDefault: boolean;
+}
+
+export type CatalogItem = SourceItem | CategoryItem | CatalogFileItem | FolderItem;
+
+export interface FolderDetectionResult {
+  folderName: string;
+  isDefault: boolean;
+  entries: GitHubTreeEntry[];
+}
 
 // --- Tool detection ---
 

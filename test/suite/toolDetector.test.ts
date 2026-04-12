@@ -1,5 +1,6 @@
 import * as assert from 'assert';
 import { classifyItem } from '../../src/services/toolDetector';
+import { stripFolderPrefix } from '../../src/utils/pathUtils';
 
 describe('toolDetector', () => {
   describe('classifyItem', () => {
@@ -192,39 +193,95 @@ describe('toolDetector', () => {
     // --- templates/ prefix stripping ---
 
     describe('templates prefix', () => {
-      it('should classify templates/.github/agents/ as copilot agents', () => {
+      it('should return unknown for templates/.github/agents/ (caller must strip prefix)', () => {
         const result = classifyItem('templates/.github/agents/code-reviewer.agent.md');
-        assert.strictEqual(result.tool, 'copilot');
-        assert.strictEqual(result.category, 'agents');
+        assert.strictEqual(result.tool, 'unknown');
+        assert.strictEqual(result.category, 'unknown');
       });
 
-      it('should classify templates/.claude/commands/ as claude-code commands', () => {
+      it('should return unknown for templates/.claude/commands/ (caller must strip prefix)', () => {
         const result = classifyItem('templates/.claude/commands/review.md');
-        assert.strictEqual(result.tool, 'claude-code');
-        assert.strictEqual(result.category, 'commands');
+        assert.strictEqual(result.tool, 'unknown');
+        assert.strictEqual(result.category, 'unknown');
       });
 
-      it('should classify templates/.claude/rules/ as claude-code rules', () => {
+      it('should return unknown for templates/.claude/rules/ (caller must strip prefix)', () => {
         const result = classifyItem('templates/.claude/rules/project-rules.md');
-        assert.strictEqual(result.tool, 'claude-code');
-        assert.strictEqual(result.category, 'rules');
+        assert.strictEqual(result.tool, 'unknown');
+        assert.strictEqual(result.category, 'unknown');
       });
 
-      it('should classify templates/CLAUDE.md as claude-code rules', () => {
+      it('should return unknown for templates/CLAUDE.md (caller must strip prefix)', () => {
         const result = classifyItem('templates/CLAUDE.md');
-        assert.strictEqual(result.tool, 'claude-code');
-        assert.strictEqual(result.category, 'rules');
+        assert.strictEqual(result.tool, 'unknown');
+        assert.strictEqual(result.category, 'unknown');
       });
 
-      it('should classify templates/.github/chatmodes/ as copilot modes', () => {
+      it('should return unknown for templates/.github/chatmodes/ (caller must strip prefix)', () => {
         const result = classifyItem('templates/.github/chatmodes/debug.chatmode.md');
-        assert.strictEqual(result.tool, 'copilot');
-        assert.strictEqual(result.category, 'modes');
+        assert.strictEqual(result.tool, 'unknown');
+        assert.strictEqual(result.category, 'unknown');
       });
 
       it('should return unknown for templates/src/index.ts', () => {
         const result = classifyItem('templates/src/index.ts');
         assert.strictEqual(result.tool, 'unknown');
+      });
+    });
+
+    // --- folder prefix stripping + classification ---
+
+    describe('folder prefix stripping + classification', () => {
+      const folders = new Set(['templates']);
+
+      it('should classify templates/.github/agents/ after stripping prefix', () => {
+        const stripped = stripFolderPrefix('templates/.github/agents/code-reviewer.agent.md', folders);
+        const result = classifyItem(stripped);
+        assert.strictEqual(result.tool, 'copilot');
+        assert.strictEqual(result.category, 'agents');
+      });
+
+      it('should classify templates/.claude/commands/ after stripping prefix', () => {
+        const stripped = stripFolderPrefix('templates/.claude/commands/review.md', folders);
+        const result = classifyItem(stripped);
+        assert.strictEqual(result.tool, 'claude-code');
+        assert.strictEqual(result.category, 'commands');
+      });
+
+      it('should classify templates/.claude/rules/ after stripping prefix', () => {
+        const stripped = stripFolderPrefix('templates/.claude/rules/project-rules.md', folders);
+        const result = classifyItem(stripped);
+        assert.strictEqual(result.tool, 'claude-code');
+        assert.strictEqual(result.category, 'rules');
+      });
+
+      it('should classify templates/CLAUDE.md after stripping prefix', () => {
+        const stripped = stripFolderPrefix('templates/CLAUDE.md', folders);
+        const result = classifyItem(stripped);
+        assert.strictEqual(result.tool, 'claude-code');
+        assert.strictEqual(result.category, 'rules');
+      });
+
+      it('should classify templates/.github/chatmodes/ after stripping prefix', () => {
+        const stripped = stripFolderPrefix('templates/.github/chatmodes/debug.chatmode.md', folders);
+        const result = classifyItem(stripped);
+        assert.strictEqual(result.tool, 'copilot');
+        assert.strictEqual(result.category, 'modes');
+      });
+
+      it('should return unknown for templates/src/index.ts even after stripping prefix', () => {
+        const stripped = stripFolderPrefix('templates/src/index.ts', folders);
+        const result = classifyItem(stripped);
+        assert.strictEqual(result.tool, 'unknown');
+        assert.strictEqual(result.category, 'unknown');
+      });
+
+      it('should not strip prefix when folder is not in the set', () => {
+        const otherFolders = new Set(['other']);
+        const stripped = stripFolderPrefix('templates/.github/agents/code-reviewer.agent.md', otherFolders);
+        const result = classifyItem(stripped);
+        assert.strictEqual(result.tool, 'unknown');
+        assert.strictEqual(result.category, 'unknown');
       });
     });
   });

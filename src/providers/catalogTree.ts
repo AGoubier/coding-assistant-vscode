@@ -289,6 +289,12 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
         return this.createCategoryTreeItem(item);
       case 'item':
         return this.createFileTreeItem(item);
+      case 'folder':
+        return this.createSourceTreeItem(item as unknown as SourceItem);
+      default: {
+        const _exhaustive: never = item;
+        return _exhaustive;
+      }
     }
   }
 
@@ -335,6 +341,12 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
         return this.getFileNodes(item);
       case 'item':
         return [];
+      case 'folder':
+        return [];
+      default: {
+        const _exhaustive: never = item;
+        return _exhaustive;
+      }
     }
   }
 

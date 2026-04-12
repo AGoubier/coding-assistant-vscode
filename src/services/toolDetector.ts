@@ -4,7 +4,7 @@
 // WP08 T08-01: detectWorkspaceTools scans workspace for tool markers
 
 import * as vscode from 'vscode';
-import type { ToolClassification, CategoryType, DetectedTool } from '../models/types';
+import type { ToolClassification, CategoryType, DetectedTool, GitHubTreeEntry, FolderDetectionResult } from '../models/types';
 
 // Copilot file patterns within .github/ directories
 const COPILOT_PATTERNS: { dir: string; category: CategoryType; extensions?: string[] }[] = [
@@ -31,17 +31,11 @@ function normalizePath(filePath: string): string {
 /**
  * Classify a file path into tool type and category.
  * Returns { tool: 'unknown', category: 'unknown' } for unrecognized patterns.
- * Strips a leading 'templates/' prefix so repo items stored under templates/
- * are classified the same as root-level items.
  * Spec ref: FR-012 (path detection), FR-015 (tool badge)
  */
 export function classifyItem(path: string): ToolClassification {
   const normalized = normalizePath(path);
   const segments = normalized.split('/');
-  // Strip leading 'templates/' so repo items under templates/.github/ etc. are recognised
-  if (segments.length > 1 && segments[0].toLowerCase() === 'templates') {
-    segments.shift();
-  }
 
   // Ignore placeholder files that are never catalog items
   const filename = segments[segments.length - 1].toLowerCase();
@@ -155,4 +149,89 @@ export async function detectWorkspaceTools(folder: vscode.WorkspaceFolder): Prom
   }
 
   return results;
+}
+
+/**
+ * Detect first-level folders in GitHub tree entries that contain .github/ or .claude/ subdirectories.
+ * Detection is case-sensitive for directory names but case-insensitive for .github and .claude markers.
+ * Only the first path segment qualifies as a folder; nested directories do not create additional folders.
+ * Spec ref: FR-001, FR-002, FR-003
+ */
+export function detectFolders(entries: GitHubTreeEntry[]): FolderDetectionResult[] {
+  const folderNames = new Set<string>();
+
+  for (const entry of entries) {
+    const segments = entry.path.split('/');
+    if (segments.length < 2) {
+      continue;
+    }
+
+    // Skip root-level .github/.claude entries (not inside a folder)
+    const firstLower = segments[0].toLowerCase();
+    if (firstLower === '.github' || firstLower === '.claude') {
+      continue;
+    }
+
+    // Check if any segment from index 1 onward is .github or .claude (case-insensitive)
+    for (let i = 1; i < segments.length; i++) {
+      const segLower = segments[i].toLowerCase();
+      if (segLower === '.github' || segLower === '.claude') {
+        folderNames.add(segments[0]);
+        break;
+      }
+    }
+  }
+
+  // Build results: for each folder, collect all entries under it
+  const results: FolderDetectionResult[] = [];
+  for (const folderName of folderNames) {
+    const prefix = folderName + '/';
+    const folderEntries = entries.filter(e => e.path.startsWith(prefix));
+    results.push({
+      folderName,
+      isDefault: false,
+      entries: folderEntries,
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Partition tree entries into groups keyed by folder name.
+ * Entries whose first path segment matches a folder name are grouped under that folder.
+ * Root-level entries (first segment is .github or .claude, case-insensitive) are grouped under "".
+ * Entries not matching any folder and not root-level are excluded.
+ * Spec ref: FR-001, FR-004, FR-006
+ */
+export function groupByFolder(
+  entries: GitHubTreeEntry[],
+  folders: Set<string>,
+): Map<string, GitHubTreeEntry[]> {
+  const result = new Map<string, GitHubTreeEntry[]>();
+
+  for (const entry of entries) {
+    const firstSegment = entry.path.split('/')[0];
+
+    if (folders.has(firstSegment)) {
+      const group = result.get(firstSegment);
+      if (group) {
+        group.push(entry);
+      } else {
+        result.set(firstSegment, [entry]);
+      }
+    } else {
+      const firstLower = firstSegment.toLowerCase();
+      if (firstLower === '.github' || firstLower === '.claude') {
+        const group = result.get('');
+        if (group) {
+          group.push(entry);
+        } else {
+          result.set('', [entry]);
+        }
+      }
+    }
+  }
+
+  return result;
 }
