@@ -261,3 +261,17 @@ export interface BundleFileItem {
   bundleItem: BundleItem;
   bundleName: string;
 }
+
+// --- Multi-index merge types - Section 7.9, 7.10 ---
+
+export interface MergedSourceList {
+  sources: SourceConfig[];
+  fetchResults: IndexFetchResult[];
+}
+
+export interface IndexFetchResult {
+  url: string;
+  success: boolean;
+  sourceCount: number | null;
+  error: string | null;
+}
