@@ -27,16 +27,17 @@ Extension Host (src/extension.ts)
   |     +-- SourceRegistry - reads settings/index, validates sources
   |     +-- GitHubClient - HTTP client for GitHub API and raw content
   |     +-- CacheManager - in-memory and persistent caching
-  |     +-- Installer - file/directory download, target path computation, conflict detection, multi-root folder selection
-  |     +-- ManifestManager - CRUD for .vscode/awesome-ca-manifest.json (installation tracking)
-  |     +-- LifecycleManager - update detection (SHA comparison), update application, uninstall orchestration
+  |     +-- Installer - file/directory download, target path computation, multi-root folder selection
+  |     +-- ConflictResolver - cross-folder conflict detection (detectCrossFolderConflict) and resolution via QuickPick (resolveFolderConflict) (WP17)
+  |     +-- ManifestManager - CRUD for .vscode/awesome-ca-manifest.json (installation tracking with full source paths for folder items)
+  |     +-- LifecycleManager - update detection (SHA comparison), update application (folder-aware fetch/write), uninstall orchestration (uses targetPaths)
   |     +-- AuthManager - SecretStorage token management
   |     +-- ToolDetector - workspace tool detection, folder discovery (detectFolders, groupByFolder), item classification
   |     +-- BundleParser - parses and validates bundle manifest JSON from source repos
   |     +-- NewContentDetector - tree snapshot diffing for new/removed item detection
   |
   +-- Models (src/models/)
-  |     +-- types.ts - shared TypeScript interfaces (CatalogItem union incl. FolderItem, FolderDetectionResult)
+  |     +-- types.ts - shared TypeScript interfaces (CatalogItem union incl. FolderItem, FolderDetectionResult, CrossFolderConflict, ConflictCandidate)
   |     +-- errors.ts - custom error classes
   |
   +-- Utils (src/utils/)
@@ -63,11 +64,11 @@ Extension Host (src/extension.ts)
 4. CacheManager caches responses using ETags and expiration times
 5. ToolDetector.detectFolders() scans the flat tree entry array to identify first-level directories containing `.github/` or `.claude/` subdirectories; groupByFolder() partitions entries by detected folder. Folder prefixes are stripped via stripFolderPrefix() before classification and installation.
 6. CatalogTreeProvider renders the catalog tree view from fetched data, inserting a Folder level (Source > Folder > Category > Items) when folders are detected
-7. On install: Installer validates paths, downloads content via GitHubClient, writes files to workspace, handles conflicts via QuickPick
-8. ManifestManager records each installation in `.vscode/awesome-ca-manifest.json` with commit SHA, timestamp, and target paths
+7. On install: Installer validates paths, strips folder prefixes via stripFolderPrefix() for folder-enabled sources, then ConflictResolver.detectCrossFolderConflict() checks whether another folder's item would resolve to the same workspace path. If a conflict is detected, resolveFolderConflict() presents a QuickPick for the user to choose which folder's version to install. The selected item is downloaded via GitHubClient and written to the workspace. (WP17)
+8. ManifestManager records each installation in `.vscode/awesome-ca-manifest.json` with commit SHA, timestamp, itemPath (full source path including folder prefix), and targetPaths (folder-prefix-stripped workspace-relative paths). (WP17)
 9. LifecycleManager checks for upstream updates by comparing manifest SHAs with latest GitHub commit SHAs (concurrency limit of 10)
-10. On update: diff view shows installed vs upstream; on accept, Installer re-downloads and ManifestManager updates SHA
-11. On uninstall: files are deleted and manifest entry is removed
+10. On update: LifecycleManager fetches content using the full itemPath from the manifest (preserving folder prefix) and writes to the workspace using the stripped targetPaths. If the source path no longer exists in the repo tree, the user is informed. (WP17)
+11. On uninstall: files are deleted at targetPaths locations and manifest entry is removed
 12. CatalogTreeProvider discovers bundles from `bundles/*.json` in source repos and displays them under a "Bundles" category
 13. On install bundle: each item is installed sequentially with progress, supporting cross-source references and optional/required items
 14. Search/filter: CatalogTreeProvider stores a search query and applies `matchesSearch()` to filter items by name, path, tool, and category when rendering the tree

@@ -4,6 +4,28 @@ All notable changes to this project are documented in this file. Entries are ord
 
 ---
 
+## [WP17] - Folder-Aware Installation and Conflict Resolution (2026-04-12)
+
+### Added
+
+- Folder-aware installation: items from source subfolders have their folder prefix stripped before writing to the workspace, so `frontend-team/.github/agents/helper.agent.md` installs to `.github/agents/helper.agent.md` (FR-010)
+- Cross-folder conflict detection: when items from different folders resolve to the same workspace path, a QuickPick dialog lets the user choose which version to install (FR-014, FR-015)
+- `ConflictResolver` service (`conflictResolver.ts`) with `detectCrossFolderConflict()` for conflict scanning and `resolveFolderConflict()` for user-facing resolution via QuickPick
+- `CrossFolderConflict` and `ConflictCandidate` types in `types.ts` for modeling detected conflicts
+- Manifest entries for folder items preserve the full source path in `itemPath` (for fetching updates) and the stripped workspace path in `targetPaths` (for locating installed files) (FR-012)
+- Folder-aware update flow: updates fetch content using the full `itemPath` from the manifest and write to the workspace using `targetPaths` (FR-013)
+- Folder-aware uninstall flow: uninstall uses `targetPaths` to locate and delete workspace files (FR-013)
+- Conflict detection performance: O(n) scan completing in under 10ms at p95 for manifests with 100 entries (NFR-005)
+- Conflict prompt logging at info level for both selection and cancellation outcomes (NFR-016)
+
+### Changed
+
+- Install command handler now calls `stripFolderPrefix()` before writing files for folder-enabled sources, and invokes conflict detection before proceeding with installation
+- `LifecycleManager.applyUpdate()` uses full `itemPath` for content fetching and `targetPaths` for workspace writes
+- `LifecycleManager.uninstallItem()` uses `targetPaths` for file deletion
+
+---
+
 ## [WP16] - Catalog Tree Folder Display (2026-04-12)
 
 ### Added

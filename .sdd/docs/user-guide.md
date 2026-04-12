@@ -154,6 +154,19 @@ If a file already exists at the target location, you are prompted with three cho
 
 Pressing Escape cancels and keeps the existing file.
 
+### Cross-Folder Conflict Resolution (WP17)
+
+When a source repository has multiple folders (e.g., `frontend-team/` and `backend-team/`), different folders may contain items with the same filename that would install to the same location in your workspace (e.g., both provide `.github/agents/helper.agent.md`).
+
+When this conflict is detected during installation:
+
+1. A **QuickPick dialog** appears listing all folder versions of the conflicting item
+2. Each option shows the folder name and full source path (e.g., "Frontend Team/helper.agent.md")
+3. Select the version you want to install
+4. Press Escape to cancel the installation entirely -- no file is written
+
+If you have already installed an item from one folder and attempt to install the same-named item from a different folder, the conflict dialog also appears, allowing you to choose which version to keep.
+
 ### Directory Items (Skills)
 
 Some items (like Copilot skills and plugins) consist of multiple files in a directory. These are installed recursively, preserving the directory structure. A progress notification shows the installation status.
@@ -162,11 +175,12 @@ Some items (like Copilot skills and plugins) consist of multiple files in a dire
 
 Every installation is recorded in `.vscode/awesome-ca-manifest.json` in your workspace. This manifest tracks:
 - Source repository and branch
-- Installed file paths
+- Full source path (including folder prefix for folder items) (WP17)
+- Installed file paths (folder prefix stripped for workspace location) (WP17)
 - Commit SHA at time of installation
 - Installation timestamp
 
-This manifest enables future update detection and uninstall functionality.
+This manifest enables future update detection and uninstall functionality. For folder items, the manifest preserves both the original source path (for fetching updates) and the stripped workspace path (for locating installed files).
 
 ### Security
 

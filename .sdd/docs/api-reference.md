@@ -209,10 +209,23 @@ Manages the `.vscode/awesome-ca-manifest.json` file for tracking installed custo
       "category": "agents",
       "commitSha": "abc123",
       "installedAt": "2025-07-19T10:00:00.000Z"
+    },
+    {
+      "id": "https://github.com/owner/repo#frontend-team/.github/agents/helper.agent.md",
+      "sourceUrl": "https://github.com/owner/repo",
+      "sourceBranch": "main",
+      "itemPath": "frontend-team/.github/agents/helper.agent.md",
+      "targetPaths": [".github/agents/helper.agent.md"],
+      "tool": "copilot",
+      "category": "agents",
+      "commitSha": "def456",
+      "installedAt": "2025-07-19T11:00:00.000Z"
     }
   ]
 }
 ```
+
+The second entry (WP17) shows a folder-prefixed item: `itemPath` stores the full source path including the folder prefix, while `targetPaths` stores the stripped workspace path.
 
 **Corruption handling**: If the manifest JSON is invalid, ManifestManager backs up the file to `.bak`, creates a fresh manifest, logs a `ManifestCorruptError`, and notifies the user.
 
@@ -234,16 +247,56 @@ Handles file and directory downloads from source repos to workspace directories.
 The `awesome-coding-assistants.install` command orchestrates:
 1. Select target workspace folder (auto-select or QuickPick for multi-root)
 2. Compute target path from tool/category mapping
-3. Check for existing file and resolve conflicts (Overwrite/Keep/Show Diff)
-4. Download content via GitHubClient and write to workspace
-5. Fetch latest commit SHA for version tracking
-6. Record installation in manifest
-7. Refresh catalog tree to show installed badge
-8. Show success notification
+3. For folder-enabled sources: strip folder prefix via `stripFolderPrefix()` to compute workspace-relative target path (FR-010). Items from the "Default" folder (root-level) are not stripped (FR-011). (WP17)
+4. For folder-enabled sources: call `detectCrossFolderConflict()` to check for items from other folders resolving to the same target path. If a conflict is detected, call `resolveFolderConflict()` to show a QuickPick. If the user cancels, skip installation. If the user selects a candidate, use that candidate's `fullSourcePath` as the install source. (WP17)
+5. Check for existing file and resolve conflicts (Overwrite/Keep/Show Diff)
+6. Download content via GitHubClient and write to workspace
+7. Fetch latest commit SHA for version tracking
+8. Record installation in manifest with `itemPath` set to the full source path (including folder prefix) and `targetPaths` set to the stripped workspace-relative path (WP17)
+9. Refresh catalog tree to show installed badge
+10. Show success notification
 
 **CLAUDE.md special case**: When installing a CLAUDE.md file, user is prompted to choose between project root (`CLAUDE.md`) and `.claude/CLAUDE.md`.
 
 **Error codes**: `INSTALL_FAILED` (write failure), `INVALID_PATH` (path traversal detected).
+
+## Conflict Resolution (WP17)
+
+### ConflictResolver (`conflictResolver.ts`)
+
+Detects and resolves cross-folder naming conflicts when items from different source folders strip to the same workspace target path.
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `detectCrossFolderConflict` | `(itemPath: string, folders: Set<string>, allEntries: GitHubTreeEntry[], manifest: Manifest, source: SourceConfig, log: LogOutputChannel) => CrossFolderConflict \| undefined` | Scans tree entries and manifest for items from other folders that strip to the same target path. Returns undefined if no conflict. O(n) scan, < 10ms at p95 (NFR-005). |
+| `resolveFolderConflict` | `(conflict: CrossFolderConflict, log: LogOutputChannel) => Promise<ConflictCandidate \| undefined>` | Shows a QuickPick with one option per conflict candidate. Returns the selected candidate or undefined if dismissed. Logs outcome at info level (NFR-016). |
+
+**CrossFolderConflict type**:
+```typescript
+{
+  targetPath: string;           // The post-strip workspace path that conflicts
+  candidates: ConflictCandidate[];  // All candidates (including the item being installed)
+}
+```
+
+**ConflictCandidate type**:
+```typescript
+{
+  fullSourcePath: string;    // Full path including folder prefix (e.g., "frontend-team/.github/agents/x.md")
+  folderName: string;        // Raw folder name (e.g., "frontend-team")
+  folderDisplayName: string; // Formatted display name (e.g., "Frontend Team")
+  source: SourceConfig;      // Parent source config
+}
+```
+
+**Detection algorithm**:
+1. Strip the folder prefix from `itemPath` to compute `targetPath`
+2. If stripping changed nothing (no folder prefix), return undefined
+3. Scan `allEntries` for other blob entries from different folders that strip to the same `targetPath`
+4. Scan `manifest.installations` for existing entries at the same `targetPath` from a different folder
+5. If candidates found, prepend the current item and return the `CrossFolderConflict`
+
+**QuickPick label format**: `"<folderDisplayName>/<filename>"` with description showing the full source path.
 
 ## Lifecycle Services
 
@@ -280,13 +333,13 @@ Orchestrates update detection, update application, and uninstallation. Delegates
 2. Get the cached update result with the latest SHA
 3. Open VS Code diff editor: installed file vs upstream content (via preview scheme)
 4. Prompt user to Accept or Reject the update
-5. On accept: re-download file, update manifest SHA and timestamp, refresh tree
+5. On accept: fetch content using full `itemPath` from manifest (preserves folder prefix for folder items), write to workspace using `targetPaths` (stripped path), update manifest SHA and timestamp, refresh tree (WP17)
 
 ### Uninstall Command Flow
 
 1. Find the installation entry and workspace folder
 2. Show confirmation dialog (modal warning)
-3. Delete file(s) at target path(s) using `workspace.fs.delete` (graceful if already deleted)
+3. Delete file(s) at `targetPaths` locations in workspace using `workspace.fs.delete` (graceful if already deleted) (WP17)
 4. Remove manifest entry
 5. Refresh tree to remove installed badge
 
