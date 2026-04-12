@@ -4,13 +4,15 @@
 // WP03 T03-01, T03-07
 
 import * as vscode from 'vscode';
-import type { MasterIndex, SourceConfig, SourceEntry, ValidationResult } from '../models/types';
-import { SourceUnreachableError } from '../models/errors';
+import type { MasterIndex, SourceConfig, SourceEntry, ValidationResult, MergedSourceList, IndexFetchResult } from '../models/types';
+import { SourceUnreachableError, IndexErrorCodes } from '../models/errors';
 import { GitHubClient } from './githubClient';
 
 const SETTING_SECTION = 'awesome-coding-assistants';
 const SETTING_SOURCES = 'sources';
 const SETTING_INDEX_URL = 'indexUrl';
+
+const DEFAULT_INDEX_URL = 'https://raw.githubusercontent.com/jlacube/awesome-coding-assistants/main/index.json';
 
 const DEFAULT_SOURCE: SourceConfig = {
   url: 'https://github.com/jlacube/awesome-coding-assistants',
@@ -24,6 +26,26 @@ const DEFAULT_SOURCE: SourceConfig = {
  */
 export function sourceKey(source: SourceConfig): string {
   return `${source.url}@${source.branch || 'main'}`;
+}
+
+/**
+ * Coerce the raw indexUrl setting to a validated string[].
+ * FR-022, FR-023: backward-compatible runtime coercion.
+ */
+export function normalizeIndexUrls(raw: unknown, defaultUrls: string[], log?: vscode.LogOutputChannel): string[] {
+  if (raw === undefined) {
+    return defaultUrls;
+  }
+  if (typeof raw === 'string') {
+    log?.warn(`[${IndexErrorCodes.INVALID_INDEX_URL_TYPE.code}] indexUrl setting is a string, coercing to array. Type: ${typeof raw}`);
+    return [raw];
+  }
+  if (Array.isArray(raw) && raw.every((v: unknown) => typeof v === 'string')) {
+    return raw as string[];
+  }
+  const typeName = raw === null ? 'null' : typeof raw;
+  log?.warn(`[${IndexErrorCodes.INVALID_INDEX_URL_TYPE.code}] indexUrl setting has invalid type: ${typeName}. Falling back to defaults.`);
+  return defaultUrls;
 }
 
 export class SourceRegistry {
@@ -127,14 +149,160 @@ export class SourceRegistry {
   }
 
   /**
-   * Fetch and parse the master index from the configured indexUrl.
-   * Silently falls back on errors (FR-001 - no error to user).
-   * FR-001, T03-07
+   * Fetch and parse the master index from the configured indexUrl(s).
+   * Supports single URL (existing behavior) and multiple URLs (union merge).
+   * FR-001, FR-024, FR-027, T03-07
    */
   async loadMasterIndex(): Promise<void> {
     const config = vscode.workspace.getConfiguration(SETTING_SECTION);
-    const indexUrl = config.get<string>(SETTING_INDEX_URL, '');
+    const raw = config.get(SETTING_INDEX_URL);
 
+    const urls = normalizeIndexUrls(raw, [DEFAULT_INDEX_URL], this.log);
+
+    if (urls.length === 0) {
+      this.log.trace('No index URLs configured, skipping master index');
+      this.cachedMasterIndex = undefined;
+      return;
+    }
+
+    if (urls.length === 1) {
+      // Single URL: use existing single-fetch logic
+      await this.loadSingleIndex(urls[0]);
+    } else {
+      // Multiple URLs: parallel fetch + union merge
+      const result = await this.loadMultipleIndexes(urls);
+
+      // Log per-URL results (NFR-015)
+      for (const fr of result.fetchResults) {
+        if (fr.success) {
+          this.log.info(`Index fetch succeeded: ${fr.url} (${fr.sourceCount} sources)`);
+        } else {
+          this.log.warn(`[${IndexErrorCodes.INDEX_FETCH_FAILED.code}] Index fetch failed: ${fr.url}: ${fr.error}`);
+        }
+      }
+
+      if (result.sources.length > 0) {
+        this.cachedMasterIndex = result.sources;
+        this.log.info(`Master index loaded: ${result.sources.length} sources from ${urls.length} URLs`);
+      } else {
+        // All URLs failed (FR-024)
+        this.log.error(`[${IndexErrorCodes.INDEX_FETCH_FAILED.code}] All index URLs failed. Falling back to user-configured sources.`);
+        this.cachedMasterIndex = undefined;
+      }
+    }
+  }
+
+  /**
+   * Fetch multiple index JSON files in parallel, union-merge with dedup.
+   * FR-024, FR-025, FR-026, NFR-003, NFR-006, NFR-008
+   */
+  async loadMultipleIndexes(urls: string[]): Promise<MergedSourceList> {
+    // Validate HTTPS (NFR-006) and filter
+    const validUrls: string[] = [];
+    const fetchResults: IndexFetchResult[] = [];
+
+    for (const url of urls) {
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'https:') {
+          this.log.warn(`[${IndexErrorCodes.INDEX_FETCH_FAILED.code}] Non-HTTPS index URL rejected: ${url}`);
+          fetchResults.push({ url, success: false, sourceCount: null, error: 'Non-HTTPS URL rejected' });
+          continue;
+        }
+        validUrls.push(url);
+      } catch {
+        this.log.warn(`[${IndexErrorCodes.INDEX_FETCH_FAILED.code}] Malformed index URL: ${url}`);
+        fetchResults.push({ url, success: false, sourceCount: null, error: 'Malformed URL' });
+      }
+    }
+
+    // Parallel fetch using Promise.allSettled (FR-024, NFR-003)
+    const fetchPromises = validUrls.map(url => this.fetchSingleIndex(url));
+    const results = await Promise.allSettled(fetchPromises);
+
+    // Union merge in array order with dedup by sourceKey (FR-025, FR-026)
+    const seenKeys = new Set<string>();
+    const mergedSources: SourceConfig[] = [];
+
+    for (let i = 0; i < validUrls.length; i++) {
+      const result = results[i];
+      const url = validUrls[i];
+
+      if (result.status === 'rejected') {
+        fetchResults.push({
+          url,
+          success: false,
+          sourceCount: null,
+          error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+        });
+        continue;
+      }
+
+      const sources = result.value;
+      if (sources === null) {
+        // Schema validation failure
+        fetchResults.push({
+          url,
+          success: false,
+          sourceCount: null,
+          error: 'Invalid index schema',
+        });
+        continue;
+      }
+
+      let addedCount = 0;
+      for (const source of sources) {
+        const key = sourceKey(source);
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key);
+          mergedSources.push(source);
+          addedCount++;
+        }
+      }
+
+      fetchResults.push({
+        url,
+        success: true,
+        sourceCount: addedCount,
+        error: null,
+      });
+    }
+
+    return { sources: mergedSources, fetchResults };
+  }
+
+  /**
+   * Fetch and validate a single index URL, returning sources or null.
+   */
+  private async fetchSingleIndex(url: string): Promise<SourceConfig[] | null> {
+    const indexSource = this.indexUrlToSource(url);
+    if (!indexSource) {
+      this.log.warn(`[${IndexErrorCodes.INDEX_FETCH_FAILED.code}] Cannot parse index URL: ${url}`);
+      throw new Error(`Cannot parse index URL: ${url}`);
+    }
+
+    const content = await this.github.getFileContent(indexSource.source, indexSource.path);
+    const parsed = JSON.parse(content) as unknown;
+
+    if (!this.isValidMasterIndex(parsed)) {
+      this.log.warn(`[${IndexErrorCodes.INDEX_SCHEMA_INVALID.code}] Index at ${url} has an invalid format`);
+      return null;
+    }
+
+    const index = parsed as MasterIndex;
+    if (!index.version.startsWith('1')) {
+      this.log.warn(`Unsupported master index version: ${index.version} at ${url}`);
+      return null;
+    }
+
+    return index.sources.map(entry => this.sourceEntryToConfig(entry));
+  }
+
+  /**
+   * Single-URL fetch path (refactored from original loadMasterIndex).
+   * Preserves existing behavior for backward compatibility.
+   */
+  private async loadSingleIndex(indexUrl: string): Promise<void> {
     if (!indexUrl) {
       this.log.trace('No index URL configured, skipping master index');
       this.cachedMasterIndex = undefined;
@@ -142,37 +310,16 @@ export class SourceRegistry {
     }
 
     try {
-      // Build a temporary SourceConfig for fetching the index
-      const indexSource = this.indexUrlToSource(indexUrl);
-      if (!indexSource) {
-        this.log.warn(`Cannot parse index URL: ${indexUrl}`);
+      const sources = await this.fetchSingleIndex(indexUrl);
+      if (sources === null) {
         this.cachedMasterIndex = undefined;
         return;
       }
 
-      const content = await this.github.getFileContent(indexSource.source, indexSource.path);
-      const parsed = JSON.parse(content) as unknown;
-
-      if (!this.isValidMasterIndex(parsed)) {
-        this.log.error('Master index JSON is malformed or missing required fields');
-        this.cachedMasterIndex = undefined;
-        return;
-      }
-
-      const index = parsed as MasterIndex;
-
-      // Version check
-      if (!index.version.startsWith('1')) {
-        this.log.warn(`Unsupported master index version: ${index.version}, skipping`);
-        this.cachedMasterIndex = undefined;
-        return;
-      }
-
-      this.cachedMasterIndex = index.sources.map(entry => this.sourceEntryToConfig(entry));
+      this.cachedMasterIndex = sources;
       this.log.info(`Master index loaded: ${this.cachedMasterIndex.length} sources from ${indexUrl}`);
     } catch (err) {
-      // Silently fall back - FR-001 says no error shown to user
-      this.log.warn(`Failed to fetch master index from ${indexUrl}: ${err}`);
+      this.log.warn(`[${IndexErrorCodes.INDEX_FETCH_FAILED.code}] Failed to fetch master index from ${indexUrl}: ${err}`);
       this.cachedMasterIndex = undefined;
     }
   }
