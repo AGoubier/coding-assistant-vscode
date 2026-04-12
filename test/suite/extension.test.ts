@@ -31,6 +31,7 @@ describe('Extension Test Suite', () => {
       'awesome-coding-assistants.showAllTools',
       'awesome-coding-assistants.showDetectedTools',
       'awesome-coding-assistants.markAllSeen',
+      'awesome-coding-assistants.openWalkthrough',
     ];
 
     for (const cmd of expectedCommands) {
