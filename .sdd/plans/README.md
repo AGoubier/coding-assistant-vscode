@@ -252,7 +252,7 @@ WP14 adds the P2 removed-content rendering. It builds on WP13's tree UI changes 
 | [WP17](WP17-folder-install-conflicts.md) | Folder-Aware Installation and Conflict Resolution | P1 | For Review | WP15, WP16 | No |
 | [WP18](WP18-folder-search.md) | Search Across Folders | P1 | Not Started | WP16 | Yes (with WP17) |
 | [WP19](WP19-index-url-migration.md) | Index URL Migration and Multi-Index Merge | P1 | Not Started | none | Yes |
-| [WP20](WP20-onboarding-walkthrough.md) | Onboarding Walkthrough and Enterprise Configuration | P1 | Not Started | WP19 | No |
+| [WP20](WP20-onboarding-walkthrough.md) | Onboarding Walkthrough and Enterprise Configuration | P1 | For Review | WP19 | No |
 
 ## MVP Scope (Spec 003)
 
