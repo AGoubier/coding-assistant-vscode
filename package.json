@@ -276,9 +276,14 @@
           }
         },
         "awesome-coding-assistants.indexUrl": {
-          "type": "string",
-          "default": "https://raw.githubusercontent.com/jlacube/awesome-coding-assistants/main/index.json",
-          "description": "URL to the master index JSON file listing available source repositories."
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "https://raw.githubusercontent.com/jlacube/awesome-coding-assistants/main/index.json"
+          ],
+          "markdownDescription": "URLs to master index JSON files listing available source repositories. Add multiple URLs to merge catalogs from different sources (e.g., private + community). Sources are deduplicated by `url@branch` key with first-seen-wins ordering. All URLs must use HTTPS."
         },
         "awesome-coding-assistants.cacheExpirationMinutes": {
           "type": "integer",
