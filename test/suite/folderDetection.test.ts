@@ -100,16 +100,14 @@ describe('folderDetection', () => {
       );
     });
 
-    // --- FR-002: Nested path exclusion ---
-    it('should not create additional folder for nested directory', () => {
-      // Only first path segment qualifies
+    // --- FR-001/FR-002: Marker must be directly under first-level dir ---
+    it('should not detect folder when .github is not directly under first segment', () => {
+      // a/b/.github/... -> .github is at segments[2], not segments[1], so "a" does NOT qualify
       const entries = [
         entry('a/b/.github/agents/x.md'),
       ];
       const result = detectFolders(entries);
-      assert.strictEqual(result.length, 1);
-      assert.strictEqual(result[0].folderName, 'a');
-      // "b" is NOT a folder
+      assert.strictEqual(result.length, 0);
     });
 
     // --- Single entry ---

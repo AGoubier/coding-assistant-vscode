@@ -290,7 +290,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       case 'item':
         return this.createFileTreeItem(item);
       case 'folder':
-        return this.createSourceTreeItem(item as unknown as SourceItem);
+        return new vscode.TreeItem(item.displayName, vscode.TreeItemCollapsibleState.Collapsed);
       default: {
         const _exhaustive: never = item;
         return _exhaustive;

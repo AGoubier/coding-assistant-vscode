@@ -172,12 +172,12 @@ export function detectFolders(entries: GitHubTreeEntry[]): FolderDetectionResult
       continue;
     }
 
-    // Check if any segment from index 1 onward is .github or .claude (case-insensitive)
-    for (let i = 1; i < segments.length; i++) {
-      const segLower = segments[i].toLowerCase();
-      if (segLower === '.github' || segLower === '.claude') {
+    // Check if segments[1] is .github or .claude (case-insensitive)
+    // FR-001: pattern is <directory>/.github/<subpath> -- marker must be directly under the first-level dir
+    if (segments.length >= 3) {
+      const seg1Lower = segments[1].toLowerCase();
+      if (seg1Lower === '.github' || seg1Lower === '.claude') {
         folderNames.add(segments[0]);
-        break;
       }
     }
   }
