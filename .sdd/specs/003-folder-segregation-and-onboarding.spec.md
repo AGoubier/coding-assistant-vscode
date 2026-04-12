@@ -1267,11 +1267,9 @@ New discriminated union member for the catalog tree. Represents a folder-level n
 
 ---
 
-### 7.3 ToolItem
+### 7.3 ToolItem -- Not Used
 
-New discriminated union member for the catalog tree. Represents a tool-level node in the tree hierarchy between Folder and Category. This supports the Source > Folder > Tool > Category > Items hierarchy described in the brief.
-
-[NEEDS CLARIFICATION: The brief describes the tree hierarchy as Source > Folder > Tool > Category > Items, but Section 4 (FRs) consistently describes it as Source > Folder > Category > Items, omitting the Tool level between Folder and Category. This data model follows the FR hierarchy (Source > Folder > Category > Items) as authoritative. If the Tool level is needed, a separate FR must be added.]
+The brief originally proposed a Source > Folder > Tool > Category > Items hierarchy, but this was resolved in favor of Source > Folder > Category > Items (no Tool level). The `ToolItem` type is not part of this specification. Category nodes already encode their associated tool type via the `tool` field on `CategoryItem`, making a separate `ToolItem` level redundant.
 
 ---
 
@@ -1436,7 +1434,7 @@ Declarative definition of the onboarding walkthrough, specified in `package.json
 
 | Field | Type | Required | Constraints | Default | Description |
 |-------|------|----------|-------------|---------|-------------|
-| id | string | yes | unique within the extension; recommended: `"getStarted"` | - | Walkthrough identifier, scoped to the extension by VS Code |
+| id | string | yes | SHALL be `"getStarted"`; VS Code scopes to `"jlacube.awesome-coding-assistants#getStarted"` | - | Walkthrough identifier, scoped to the extension by VS Code |
 | title | string | yes | max 100, plain text | - | Display title shown in the Get Started section |
 | description | string | yes | max 500, plain text | - | Brief description of the walkthrough purpose |
 | steps | WalkthroughStep[] | yes | exactly 2 elements (FR-029) | - | Ordered array of walkthrough step definitions |
@@ -3616,7 +3614,7 @@ No new npm packages are required by the folder segregation or onboarding feature
 - **Key operations**:
   - `GET /repos/{owner}/{repo}/git/trees/{branch}?recursive=1` -- fetch full repository tree (used for folder detection, item classification, and catalog tree rendering)
   - `GET /repos/{owner}/{repo}/contents/{path}?ref={branch}` -- fetch individual file content (used for install, update, and preview)
-- **Timeout**: Governed by Node.js `fetch()` defaults (~30 seconds). No custom timeout is configured in the existing `GitHubClient`.
+- **Timeout**: This specification deliberately accepts the Node.js `fetch()` platform default (~30 seconds) as the request timeout. No custom timeout constant is introduced. Rationale: the existing `GitHubClient` has shipped without a custom timeout since v0.1.0; adding one would change behavior for all existing API calls and is out of scope for this feature. If a future NFR requires explicit timeout control, a `FETCH_TIMEOUT_MS` constant SHALL be introduced in `githubClient.ts`.
 - **Retry strategy**: No automatic retry for failed requests. The existing `GitHubClient` handles HTTP 401 (auth prompt), HTTP 403 with `X-RateLimit-Remaining: 0` (rate-limit warning), and HTTP 404 (source unreachable error). Failed requests are reported to the user via error messages.
 - **Fallback**: When a source's tree cannot be fetched, the source node displays an error state in the catalog tree. Other sources continue to load independently. When all index URLs fail (FR-024), the system falls back to user-configured sources from the `sources` setting.
 
@@ -3626,7 +3624,7 @@ No new npm packages are required by the folder segregation or onboarding feature
 - **Auth method**: No authentication. Index JSON files are served from public HTTPS endpoints (e.g., GitHub raw content URLs).
 - **Key operations**:
   - `GET {indexUrl}` -- fetch the index JSON file at each configured URL. Response is parsed as `MasterIndex` (schema: `{ sources: SourceEntry[] }`).
-- **Timeout**: Same as GitHub REST API (Node.js `fetch()` defaults).
+- **Timeout**: Same as GitHub REST API (platform default ~30 seconds, accepted deliberately -- see GitHub REST API timeout rationale above).
 - **Retry strategy**: No automatic retry per individual URL. When one URL fails, the system logs a warning and continues with remaining URLs (FR-024). When all URLs fail, the system falls back to user-configured sources.
 - **Fallback**: Individual URL failure -> continue with remaining URLs. All URLs fail -> use user-configured sources only. Invalid JSON response -> treated as fetch failure for that URL.
 
@@ -3961,11 +3959,9 @@ Scan of Section 7 entities for sensitive fields:
 
 ## 14. Open Questions
 
-| # | Question | Impact | Owner | Section |
-|---|---------|--------|-------|---------|
-| OQ-01 | The brief describes the tree hierarchy as Source > Folder > Tool > Category > Items, but Section 4 (FRs) and Section 7 (Data Model) consistently describe it as Source > Folder > Category > Items, omitting the Tool level between Folder and Category. Section 7.3 added a `[NEEDS CLARIFICATION]` note and followed the FR hierarchy as authoritative. Is the Tool level between Folder and Category intentionally omitted, or does the brief's hierarchy require an additional FR? | If the Tool level is required, new FRs must be added for the Folder > Tool rendering path, and the `FolderItem` children logic in `getChildren()` must produce `ToolItem` nodes instead of `CategoryItem` nodes directly. | Product Owner | 4.2 (Folder Tree Display), 7.3 (ToolItem) |
+No open questions remain. All decisions have been resolved.
 
-All other decisions identified in the brief's "Open Questions" section have been resolved within this specification:
+Resolved questions:
 
 - **JSON Schema oneOf rendering** (brief OQ-1): Resolved by Decision 7 in Section 9.4 -- single `type: "array"` with runtime coercion via `normalizeIndexUrls()` (FR-021, FR-022).
 - **Managed settings for custom extensions** (brief OQ-2): Addressed by FR-034, FR-035, and C-01 -- machine-level settings provide defaults; users can override; no policy enforcement for custom extensions.
