@@ -75,7 +75,7 @@ export class GitHubClient {
     }
 
     const branch = source.branch || 'main';
-    const cacheKey = `${source.url}:${path}`;
+    const cacheKey = `${source.url}:${branch}:${path}`;
 
     // Try raw.githubusercontent.com first (for public repos)
     if (!source.authTokenKey) {
@@ -111,7 +111,7 @@ export class GitHubClient {
 
     const branch = source.branch || 'main';
     const url = `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/commits?path=${encodeURIComponent(path)}&per_page=1&sha=${branch}`;
-    const cacheKey = `${source.url}:commits:${path}`;
+    const cacheKey = `${source.url}:commits:${branch}:${path}`;
 
     const result = await this.fetchWithCache(url, cacheKey, source, true, true);
     const commits = JSON.parse(result) as GitHubCommit[];
