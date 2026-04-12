@@ -1,6 +1,6 @@
 ---
-lane: to_do
-review_status: has_feedback
+lane: for_review
+review_status: addressed
 review_cycles: 1
 depends_on: [WP15, WP16]
 docs_scope: [architecture, api-reference, user-guide, changelog, inline-code]
@@ -201,6 +201,8 @@ This work package extends the installation, manifest tracking, and update/uninst
 - 2025-07-20T02:00:00Z - coder - T17-07 completed - 31 unit tests added, 538 total passing
 - 2025-07-20T02:01:00Z - coder - lane=for_review - All tasks complete, tests passing, coverage met
 - 2026-04-12T12:00:00Z - review-coordinator - lane=to_do - Verdict: Changes Required (2 FAILs) -- awaiting remediation
+- 2026-04-12T13:00:00Z - coder - lane=doing - Rework mode: addressing 2 FB-XX items (FB-01, FB-02)
+- 2026-04-12T13:30:00Z - coder - lane=for_review - FB-01 and FB-02 fixed, all 541 tests passing
 
 ## Review
 
@@ -220,11 +222,11 @@ This work package extends the installation, manifest tracking, and update/uninst
 
 > Implementers: address every FB-XX item before returning for re-review.
 
-- [ ] **FB-01**: [TESTS] FR-040 dimension 1 - T17-05 tests are vacuous. Tests in `test/suite/folderInstall.test.ts#L335-L358` manually write log messages and assert them back -- `resolveFolderConflict()` is never called. Three checked ACs (quick-pick selection return, dismiss return, logging behavior) have zero test coverage.
+- [x] **FB-01**: [TESTS] FR-040 dimension 1 - T17-05 tests are vacuous. Tests in `test/suite/folderInstall.test.ts#L335-L358` manually write log messages and assert them back -- `resolveFolderConflict()` is never called. Three checked ACs (quick-pick selection return, dismiss return, logging behavior) have zero test coverage.
   File: test/suite/folderInstall.test.ts#L335-L358. Expected: Mock `vscode.window.showQuickPick` per spec Section 11.4 and call `resolveFolderConflict()` to verify return values and actual logging.
   Source skills: review-tests (TEST-001)
 
-- [ ] **FB-02**: [TESTS] FR-040 dimension 2 - New FR-013 error handling code in lifecycle.ts (404 detection with descriptive error throw) added by WP17 has no test coverage.
+- [x] **FB-02**: [TESTS] FR-040 dimension 2 - New FR-013 error handling code in lifecycle.ts (404 detection with descriptive error throw) added by WP17 has no test coverage.
   File: src/services/lifecycle.ts#L165-L172. Expected: Add a test that exercises `applyUpdate()` with a source 404 and verifies the "Item not found in source" error is thrown.
   Source skills: review-tests (TEST-002)
 

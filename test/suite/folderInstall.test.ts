@@ -4,7 +4,7 @@
 
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { detectCrossFolderConflict } from '../../src/services/conflictResolver';
+import { detectCrossFolderConflict, resolveFolderConflict } from '../../src/services/conflictResolver';
 import { stripFolderPrefix } from '../../src/utils/pathUtils';
 import { installationId } from '../../src/models/types';
 import type {
@@ -311,24 +311,102 @@ describe('WP17 - Folder-Aware Installation and Conflict Resolution', () => {
   });
 
   // ========================================
-  // T17-05: resolveConflict quick-pick (logging)
+  // T17-05: resolveConflict quick-pick
   // ========================================
-  describe('T17-05: Conflict resolution logging', () => {
+  describe('T17-05: Conflict resolution via resolveFolderConflict()', () => {
+    const source = makeSource();
+
+    function makeConflict(): CrossFolderConflict {
+      return {
+        targetPath: '.github/agents/x.md',
+        candidates: [
+          {
+            fullSourcePath: 'frontend/.github/agents/x.md',
+            folderName: 'frontend',
+            folderDisplayName: 'Frontend',
+            source,
+          },
+          {
+            fullSourcePath: 'backend/.github/agents/x.md',
+            folderName: 'backend',
+            folderDisplayName: 'Backend',
+            source,
+          },
+        ],
+      };
+    }
+
+    it('returns selected candidate when user picks an option', async () => {
+      const log = createMockLogOutputChannel();
+      const conflict = makeConflict();
+
+      const origShowQuickPick = vscode.window.showQuickPick;
+      (vscode.window as any).showQuickPick = async (items: any[]) => {
+        // Simulate user selecting the first item
+        return items[0];
+      };
+
+      try {
+        const result = await resolveFolderConflict(conflict, log);
+        assert.ok(result, 'Should return a candidate');
+        assert.strictEqual(result!.fullSourcePath, 'frontend/.github/agents/x.md');
+        assert.strictEqual(result!.folderName, 'frontend');
+      } finally {
+        (vscode.window as any).showQuickPick = origShowQuickPick;
+      }
+    });
+
+    it('returns undefined when user dismisses (Escape)', async () => {
+      const log = createMockLogOutputChannel();
+      const conflict = makeConflict();
+
+      const origShowQuickPick = vscode.window.showQuickPick;
+      (vscode.window as any).showQuickPick = async () => undefined;
+
+      try {
+        const result = await resolveFolderConflict(conflict, log);
+        assert.strictEqual(result, undefined, 'Should return undefined on dismiss');
+      } finally {
+        (vscode.window as any).showQuickPick = origShowQuickPick;
+      }
+    });
+
     it('NFR-016: logs selection at info level', async () => {
       const log = createMockLogOutputChannel();
-      // We cannot easily mock vscode.window.showQuickPick in unit tests,
-      // but we can verify the log message format by checking the function exists
-      // and the log channel works
-      log.info('Conflict resolved: user selected frontend/.github/agents/x.md from folder frontend');
-      const infoMessages = log.messages.filter(m => m.level === 'info');
-      assert.ok(infoMessages.some(m => m.message.includes('Conflict resolved')));
+      const conflict = makeConflict();
+
+      const origShowQuickPick = vscode.window.showQuickPick;
+      (vscode.window as any).showQuickPick = async (items: any[]) => items[0];
+
+      try {
+        await resolveFolderConflict(conflict, log);
+        const infoMessages = log.messages.filter(m => m.level === 'info');
+        assert.ok(
+          infoMessages.some(m => m.message.includes('Conflict resolved') && m.message.includes('frontend')),
+          'Should log selection with folder name',
+        );
+      } finally {
+        (vscode.window as any).showQuickPick = origShowQuickPick;
+      }
     });
 
     it('NFR-016: logs cancellation at info level', async () => {
       const log = createMockLogOutputChannel();
-      log.info('Conflict cancelled by user for target path .github/agents/x.md');
-      const infoMessages = log.messages.filter(m => m.level === 'info');
-      assert.ok(infoMessages.some(m => m.message.includes('Conflict cancelled')));
+      const conflict = makeConflict();
+
+      const origShowQuickPick = vscode.window.showQuickPick;
+      (vscode.window as any).showQuickPick = async () => undefined;
+
+      try {
+        await resolveFolderConflict(conflict, log);
+        const infoMessages = log.messages.filter(m => m.level === 'info');
+        assert.ok(
+          infoMessages.some(m => m.message.includes('Conflict cancelled') && m.message.includes('.github/agents/x.md')),
+          'Should log cancellation with target path',
+        );
+      } finally {
+        (vscode.window as any).showQuickPick = origShowQuickPick;
+      }
     });
   });
 

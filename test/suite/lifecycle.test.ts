@@ -379,6 +379,33 @@ describe('WP06 - Lifecycle Management', () => {
       await lifecycle.applyUpdate(entry, folder, 'newsha');
       assert.ok(!lifecycle.hasUpdate(entry.id), 'Update cache should be cleared after apply');
     });
+
+    it('FR-013: throws descriptive error when source returns 404', async () => {
+      const entry = makeEntry({
+        itemPath: 'frontend-team/.github/agents/deleted.agent.md',
+        targetPaths: ['.github/agents/deleted.agent.md'],
+        commitSha: 'oldsha1234567890123456789012345678901234',
+      });
+      const manifest = new ManifestManager(makeMockLog(), mockFs);
+      await manifest.addInstallation(folder, entry);
+      store.set('/workspace/.github/agents/deleted.agent.md', '# Old');
+
+      const github = makeMockGitHub({
+        getFileContent: async () => { throw new Error('404 Not Found'); },
+      });
+
+      const installer = new Installer(github, makeMockLog(), mockFs);
+      const lifecycle = new LifecycleManager(github, manifest, installer, makeMockLog(), mockFs);
+
+      await assert.rejects(
+        () => lifecycle.applyUpdate(entry, folder, 'newsha'),
+        (err: Error) => {
+          assert.ok(err.message.includes('Item not found in source'), `Expected "Item not found in source" but got: ${err.message}`);
+          assert.ok(err.message.includes(entry.itemPath), 'Error should include the item path');
+          return true;
+        },
+      );
+    });
   });
 
   // ========================================
