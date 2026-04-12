@@ -247,7 +247,7 @@ WP14 adds the P2 removed-content rendering. It builds on WP13's tree UI changes 
 
 | ID | Title | Priority | Status | Depends On | Parallelisable |
 |----|-------|----------|--------|-----------|----------------|
-| [WP15](WP15-folder-detection.md) | Folder Detection, Path Utilities, and Type Extensions | P1 | For Review | none | Yes |
+| [WP15](WP15-folder-detection.md) | Folder Detection, Path Utilities, and Type Extensions | P1 | Done | none | Yes |
 | [WP16](WP16-folder-tree-display.md) | Catalog Tree Folder Display | P1 | Not Started | WP15 | No |
 | [WP17](WP17-folder-install-conflicts.md) | Folder-Aware Installation and Conflict Resolution | P1 | Not Started | WP15, WP16 | No |
 | [WP18](WP18-folder-search.md) | Search Across Folders | P1 | Not Started | WP16 | Yes (with WP17) |
