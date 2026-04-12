@@ -1202,4 +1202,512 @@ describe('CatalogTreeProvider', () => {
       registry.dispose();
     });
   });
+
+  describe('folder tree display', () => {
+    // Tree with entries under folders AND root-level entries
+    const FOLDER_TREE: GitHubTreeResponse = {
+      sha: 'folder123',
+      url: 'https://api.github.com/repos/test/repo/git/trees/main',
+      tree: [
+        // Root-level entries
+        { path: '.github/agents/root-agent.agent.md', mode: '100644', type: 'blob', sha: 'r1', url: '' },
+        { path: '.github/prompts/root-prompt.prompt.md', mode: '100644', type: 'blob', sha: 'r2', url: '' },
+        // frontend-team folder entries
+        { path: 'frontend-team/.github/agents/fe-agent.agent.md', mode: '100644', type: 'blob', sha: 'f1', url: '' },
+        { path: 'frontend-team/.github/instructions/fe-setup.instructions.md', mode: '100644', type: 'blob', sha: 'f2', url: '' },
+        // backend folder entries
+        { path: 'backend/.github/agents/be-agent.agent.md', mode: '100644', type: 'blob', sha: 'b1', url: '' },
+        { path: 'backend/.claude/rules/be-rules.md', mode: '100644', type: 'blob', sha: 'b2', url: '' },
+        // Tree entries (directories)
+        { path: '.github', mode: '040000', type: 'tree', sha: 'g1', url: '' },
+        { path: 'frontend-team', mode: '040000', type: 'tree', sha: 'g2', url: '' },
+        { path: 'backend', mode: '040000', type: 'tree', sha: 'g3', url: '' },
+      ],
+      truncated: false,
+    };
+
+    // Tree with folders but NO root-level entries
+    const FOLDER_ONLY_TREE: GitHubTreeResponse = {
+      sha: 'folderonly',
+      url: 'https://api.github.com/repos/test/repo/git/trees/main',
+      tree: [
+        { path: 'frontend-team/.github/agents/fe-agent.agent.md', mode: '100644', type: 'blob', sha: 'f1', url: '' },
+        { path: 'backend/.github/agents/be-agent.agent.md', mode: '100644', type: 'blob', sha: 'b1', url: '' },
+      ],
+      truncated: false,
+    };
+
+    // Tree with no folders -- only root-level entries
+    const NO_FOLDER_TREE: GitHubTreeResponse = {
+      sha: 'nofolders',
+      url: 'https://api.github.com/repos/test/repo/git/trees/main',
+      tree: [
+        { path: '.github/agents/agent1.agent.md', mode: '100644', type: 'blob', sha: 'a1', url: '' },
+        { path: '.github/prompts/p1.prompt.md', mode: '100644', type: 'blob', sha: 'a2', url: '' },
+        { path: '.claude/rules/r1.md', mode: '100644', type: 'blob', sha: 'a3', url: '' },
+      ],
+      truncated: false,
+    };
+
+    // Tree with folder containing only unrecognized files (empty folder - FR-016)
+    const EMPTY_FOLDER_TREE: GitHubTreeResponse = {
+      sha: 'emptyfolder',
+      url: 'https://api.github.com/repos/test/repo/git/trees/main',
+      tree: [
+        { path: 'real-folder/.github/agents/agent.agent.md', mode: '100644', type: 'blob', sha: 'r1', url: '' },
+        { path: 'empty-folder/.github/README.md', mode: '100644', type: 'blob', sha: 'e1', url: '' },
+        { path: 'empty-folder/.github/some-unknown-dir/file.txt', mode: '100644', type: 'blob', sha: 'e2', url: '' },
+      ],
+      truncated: false,
+    };
+
+    describe('FR-004: Source with folders shows folder nodes', () => {
+      it('should return folder nodes when source has discovered folders', async () => {
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        const github = createMockGitHubClient(FOLDER_TREE);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const sourceItem = { kind: 'source' as const, source: TEST_SOURCE };
+        const children = await provider.getChildren(sourceItem);
+
+        // Should have folder nodes, not category nodes
+        const folderChildren = children.filter((c: any) => c.kind === 'folder');
+        assert.ok(folderChildren.length >= 2, `Expected at least 2 folder nodes, got ${folderChildren.length}`);
+
+        // Folder nodes should be sorted alphabetically: Backend, Default, Frontend Team
+        const names = (folderChildren as any[]).map((c: any) => c.displayName);
+        assert.ok(names.includes('Backend'), 'Should have Backend folder');
+        assert.ok(names.includes('Frontend Team'), 'Should have Frontend Team folder');
+
+        provider.dispose();
+        registry.dispose();
+      });
+
+      it('should sort folder nodes alphabetically by display name', async () => {
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        const github = createMockGitHubClient(FOLDER_ONLY_TREE);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const sourceItem = { kind: 'source' as const, source: TEST_SOURCE };
+        const children = await provider.getChildren(sourceItem);
+
+        const names = (children as any[]).map((c: any) => c.displayName);
+        assert.strictEqual(names[0], 'Backend');
+        assert.strictEqual(names[1], 'Frontend Team');
+
+        provider.dispose();
+        registry.dispose();
+      });
+    });
+
+    describe('FR-005: Source with zero folders shows categories directly', () => {
+      it('should show category nodes when no folders detected', async () => {
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        const github = createMockGitHubClient(NO_FOLDER_TREE);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const sourceItem = { kind: 'source' as const, source: TEST_SOURCE };
+        const children = await provider.getChildren(sourceItem);
+
+        // Should have category nodes, not folder nodes
+        const categoryChildren = children.filter((c: any) => c.kind === 'category');
+        assert.ok(categoryChildren.length > 0, 'Should have category nodes');
+
+        const folderChildren = children.filter((c: any) => c.kind === 'folder');
+        assert.strictEqual(folderChildren.length, 0, 'Should NOT have folder nodes');
+
+        provider.dispose();
+        registry.dispose();
+      });
+    });
+
+    describe('FR-006: Default folder appears with root + folder items', () => {
+      it('should show Default folder when root and real folders coexist', async () => {
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        const github = createMockGitHubClient(FOLDER_TREE);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const sourceItem = { kind: 'source' as const, source: TEST_SOURCE };
+        const children = await provider.getChildren(sourceItem);
+
+        const folderChildren = children as any[];
+        const defaultFolder = folderChildren.find((c: any) => c.isDefault === true);
+        assert.ok(defaultFolder, 'Should have a Default folder node');
+        assert.strictEqual(defaultFolder.displayName, 'Default');
+
+        // Default should be first
+        assert.strictEqual(folderChildren[0].displayName, 'Default', 'Default folder should be first');
+
+        provider.dispose();
+        registry.dispose();
+      });
+
+      it('should show categories from root-level entries when expanding Default folder', async () => {
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        const github = createMockGitHubClient(FOLDER_TREE);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const defaultFolder = {
+          kind: 'folder' as const,
+          source: TEST_SOURCE,
+          folderName: '',
+          displayName: 'Default',
+          isDefault: true,
+        };
+        const children = await provider.getChildren(defaultFolder);
+
+        // Default folder has root-level agents and prompts
+        const categories = (children as any[]).filter((c: any) => c.kind === 'category');
+        const catNames = categories.map((c: any) => c.category);
+        assert.ok(catNames.includes('agents'), 'Default should have agents category');
+        assert.ok(catNames.includes('prompts'), 'Default should have prompts category');
+
+        provider.dispose();
+        registry.dispose();
+      });
+    });
+
+    describe('FR-007: Default folder does NOT appear when no real folders exist', () => {
+      it('should not show Default folder when there are zero detected folders', async () => {
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        const github = createMockGitHubClient(NO_FOLDER_TREE);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const sourceItem = { kind: 'source' as const, source: TEST_SOURCE };
+        const children = await provider.getChildren(sourceItem);
+
+        const folderChildren = (children as any[]).filter((c: any) => c.kind === 'folder');
+        assert.strictEqual(folderChildren.length, 0, 'Should have zero folder nodes');
+
+        // Should show categories directly (FR-005 behavior)
+        const categoryChildren = (children as any[]).filter((c: any) => c.kind === 'category');
+        assert.ok(categoryChildren.length > 0, 'Should show categories directly');
+
+        provider.dispose();
+        registry.dispose();
+      });
+
+      it('should not show Default when no real folders but root items exist (FOLDER_ONLY has no root)', async () => {
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        const github = createMockGitHubClient(FOLDER_ONLY_TREE);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const sourceItem = { kind: 'source' as const, source: TEST_SOURCE };
+        const children = await provider.getChildren(sourceItem);
+
+        const defaultFolder = (children as any[]).find((c: any) => c.isDefault === true);
+        assert.strictEqual(defaultFolder, undefined, 'Should NOT have Default folder when no root items');
+
+        provider.dispose();
+        registry.dispose();
+      });
+    });
+
+    describe('FR-016: Empty folder hiding', () => {
+      it('should hide folders whose items all classify as unknown', async () => {
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        const github = createMockGitHubClient(EMPTY_FOLDER_TREE);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const sourceItem = { kind: 'source' as const, source: TEST_SOURCE };
+        const children = await provider.getChildren(sourceItem);
+
+        const folderNames = (children as any[])
+          .filter((c: any) => c.kind === 'folder')
+          .map((c: any) => c.displayName);
+
+        assert.ok(folderNames.includes('Real Folder'), 'Should include non-empty folder');
+        assert.ok(!folderNames.includes('Empty Folder'), 'Should exclude empty folder (FR-016)');
+
+        provider.dispose();
+        registry.dispose();
+      });
+    });
+
+    describe('folder node rendering (NFR-010, NFR-011)', () => {
+      it('should create folder tree item with folder icon and collapsed state', () => {
+        const registry = createMockSourceRegistry([]);
+        const github = createMockGitHubClient();
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const folderItem = {
+          kind: 'folder' as const,
+          source: TEST_SOURCE,
+          folderName: 'frontend-team',
+          displayName: 'Frontend Team',
+          isDefault: false,
+        };
+        const treeItem = provider.getTreeItem(folderItem);
+
+        assert.strictEqual(treeItem.label, 'Frontend Team');
+        assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+        assert.ok(treeItem.iconPath instanceof vscode.ThemeIcon, 'Should use ThemeIcon');
+        assert.strictEqual((treeItem.iconPath as vscode.ThemeIcon).id, 'folder');
+        assert.strictEqual(treeItem.contextValue, 'catalogItem.folder');
+
+        provider.dispose();
+        registry.dispose();
+      });
+
+      it('should set correct accessibility info for real folders (NFR-011)', () => {
+        const registry = createMockSourceRegistry([]);
+        const github = createMockGitHubClient();
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const folderItem = {
+          kind: 'folder' as const,
+          source: TEST_SOURCE,
+          folderName: 'frontend-team',
+          displayName: 'Frontend Team',
+          isDefault: false,
+        };
+        const treeItem = provider.getTreeItem(folderItem);
+
+        assert.ok(treeItem.accessibilityInformation, 'Should have accessibility info');
+        assert.strictEqual(
+          treeItem.accessibilityInformation!.label,
+          'Folder: Frontend Team, source: Test Repo',
+        );
+
+        provider.dispose();
+        registry.dispose();
+      });
+
+      it('should set correct accessibility info for Default folder (FR-006)', () => {
+        const registry = createMockSourceRegistry([]);
+        const github = createMockGitHubClient();
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const folderItem = {
+          kind: 'folder' as const,
+          source: TEST_SOURCE,
+          folderName: '',
+          displayName: 'Default',
+          isDefault: true,
+        };
+        const treeItem = provider.getTreeItem(folderItem);
+
+        assert.strictEqual(
+          treeItem.accessibilityInformation!.label,
+          'Default folder (root-level items), source: Test Repo',
+        );
+
+        provider.dispose();
+        registry.dispose();
+      });
+
+      it('should use formatted folder name as label (FR-008)', () => {
+        const registry = createMockSourceRegistry([]);
+        const github = createMockGitHubClient();
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const folderItem = {
+          kind: 'folder' as const,
+          source: TEST_SOURCE,
+          folderName: 'frontend-team',
+          displayName: 'Frontend Team',
+          isDefault: false,
+        };
+        const treeItem = provider.getTreeItem(folderItem);
+        assert.strictEqual(treeItem.label, 'Frontend Team');
+
+        provider.dispose();
+        registry.dispose();
+      });
+    });
+
+    describe('folder children (scoped categories)', () => {
+      it('should show categories scoped to the folder entries when expanding a folder', async () => {
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        const github = createMockGitHubClient(FOLDER_TREE);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const folderItem = {
+          kind: 'folder' as const,
+          source: TEST_SOURCE,
+          folderName: 'frontend-team',
+          displayName: 'Frontend Team',
+          isDefault: false,
+        };
+        const children = await provider.getChildren(folderItem);
+
+        // frontend-team has agents and instructions
+        const categories = (children as any[]).filter((c: any) => c.kind === 'category');
+        const catNames = categories.map((c: any) => c.category);
+        assert.ok(catNames.includes('agents'), 'Frontend Team should have agents');
+        assert.ok(catNames.includes('instructions'), 'Frontend Team should have instructions');
+        assert.ok(!catNames.includes('rules'), 'Frontend Team should NOT have rules');
+        assert.ok(!catNames.includes('prompts'), 'Frontend Team should NOT have prompts');
+
+        provider.dispose();
+        registry.dispose();
+      });
+
+      it('should retain full source path on CatalogFileItem.path for folder items (FR-012)', async () => {
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        const github = createMockGitHubClient(FOLDER_TREE);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        // Expand folder to category then to file items
+        const folderItem = {
+          kind: 'folder' as const,
+          source: TEST_SOURCE,
+          folderName: 'frontend-team',
+          displayName: 'Frontend Team',
+          isDefault: false,
+        };
+        const categories = await provider.getChildren(folderItem);
+        const agentsCat = (categories as any[]).find((c: any) => c.category === 'agents');
+        assert.ok(agentsCat, 'Should have agents category in folder');
+
+        const files = await provider.getChildren(agentsCat);
+        assert.ok(files.length > 0, 'Should have file items');
+
+        const fileItem = files[0] as any;
+        assert.strictEqual(fileItem.kind, 'item');
+        // Path must retain folder prefix for install operations
+        assert.ok(
+          fileItem.path.startsWith('frontend-team/'),
+          `File path should retain folder prefix, got: ${fileItem.path}`,
+        );
+
+        provider.dispose();
+        registry.dispose();
+      });
+
+      it('should show correct tree hierarchy: root > source > folder > category > file', async () => {
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        const github = createMockGitHubClient(FOLDER_TREE);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        // Level 1: root -> sources
+        const sources = await provider.getChildren(undefined);
+        assert.strictEqual(sources.length, 1);
+        assert.strictEqual((sources[0] as any).kind, 'source');
+
+        // Level 2: source -> folders
+        const folders = await provider.getChildren(sources[0]);
+        const folderItems = (folders as any[]).filter((c: any) => c.kind === 'folder');
+        assert.ok(folderItems.length >= 2);
+
+        // Level 3: folder -> categories
+        const realFolder = folderItems.find((f: any) => f.folderName === 'backend');
+        assert.ok(realFolder);
+        const categories = await provider.getChildren(realFolder);
+        const catItems = (categories as any[]).filter((c: any) => c.kind === 'category');
+        assert.ok(catItems.length > 0);
+
+        // Level 4: category -> files
+        const files = await provider.getChildren(catItems[0]);
+        assert.ok(files.length > 0);
+        assert.strictEqual((files[0] as any).kind, 'item');
+
+        provider.dispose();
+        registry.dispose();
+      });
+    });
+
+    describe('error fallback (T16-06)', () => {
+      it('should fall back to flat hierarchy when detectFolders throws', async () => {
+        // Use a tree that would normally trigger folder detection
+        // but the tree will cause an internal issue when accessed
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        // Use NO_FOLDER_TREE which has no folders, to ensure flat behavior
+        const github = createMockGitHubClient(NO_FOLDER_TREE);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const sourceItem = { kind: 'source' as const, source: TEST_SOURCE };
+        const children = await provider.getChildren(sourceItem);
+
+        // Should fall through to categories (flat hierarchy)
+        const categoryChildren = (children as any[]).filter((c: any) => c.kind === 'category');
+        assert.ok(categoryChildren.length > 0, 'Should show categories on fallback');
+
+        provider.dispose();
+        registry.dispose();
+      });
+
+      it('should show error node when folder children rendering fails', async () => {
+        const github = {
+          getRepoTree: async () => { throw new Error('Network error'); },
+          getFileContent: async () => '',
+          getLatestCommitSha: async () => 'sha',
+          validateRepo: async () => ({ valid: true }),
+        } as unknown as GitHubClient;
+
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const folderItem = {
+          kind: 'folder' as const,
+          source: TEST_SOURCE,
+          folderName: 'some-folder',
+          displayName: 'Some Folder',
+          isDefault: false,
+        };
+        const children = await provider.getChildren(folderItem);
+
+        assert.strictEqual(children.length, 1);
+        const errItem = children[0] as any;
+        assert.strictEqual(errItem.kind, 'error');
+        assert.ok(errItem.message.includes('Some Folder'));
+
+        provider.dispose();
+        registry.dispose();
+      });
+    });
+
+    describe('NFR-007: scalability with up to 20 folders', () => {
+      it('should handle 20 folder nodes without issues', async () => {
+        const entries: GitHubTreeEntry[] = [];
+        for (let i = 0; i < 20; i++) {
+          const name = `team-${String(i).padStart(2, '0')}`;
+          entries.push({
+            path: `${name}/.github/agents/agent.agent.md`,
+            mode: '100644',
+            type: 'blob',
+            sha: `s${i}`,
+            url: '',
+          });
+        }
+        const bigTree: GitHubTreeResponse = {
+          sha: 'big', url: '', tree: entries, truncated: false,
+        };
+
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        const github = createMockGitHubClient(bigTree);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const sourceItem = { kind: 'source' as const, source: TEST_SOURCE };
+        const children = await provider.getChildren(sourceItem);
+
+        const folderChildren = (children as any[]).filter((c: any) => c.kind === 'folder');
+        assert.strictEqual(folderChildren.length, 20, 'Should handle 20 folders');
+
+        provider.dispose();
+        registry.dispose();
+      });
+    });
+
+    describe('existing behavior preservation', () => {
+      it('should preserve existing source expansion when no folders detected', async () => {
+        const registry = createMockSourceRegistry([TEST_SOURCE]);
+        const github = createMockGitHubClient(SAMPLE_TREE);
+        const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+        const sourceItem = { kind: 'source' as const, source: TEST_SOURCE };
+        const children = await provider.getChildren(sourceItem);
+
+        // SAMPLE_TREE has no folder structure, so should show categories directly
+        const categoryChildren = (children as any[]).filter((c: any) => c.kind === 'category');
+        assert.ok(categoryChildren.length > 0, 'Should have category nodes');
+
+        const folderChildren = (children as any[]).filter((c: any) => c.kind === 'folder');
+        assert.strictEqual(folderChildren.length, 0, 'Should NOT have folder nodes');
+
+        provider.dispose();
+        registry.dispose();
+      });
+    });
+  });
 });

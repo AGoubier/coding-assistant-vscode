@@ -9,6 +9,7 @@ import type {
   CategoryItem,
   CatalogFileItem,
   SourceItem,
+  FolderItem,
   SourceConfig,
   GitHubTreeResponse,
   GitHubTreeEntry,
@@ -23,7 +24,8 @@ import type {
 import { installationId } from '../models/types';
 import { GitHubClient } from '../services/githubClient';
 import { SourceRegistry, sourceKey } from '../services/sourceRegistry';
-import { classifyItem, detectWorkspaceTools } from '../services/toolDetector';
+import { classifyItem, detectWorkspaceTools, detectFolders, groupByFolder } from '../services/toolDetector';
+import { formatFolderName, stripFolderPrefix } from '../utils/pathUtils';
 import { parseBundle } from '../services/bundleParser';
 import type { ManifestManager } from '../services/manifestManager';
 import type { LifecycleManager } from '../services/lifecycle';
@@ -290,12 +292,75 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       case 'item':
         return this.createFileTreeItem(item);
       case 'folder':
-        return new vscode.TreeItem(item.displayName, vscode.TreeItemCollapsibleState.Collapsed);
+        return this.createFolderTreeItem(item);
       default: {
         const _exhaustive: never = item;
         return _exhaustive;
       }
     }
+  }
+
+  /**
+   * Build folder tree nodes for a source repository.
+   * Detects folders, filters empty ones (FR-016), formats names (FR-008),
+   * sorts alphabetically, and prepends Default folder when root items coexist (FR-006).
+   * Returns empty array when no folders detected (caller falls back to flat hierarchy).
+   * Spec refs: FR-004, FR-006, FR-007, FR-008, FR-016, Section 8.2.2
+   */
+  private getFolderNodes(source: SourceConfig, treeEntries: GitHubTreeEntry[]): FolderItem[] {
+    const detectionResults = detectFolders(treeEntries);
+    if (detectionResults.length === 0) {
+      return [];
+    }
+
+    const folderNames = new Set(detectionResults.map(r => r.folderName));
+    const grouped = groupByFolder(treeEntries, folderNames);
+
+    // Filter out empty folders (FR-016): folders whose blob entries all classify as 'unknown'
+    const nonEmptyFolders: FolderItem[] = [];
+    for (const result of detectionResults) {
+      const folderEntries = grouped.get(result.folderName) || [];
+      const hasClassifiable = folderEntries.some(e => {
+        if (e.type !== 'blob') { return false; }
+        const stripped = stripFolderPrefix(e.path, folderNames);
+        return classifyItem(stripped).tool !== 'unknown';
+      });
+      if (!hasClassifiable) { continue; }
+
+      nonEmptyFolders.push({
+        kind: 'folder',
+        source,
+        folderName: result.folderName,
+        displayName: formatFolderName(result.folderName),
+        isDefault: false,
+      });
+    }
+
+    if (nonEmptyFolders.length === 0) {
+      return [];
+    }
+
+    // Sort alphabetically by display name
+    nonEmptyFolders.sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+    // Check for root-level items (FR-006): if "" group has classifiable items, prepend Default
+    const rootEntries = grouped.get('') || [];
+    const hasRootClassifiable = rootEntries.some(e => {
+      if (e.type !== 'blob') { return false; }
+      return classifyItem(e.path).tool !== 'unknown';
+    });
+
+    if (hasRootClassifiable) {
+      nonEmptyFolders.unshift({
+        kind: 'folder',
+        source,
+        folderName: '',
+        displayName: 'Default',
+        isDefault: true,
+      });
+    }
+
+    return nonEmptyFolders;
   }
 
   async getChildren(element?: TreeElement): Promise<TreeElement[]> {
@@ -336,17 +401,83 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     const item = element as CatalogItem;
     switch (item.kind) {
       case 'source':
-        return this.getCategoryNodes(item);
+        return this.getSourceChildren(item);
       case 'category':
         return this.getFileNodes(item);
       case 'item':
         return [];
       case 'folder':
-        return [];
+        return this.getFolderChildren(item);
       default: {
         const _exhaustive: never = item;
         return _exhaustive;
       }
+    }
+  }
+
+  /**
+   * Get children for a source node. Detects folders and returns folder nodes
+   * when folders exist (FR-004), otherwise falls back to category nodes (FR-005, FR-007).
+   * Wraps detectFolders in try/catch for error resilience (T16-06).
+   */
+  private async getSourceChildren(sourceItem: SourceItem): Promise<TreeElement[]> {
+    try {
+      const tree = await this.getOrFetchTree(sourceItem.source);
+
+      // Try folder detection; on failure fall back to flat hierarchy (FR-005)
+      try {
+        const folderNodes = this.getFolderNodes(sourceItem.source, tree.tree);
+        if (folderNodes.length > 0) {
+          return folderNodes;
+        }
+      } catch (err) {
+        this.log.error(`Folder detection failed for ${sourceItem.source.url}, falling back to flat hierarchy: ${err}`);
+      }
+
+      // No folders or detection failed: fall back to existing category display (FR-005, FR-007)
+      return this.getCategoryNodes(sourceItem);
+    } catch (err) {
+      this.log.error(`Failed to load source ${sourceItem.source.url}: ${err}`);
+      return [{
+        kind: 'error',
+        message: `Unable to access repository: ${sourceItem.source.url}`,
+        source: sourceItem.source,
+      }];
+    }
+  }
+
+  /**
+   * Get children for a folder node. Returns category nodes scoped to the folder's entries.
+   * Default folder uses root-level entries (empty-string group from groupByFolder).
+   * Wraps in try/catch for error resilience (T16-06).
+   */
+  private async getFolderChildren(folderItem: FolderItem): Promise<TreeElement[]> {
+    try {
+      const tree = await this.getOrFetchTree(folderItem.source);
+      const detectionResults = detectFolders(tree.tree);
+      const folderNames = new Set(detectionResults.map(r => r.folderName));
+      const grouped = groupByFolder(tree.tree, folderNames);
+
+      // Get entries for this folder
+      const key = folderItem.isDefault ? '' : folderItem.folderName;
+      const rawEntries = grouped.get(key) || [];
+
+      // Strip folder prefixes for classification (non-default folders only)
+      const strippedEntries: GitHubTreeEntry[] = rawEntries.map(e => ({
+        ...e,
+        path: folderItem.isDefault ? e.path : stripFolderPrefix(e.path, folderNames),
+      }));
+
+      // Build a virtual source item and get category nodes scoped to folder entries
+      const virtualSource: SourceItem = { kind: 'source', source: folderItem.source };
+      return this.getCategoryNodes(virtualSource, strippedEntries, folderItem.folderName);
+    } catch (err) {
+      this.log.error(`Failed to load folder ${folderItem.displayName}: ${err}`);
+      return [{
+        kind: 'error',
+        message: `Failed to load folder: ${folderItem.displayName}`,
+        source: folderItem.source,
+      }];
     }
   }
 
@@ -358,11 +489,18 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     }));
   }
 
-  private async getCategoryNodes(sourceItem: SourceItem): Promise<TreeElement[]> {
+  private async getCategoryNodes(sourceItem: SourceItem, folderEntries?: GitHubTreeEntry[], folderName?: string): Promise<TreeElement[]> {
     try {
       await this.ensureDetectedTools();
-      const tree = await this.getOrFetchTree(sourceItem.source);
-      const entryMap = this.groupByCategory(tree.tree);
+
+      let entriesToGroup: GitHubTreeEntry[];
+      if (folderEntries) {
+        entriesToGroup = folderEntries;
+      } else {
+        const tree = await this.getOrFetchTree(sourceItem.source);
+        entriesToGroup = tree.tree;
+      }
+      const entryMap = this.groupByCategory(entriesToGroup);
 
       // Build category nodes, skipping empty categories
       const categories: CategoryItem[] = [];
@@ -410,6 +548,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
               category: category as CategoryType,
               tool: firstClassification.tool,
               filteredCount: matchCount,
+              folderName,
             });
             continue;
           }
@@ -419,18 +558,21 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
             source: sourceItem.source,
             category: category as CategoryType,
             tool: firstClassification.tool,
+            folderName,
           });
         }
       }
 
-      // Check for bundles directory and add Bundles category if present
-      const hasBundleFiles = await this.hasBundles(sourceItem.source);
+      // Check for bundles directory and add Bundles category if present (only for non-folder context)
       const result: TreeElement[] = categories;
-      if (hasBundleFiles) {
-        result.push({
-          kind: 'bundleCategory',
-          source: sourceItem.source,
-        });
+      if (folderName === undefined) {
+        const hasBundleFiles = await this.hasBundles(sourceItem.source);
+        if (hasBundleFiles) {
+          result.push({
+            kind: 'bundleCategory',
+            source: sourceItem.source,
+          });
+        }
       }
 
       return result;
@@ -524,8 +666,28 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   private async getFileNodes(categoryItem: CategoryItem): Promise<CatalogFileItem[]> {
     try {
       const tree = await this.getOrFetchTree(categoryItem.source);
-      const entryMap = this.groupByCategory(tree.tree);
-      const entries = entryMap.get(categoryItem.category) || [];
+
+      let entries: GitHubTreeEntry[];
+      let folderSet: Set<string> | undefined;
+
+      if (categoryItem.folderName !== undefined) {
+        // Folder-scoped: get entries for this specific folder, filter to category
+        const detectionResults = detectFolders(tree.tree);
+        folderSet = new Set(detectionResults.map(r => r.folderName));
+        const grouped = groupByFolder(tree.tree, folderSet);
+        const key = categoryItem.folderName === '' ? '' : categoryItem.folderName;
+        const rawEntries = (grouped.get(key) || []).filter(e => e.type === 'blob');
+
+        // Filter to entries matching this category using stripped-path classification
+        entries = rawEntries.filter(e => {
+          const strippedPath = key === '' ? e.path : stripFolderPrefix(e.path, folderSet!);
+          return classifyItem(strippedPath).category === categoryItem.category;
+        });
+      } else {
+        // Normal path: use full tree
+        const entryMap = this.groupByCategory(tree.tree);
+        entries = entryMap.get(categoryItem.category) || [];
+      }
 
       const newItems = this.newContentDetector
         ? new Set(this.newContentDetector.getNewItems(sourceKey(categoryItem.source)))
@@ -533,15 +695,20 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
 
       const items: CatalogFileItem[] = entries
         .map(entry => {
-          const classification = classifyItem(entry.path);
-          const name = this.extractItemName(entry.path);
+          // For folder-scoped items, strip prefix for classification but keep full path
+          const classPath = (folderSet && categoryItem.folderName)
+            ? stripFolderPrefix(entry.path, folderSet)
+            : entry.path;
+          const classification = classifyItem(classPath);
+          const name = this.extractItemName(classPath);
+          // installationId uses FULL path for manifest consistency (FR-012)
           const entryId = installationId(categoryItem.source.url, categoryItem.source.branch, entry.path);
           const isInstalled = this.installedIds.has(entryId);
           const hasUpdate = isInstalled && (this.lifecycleMgr?.hasUpdate(entryId) ?? false);
           return {
             kind: 'item' as const,
             source: categoryItem.source,
-            path: entry.path,
+            path: entry.path, // Full path retained for install operations (FR-012)
             name,
             tool: classification.tool,
             category: classification.category,
@@ -568,9 +735,12 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       if (this.newContentDetector) {
         const removedPaths = this.newContentDetector.getRemovedItems(sourceKey(categoryItem.source));
         for (const removedPath of removedPaths) {
-          const classification = classifyItem(removedPath);
+          const removedClassPath = (folderSet && categoryItem.folderName)
+            ? stripFolderPrefix(removedPath, folderSet)
+            : removedPath;
+          const classification = classifyItem(removedClassPath);
           if (classification.category === categoryItem.category) {
-            const name = this.extractItemName(removedPath);
+            const name = this.extractItemName(removedClassPath);
             const isInstalled = this.installedIds.has(
               installationId(categoryItem.source.url, categoryItem.source.branch, removedPath),
             );
@@ -771,6 +941,26 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       : item.isRemoved ? ', removed upstream'
       : '';
     treeItem.accessibilityInformation = { label: `${item.name}, ${item.tool}${status}` };
+    return treeItem;
+  }
+
+  private createFolderTreeItem(item: FolderItem): vscode.TreeItem {
+    const treeItem = new vscode.TreeItem(
+      item.displayName,
+      vscode.TreeItemCollapsibleState.Collapsed,
+    );
+    treeItem.iconPath = new vscode.ThemeIcon('folder');
+    treeItem.contextValue = 'catalogItem.folder';
+    const sourceName = item.source.name || item.source.url;
+    if (item.isDefault) {
+      treeItem.accessibilityInformation = {
+        label: `Default folder (root-level items), source: ${sourceName}`,
+      };
+    } else {
+      treeItem.accessibilityInformation = {
+        label: `Folder: ${item.displayName}, source: ${sourceName}`,
+      };
+    }
     return treeItem;
   }
 

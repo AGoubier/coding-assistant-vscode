@@ -99,6 +99,7 @@ export interface CategoryItem {
   category: CategoryType;
   tool: ToolType;
   filteredCount?: number;
+  folderName?: string;
 }
 
 export interface CatalogFileItem {
