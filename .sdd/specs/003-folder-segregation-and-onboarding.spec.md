@@ -2,7 +2,7 @@
 
 > **Source brief**: `.sdd/ideas/003-folder-segregation-and-onboarding.md`
 > **Feature branch**: `003-folder-segregation-and-onboarding`
-> **Status**: Draft
+> **Status**: Validated
 > **Version**: 1.0
 
 ---
