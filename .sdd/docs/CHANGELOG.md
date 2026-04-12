@@ -4,6 +4,21 @@ All notable changes to this project are documented in this file. Entries are ord
 
 ---
 
+## [WP20] - Onboarding Walkthrough and Enterprise Configuration (2026-04-12)
+
+### Added
+
+- Get Started walkthrough that auto-opens on first extension install, guiding new users through two steps: configuring an index URL source and browsing the catalog (FR-028, FR-029, FR-030, FR-031)
+- Walkthrough step completion events: Step 1 completes when the `indexUrl` setting is changed, Step 2 completes when the catalog view is opened (FR-030)
+- Walkthrough media markdown files: `resources/walkthrough/configure-source.md` and `resources/walkthrough/browse-catalog.md` with clear, concise guidance for first-time users (FR-031)
+- "Get Started" command (`awesome-coding-assistants.openWalkthrough`) for re-accessing the walkthrough from the Command Palette at any time (FR-032, FR-033)
+- Error handling for the openWalkthrough command: catches failures, logs at error level with `WALKTHROUGH_NOT_FOUND` code, and shows an informational message to the user (FR-032)
+- `WALKTHROUGH_NOT_FOUND` error code in `errors.ts` for structured walkthrough error logging
+- Enterprise pre-configuration support: machine-level `indexUrl` settings (configured via Intune, GPO, or image provisioning) are respected by standard VS Code settings resolution -- no custom code required (FR-034, FR-035)
+- 11 unit tests in `walkthrough.test.ts` covering command registration, correct walkthrough ID, error handling, and enterprise configuration code paths (T20-07)
+
+---
+
 ## [WP19] - Index URL Migration and Multi-Index Merge (2026-04-12)
 
 ### Added

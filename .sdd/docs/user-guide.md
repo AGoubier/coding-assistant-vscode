@@ -6,7 +6,17 @@ Awesome Coding Assistants is a VS Code extension that lets you discover, install
 
 ## Getting Started
 
-After installing the extension, you will see an "Awesome Coding Assistants" icon in the Activity Bar (left sidebar). Click it to open the Catalog view. You can also find a collapsed "Awesome Coding Assistants" view in the Explorer panel.
+After installing the extension, a **Get Started walkthrough** automatically opens to guide you through initial setup. The walkthrough has two steps:
+
+1. **Configure Your Source** -- Set your index URL to point to a catalog of AI coding assistant customizations. The index URL tells the extension where to find available agents, prompts, skills, and rules. Configure it in VS Code settings under `awesome-coding-assistants.indexUrl`. This step completes automatically when you change the setting.
+
+2. **Browse the Catalog** -- Open the Catalog view in the Activity Bar to explore available customizations. Click the "Awesome Coding Assistants" icon in the left sidebar. This step completes automatically when you open the catalog view.
+
+You can also find a collapsed "Awesome Coding Assistants" view in the Explorer panel.
+
+### Re-accessing the Walkthrough
+
+To re-open the Get Started walkthrough at any time, run **Awesome Coding Assistants: Get Started** from the Command Palette (Ctrl+Shift+P / Cmd+Shift+P).
 
 ### Initial Setup
 
@@ -33,6 +43,7 @@ Features are being implemented incrementally. Current status:
 - [x] Practice bundles (one-click install of curated item collections)
 - [x] Search and filter (keyword search across all sources)
 - [x] New content detection (badge and markers for new/removed items)
+- [x] Onboarding walkthrough (guided first-run setup with re-access command)
 - [ ] Import/export
 
 ## Browsing Customizations
@@ -361,6 +372,7 @@ Access commands via Cmd/Ctrl+Shift+P and search for "Awesome Coding Assistants":
 | Search Customizations | Search the catalog by keyword |
 | Clear Search | Remove the active search filter |
 | Mark All as Seen | Dismiss all new/removed content markers |
+| Get Started | Re-open the onboarding walkthrough |
 
 ## Search and Filter
 
@@ -390,6 +402,12 @@ Use the Search command to quickly find customizations across all configured sour
 ### Empty Results
 
 If no items match your query, a "No items match '{query}'" message is displayed in the tree.
+
+## Enterprise Pre-configuration
+
+Enterprise administrators can pre-configure the `indexUrl` setting in machine-level `settings.json` (via Intune, GPO, or image-based provisioning) to direct users to a private catalog on first launch. When a machine-level `indexUrl` is set, the walkthrough's "Configure Your Source" step reflects the pre-configured value, and users can start browsing the catalog immediately.
+
+Note: VS Code custom settings cannot be policy-locked. Users may override machine-level settings with user-level or workspace-level values.
 
 ## Troubleshooting
 

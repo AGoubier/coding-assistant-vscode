@@ -110,10 +110,14 @@ awesome-coding-assistants/
       search.test.ts             # Search and filter tests: matchesSearch, filtered tree, state (WP10)
       newContentDetector.test.ts # New content detector: snapshot diffing, mark seen (WP12)
       multiIndex.test.ts   # Multi-index URL migration: normalizeIndexUrls, loadMultipleIndexes, dedup, partial failure (WP19)
+      walkthrough.test.ts  # Walkthrough command handler: openWalkthrough, error handling, enterprise config (WP20)
   dist/                  # Bundled extension output (esbuild)
   out/                   # TypeScript compiled output (for tests)
   resources/
     icons/               # Extension icons (activity bar, tool badges)
+    walkthrough/         # Walkthrough media markdown files (WP20)
+      configure-source.md  # Step 1: index URL configuration guidance
+      browse-catalog.md    # Step 2: catalog browsing guidance
 ```
 
 ## Build System

@@ -18,6 +18,7 @@ Extension Host (src/extension.ts)
   |     +-- tokenCommands - addToken, removeToken handlers
   |     +-- cacheCommands - clearCache handler
   |     +-- installBundleCommand - installs all items in a bundle sequentially
+  |     +-- openWalkthrough - opens the Get Started walkthrough via workbench.action.openWalkthrough (WP20)
   |
   +-- Providers (src/providers/)
   |     +-- CatalogTreeProvider - TreeDataProvider for the catalog view; dispatches to folder or category children based on detectFolders() result
@@ -38,10 +39,14 @@ Extension Host (src/extension.ts)
   |
   +-- Models (src/models/)
   |     +-- types.ts - shared TypeScript interfaces (CatalogItem union incl. FolderItem, FolderDetectionResult, CrossFolderConflict, ConflictCandidate, MergedSourceList, IndexFetchResult)
-  |     +-- errors.ts - custom error classes and IndexErrorCodes (INDEX_FETCH_FAILED, INDEX_SCHEMA_INVALID, INVALID_INDEX_URL_TYPE)
+  |     +-- errors.ts - custom error classes and IndexErrorCodes (INDEX_FETCH_FAILED, INDEX_SCHEMA_INVALID, INVALID_INDEX_URL_TYPE, WALKTHROUGH_NOT_FOUND)
   |
   +-- Utils (src/utils/)
         +-- pathUtils.ts - path computation, traversal validation, folder name formatting (formatFolderName), folder prefix stripping (stripFolderPrefix)
+  |
+  +-- Resources (resources/)
+        +-- walkthrough/configure-source.md - walkthrough media: explains index URL configuration (WP20)
+        +-- walkthrough/browse-catalog.md - walkthrough media: explains catalog browsing and item installation (WP20)
 ```
 
 ## Technology Stack
@@ -103,6 +108,8 @@ The extension activates lazily. On activation:
 24. Initializes NewContentDetector (global state-backed tree snapshot diffing) and injects into CatalogTreeProvider
 25. During auto-check, compares source trees against baselines to detect new and removed items; updates TreeView badge and shows notification
 26. Registers markAllSeen command to clear all new/removed content markers and reset badge
+27. Registers openWalkthrough command to re-open the Get Started walkthrough via `workbench.action.openWalkthrough` with error handling (WALKTHROUGH_NOT_FOUND) (WP20)
+28. Contributes a declarative walkthrough (`contributes.walkthroughs` in package.json) with two steps: "Configure Your Source" (completed on indexUrl setting change) and "Browse the Catalog" (completed on catalog view open). The walkthrough auto-opens on first install. (WP20)
 
 ## Security
 
