@@ -118,7 +118,7 @@ Implements `vscode.TreeDataProvider<TreeElement>` for the main catalog tree view
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `getChildren` | `(element?) => Promise<TreeElement[]>` | Returns child nodes (sources at root, categories for source, items for category) |
+| `getChildren` | `(element?) => Promise<TreeElement[]>` | Returns child nodes. Sources at root; folders or categories for a source (depending on detected folders); categories scoped to a folder's entries for folder nodes; items for a category. |
 | `getTreeItem` | `(element) => TreeItem` | Converts a tree element to a VS Code TreeItem with icons, labels, context values, and lazy-fetched descriptions |
 | `refresh` | `() => void` | Clears internal tree cache, description cache, and fires `onDidChangeTreeData` |
 | `setSearchQuery` | `(query: string) => void` | Sets the active search filter and refreshes the tree. Empty string clears the filter. |
@@ -139,6 +139,7 @@ File item descriptions are fetched lazily via `GitHubClient.getFileContent()` on
 | Context Value | Description |
 |--------------|-------------|
 | `catalogItem.source` | A source repository node |
+| `catalogItem.folder` | A folder grouping node (between source and category when folders are detected) |
 | `catalogItem.category` | A category grouping node |
 | `catalogItem.item` | An installable item (not installed) |
 | `catalogItem.installed` | An installed item |

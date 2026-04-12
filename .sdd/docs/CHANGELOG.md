@@ -4,6 +4,27 @@ All notable changes to this project are documented in this file. Entries are ord
 
 ---
 
+## [WP16] - Catalog Tree Folder Display (2026-04-12)
+
+### Added
+
+- Folder nodes in the catalog tree: when a source repository contains subfolders with `.github/` or `.claude/` directories, expanding a source now shows folder nodes before category nodes (Source > Folder > Category > Items hierarchy) (FR-004)
+- `getFolderNodes()` method in `CatalogTreeProvider` that detects folders, filters empty ones (FR-016), formats display names (FR-008), sorts alphabetically, and prepends a "Default" folder when root-level items coexist with real folders (FR-006)
+- `getSourceChildren()` method extracted for source node expansion with folder-or-category dispatch
+- `getFolderChildren()` method for expanding folder nodes into scoped category nodes
+- `createFolderTreeItem()` for rendering folder tree items with `ThemeIcon('folder')`, formatted labels, and accessibility information (NFR-010, NFR-011)
+- `catalogItem.folder` context value for folder nodes
+- Error resilience: `detectFolders()` failures fall back to flat hierarchy (FR-005); folder children rendering failures show an error node under the folder (T16-06)
+
+### Changed
+
+- `getChildren()` now delegates to `getSourceChildren()` for source nodes and `getFolderChildren()` for folder nodes
+- `getCategoryNodes()` accepts optional `folderEntries` and `folderName` parameters to support folder-scoped category rendering
+- `getFileNodes()` uses folder-prefix-stripped paths for classification while retaining full source paths for install and manifest operations (FR-012)
+- When no folders are detected in a source, the tree renders identically to pre-folder behavior (FR-005, FR-007)
+
+---
+
 ## [WP15] - Folder Detection, Path Utilities, and Type Extensions (2026-04-12)
 
 ### Added

@@ -20,7 +20,7 @@ Extension Host (src/extension.ts)
   |     +-- installBundleCommand - installs all items in a bundle sequentially
   |
   +-- Providers (src/providers/)
-  |     +-- CatalogTreeProvider - TreeDataProvider for the catalog view
+  |     +-- CatalogTreeProvider - TreeDataProvider for the catalog view; dispatches to folder or category children based on detectFolders() result
   |     +-- PreviewProvider - TextDocumentContentProvider for item preview
   |
   +-- Services (src/services/)

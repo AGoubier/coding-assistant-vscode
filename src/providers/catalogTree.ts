@@ -944,6 +944,10 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     return treeItem;
   }
 
+  /**
+   * Create a TreeItem for a folder node with folder icon, formatted label,
+   * and accessibility information (NFR-010, NFR-011).
+   */
   private createFolderTreeItem(item: FolderItem): vscode.TreeItem {
     const treeItem = new vscode.TreeItem(
       item.displayName,

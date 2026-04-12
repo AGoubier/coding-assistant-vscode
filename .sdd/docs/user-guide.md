@@ -42,8 +42,9 @@ Features are being implemented incrementally. Current status:
 The catalog tree view displays customizations in a hierarchy:
 
 1. **Source nodes** - Each configured repository appears as a top-level node
-2. **Category nodes** - Expanding a source shows categories (Agents, Instructions, Skills, Prompts, Hooks, Commands, Rules, Modes)
-3. **Item nodes** - Expanding a category shows individual customization items
+2. **Folder nodes** - If the source repository contains subfolders with AI tool configurations, folder nodes appear as an intermediate level (see "Folder Navigation" below)
+3. **Category nodes** - Expanding a source (or folder) shows categories (Agents, Instructions, Skills, Prompts, Hooks, Commands, Rules, Modes)
+4. **Item nodes** - Expanding a category shows individual customization items
 
 Items display tool badges:
 - **Copilot icon** - Items for GitHub Copilot (`.github/agents/`, `.github/instructions/`, etc.)
@@ -51,6 +52,21 @@ Items display tool badges:
 - **AI icon** - Items with unknown tool affiliation
 
 Each item also shows a brief description extracted from the file's first non-heading line (fetched lazily on first view). Installed items display a `$(check) installed` indicator instead.
+
+### Folder Navigation
+
+Source repositories can organize their customizations into subfolders (e.g., `frontend-team/`, `backend-team/`). When folders are detected, the catalog tree inserts a folder level between the source and category nodes:
+
+**Source > Folder > Category > Items**
+
+- Folder names are auto-formatted for display: dashes and underscores become spaces, and each word is title-cased (e.g., `frontend-team` displays as "Frontend Team").
+- A **"Default"** folder appears when the repository has both subfolder items and root-level items. It groups root-level items (those not inside any subfolder).
+- Empty folders (containing no recognized AI tool items) are hidden automatically.
+- If a repository has no subfolders, the tree displays the original flat hierarchy: **Source > Category > Items**.
+
+Folder detection is automatic -- repository maintainers do not need to add any configuration. Any first-level directory containing `.github/` or `.claude/` subdirectories qualifies as a folder.
+
+When installing items from a subfolder, the folder prefix is stripped so the item lands in the same workspace location as if it came from the repository root.
 
 ### Default Source
 
