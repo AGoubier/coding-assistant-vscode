@@ -1,5 +1,5 @@
 ---
-lane: for_review
+lane: done
 depends_on: [WP15]
 docs_scope: [architecture, api-reference, user-guide, changelog, inline-code]
 target_language: TypeScript
@@ -194,6 +194,49 @@ This work package modifies the `CatalogTreeProvider` to insert folder nodes betw
 - **Risk**: Performance regression from additional folder detection + grouping on every source expand. **Mitigation**: `detectFolders()` is O(n) over entries (single pass); results can be cached alongside the tree cache. NFR-002 budgets 50ms overhead.
 - **Risk**: Search and tool filtering interactions with folder hierarchy. **Mitigation**: WP18 handles search; tool filtering applies at the item level and is unaffected by the folder grouping level.
 
+## Review
+
+> **Reviewed by**: Review Coordinator (v2)
+> **Date**: 2026-04-12T17:00:00Z
+> **Verdict**: Approved with Findings
+> **Skills dispatched**: review-spec (PASS), review-architecture (PASS), review-security (PASS), review-quality (WARN), review-performance (WARN), review-tests (WARN), review-deps (PASS), review-docs (WARN)
+> **Review round**: 1
+
+### Process Compliance
+- [PASS] Spec Compliance Checklist: All acceptance criteria checked off for T16-01 through T16-07
+- [PASS] Activity Log: Correct transitions planned -> doing -> for_review
+- [WARN] Commit granularity: T16-01 through T16-07 implemented in a single commit (bf90c46) rather than per-task commits
+- [PASS] Encoding: No prohibited Unicode characters found
+
+### Review Feedback
+
+> Implementers: no FAIL items. WARNs are advisory.
+
+(No FB-XX items -- zero FAILs)
+
+### Warnings
+- [WARN] Redundant `detectFolders()` and `groupByFolder()` calls in `getFolderChildren()` and `getFileNodes()` -- both methods re-compute folder detection on every expansion rather than caching results alongside `treeCache`. For 20 folders with multiple categories, this means ~80 redundant O(n) scans. (review-quality QUAL-007, review-performance PERF-005)
+- [WARN] Test "should fall back to flat hierarchy when detectFolders throws" (catalogTree.test.ts:1635) uses `NO_FOLDER_TREE` which has no folders -- it exercises the normal FR-005 path, not the error catch path. The inner catch block in `getSourceChildren()` is not exercised by any test. (review-tests TEST-004)
+- [WARN] CHANGELOG has no WP16 entry. Pending post-approval documentation pipeline per project workflow. (review-docs DOCS-003)
+- [WARN] Commit granularity: all tasks (T16-01 through T16-07) in one commit. (Process compliance PROC-003)
+
+### Cross-Correlation Notes
+- QUAL-007 (code duplication) and PERF-005 (unnecessary computation) reference the same code locations (catalogTree.ts getFolderChildren/getFileNodes). Merged into a single composite warning above. Both skills independently identified the redundant `detectFolders()`/`groupByFolder()` pattern.
+
+### Statistics
+| Dimension | Pass | Warn | Fail |
+|-----------|------|------|------|
+| Process Compliance | 3 | 1 | 0 |
+| review-spec | 11 | 0 | 0 |
+| review-architecture | 8 | 0 | 0 |
+| review-security | 1 | 0 | 0 |
+| review-quality | 7 | 1 | 0 |
+| review-performance | 2 | 1 | 0 |
+| review-tests | 5 | 1 | 0 |
+| review-deps | 0 | 0 | 0 |
+| review-docs | 2 | 1 | 0 |
+| **Total** | **39** | **5** | **0** |
+
 ## Activity Log
 
 - 2025-07-20T00:00:00Z - planner - lane=planned - Work package created
@@ -201,3 +244,4 @@ This work package modifies the `CatalogTreeProvider` to insert folder nodes betw
 - 2026-04-12T16:10:00Z - coder - T16-01 through T16-06 completed - Implementation of folder tree display in catalogTree.ts
 - 2026-04-12T16:15:00Z - coder - T16-07 completed - 19 unit tests for folder tree display added
 - 2026-04-12T16:20:00Z - coder - lane=for_review - All tasks complete, 507 tests passing, coverage met
+- 2026-04-12T17:00:00Z - review-coordinator - lane=done - Verdict: Approved with Findings (5 WARNs)
