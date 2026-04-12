@@ -9,8 +9,9 @@ import type { GitHubClient } from '../services/githubClient';
 import type { Installer } from '../services/installer';
 import type { ManifestManager } from '../services/manifestManager';
 import { InvalidPathError } from '../models/errors';
-import { getTargetPath, getTargetDirectory } from '../utils/pathUtils';
+import { getTargetPath, getTargetDirectory, stripFolderPrefix } from '../utils/pathUtils';
 import { buildPreviewUri } from '../providers/previewProvider';
+import { detectCrossFolderConflict, resolveFolderConflict } from '../services/conflictResolver';
 
 /**
  * Resolve the target relative path for a CatalogFileItem.
@@ -176,6 +177,7 @@ export async function installCommand(
   log: vscode.LogOutputChannel,
   refreshTree: () => void,
   getRepoTree: (source: SourceConfig) => Promise<GitHubTreeResponse>,
+  discoveredFolders: Set<string> = new Set(),
 ): Promise<void> {
   // Step 1: Select target folder (FR-024)
   const folder = await installer.selectTargetFolder();
@@ -191,15 +193,38 @@ export async function installCommand(
         cancellable: true,
       },
       async (progress, token) => {
+        // FR-010: Compute stripped path for folder-enabled sources
+        const strippedPath = stripFolderPrefix(item.path, discoveredFolders);
+        let effectiveItem = item;
+
+        // FR-014, FR-015: Cross-folder conflict detection (folder-enabled sources only)
+        if (discoveredFolders.size > 0 && strippedPath !== item.path) {
+          const tree = await getRepoTree(item.source);
+          const currentManifest = await manifest.readManifest(folder);
+          const conflict = detectCrossFolderConflict(
+            item.path, discoveredFolders, tree.tree, currentManifest, item.source, log,
+          );
+          if (conflict) {
+            const selected = await resolveFolderConflict(conflict, log);
+            if (!selected) {
+              return undefined; // User cancelled -- no install
+            }
+            // Use the selected candidate's path if different from original
+            if (selected.fullSourcePath !== item.path) {
+              effectiveItem = { ...item, path: selected.fullSourcePath };
+            }
+          }
+        }
+
         let result: string[] | undefined;
 
         // Step 2-6: Install based on item type
-        if (item.category === 'skills' || item.category === 'plugins') {
+        if (effectiveItem.category === 'skills' || effectiveItem.category === 'plugins') {
           result = await installDirectoryItem(
-            item, folder, installer, github, log, getRepoTree, token, progress,
+            effectiveItem, folder, installer, github, log, getRepoTree, token, progress,
           );
         } else {
-          result = await installSingleFile(item, folder, installer, log);
+          result = await installSingleFile(effectiveItem, folder, installer, log);
         }
 
         if (!result || result.length === 0) {
@@ -210,20 +235,21 @@ export async function installCommand(
         progress.report({ message: 'Updating manifest...' });
         let commitSha: string;
         try {
-          commitSha = await github.getLatestCommitSha(item.source, item.path);
+          commitSha = await github.getLatestCommitSha(effectiveItem.source, effectiveItem.path);
         } catch {
           commitSha = 'unknown';
-          log.warn(`Could not fetch commit SHA for ${item.path}, using 'unknown'`);
+          log.warn(`Could not fetch commit SHA for ${effectiveItem.path}, using 'unknown'`);
         }
 
+        // FR-012: Manifest stores the FULL source path (including folder prefix)
         const entry: InstallationEntry = {
-          id: installationId(item.source.url, item.source.branch, item.path),
-          sourceUrl: item.source.url,
-          sourceBranch: item.source.branch || 'main',
-          itemPath: item.path,
+          id: installationId(effectiveItem.source.url, effectiveItem.source.branch, effectiveItem.path),
+          sourceUrl: effectiveItem.source.url,
+          sourceBranch: effectiveItem.source.branch || 'main',
+          itemPath: effectiveItem.path,
           targetPaths: result,
-          tool: item.tool,
-          category: item.category,
+          tool: effectiveItem.tool,
+          category: effectiveItem.category,
           commitSha,
           installedAt: new Date().toISOString(),
         };

@@ -141,7 +141,7 @@ export class LifecycleManager {
 
   /**
    * Apply an upstream update: re-download the file(s) and update the manifest entry.
-   * FR-031: Update action.
+   * FR-031: Update action. FR-013: Uses full itemPath from manifest for fetch.
    */
   async applyUpdate(
     entry: InstallationEntry,
@@ -150,10 +150,19 @@ export class LifecycleManager {
   ): Promise<void> {
     const source = this.entryToSource(entry);
 
-    // Re-install all target paths
+    // FR-013: Re-install all target paths using full itemPath for source fetch
     for (const targetPath of entry.targetPaths) {
       const targetUri = vscode.Uri.joinPath(folder.uri, targetPath);
-      await this.installer.installFile(source, entry.itemPath, targetUri, targetPath);
+      try {
+        await this.installer.installFile(source, entry.itemPath, targetUri, targetPath);
+      } catch (err) {
+        // FR-013: If source path no longer exists, report to user
+        const detail = err instanceof Error ? err.message : String(err);
+        if (detail.includes('404') || detail.includes('Not Found') || detail.includes('not found')) {
+          throw new Error(`Item not found in source: ${entry.itemPath}. It may have been moved or deleted from the repository.`);
+        }
+        throw err;
+      }
     }
 
     // Update manifest entry with new SHA and timestamp

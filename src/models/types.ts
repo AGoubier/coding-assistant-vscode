@@ -133,6 +133,27 @@ export interface FolderItem {
 export type CatalogItem = SourceItem | CategoryItem | CatalogFileItem | FolderItem;
 
 /**
+ * Represents a cross-folder naming conflict where two or more items
+ * from different folders resolve to the same workspace target path.
+ * Spec ref: FR-014, Section 7.14
+ */
+export interface CrossFolderConflict {
+  targetPath: string;
+  candidates: ConflictCandidate[];
+}
+
+/**
+ * A single candidate in a cross-folder conflict.
+ * Spec ref: FR-014, Section 7.15
+ */
+export interface ConflictCandidate {
+  fullSourcePath: string;
+  folderName: string;
+  folderDisplayName: string;
+  source: SourceConfig;
+}
+
+/**
  * Result of folder detection on a source repository's tree entries.
  * Each result represents one discovered folder and all entries under it.
  * Spec ref: FR-001, FR-002, Section 7.2
