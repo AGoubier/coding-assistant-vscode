@@ -1,7 +1,5 @@
 ---
-lane: for_review
-review_status: addressed
-review_cycles: 1
+lane: done
 depends_on: [WP15, WP16]
 docs_scope: [architecture, api-reference, user-guide, changelog, inline-code]
 target_language: TypeScript
@@ -203,49 +201,39 @@ This work package extends the installation, manifest tracking, and update/uninst
 - 2026-04-12T12:00:00Z - review-coordinator - lane=to_do - Verdict: Changes Required (2 FAILs) -- awaiting remediation
 - 2026-04-12T13:00:00Z - coder - lane=doing - Rework mode: addressing 2 FB-XX items (FB-01, FB-02)
 - 2026-04-12T13:30:00Z - coder - lane=for_review - FB-01 and FB-02 fixed, all 541 tests passing
+- 2026-04-12T14:00:00Z - review-coordinator - lane=done - Verdict: Approved with Findings (9 WARNs)
 
 ## Review
 
 > **Reviewed by**: Review Coordinator (v2)
-> **Date**: 2026-04-12T12:00:00Z
-> **Verdict**: Changes Required
-> **Skills dispatched**: review-spec (PASS), review-architecture (WARN), review-security (PASS), review-quality (PASS), review-performance (PASS), review-tests (FAIL), review-deps (N/A), review-docs (WARN)
-> **Review round**: 1
+> **Date**: 2026-04-12T14:00:00Z
+> **Verdict**: Approved with Findings
+> **Skills dispatched**: review-tests (PASS) [re-review]; review-spec (PASS), review-architecture (WARN), review-security (PASS), review-quality (PASS), review-performance (PASS), review-deps (N/A), review-docs (WARN) [preserved from round 1]
+> **Review round**: 2
 
 ### Process Compliance
-- [PASS] Spec Compliance Checklist: All acceptance criteria checked off. Note: T17-04 AC #2 references `isInstalled` field that doesn't exist in ConflictCandidate type.
+- [PASS] Spec Compliance Checklist: All acceptance criteria checked off.
 - [WARN] Activity Log: Timestamps are non-chronological (2026-04-12 lane=doing followed by 2025-07-20 T17-07 completed)
-- [PASS] Commit granularity: 2 commits (a60f450 impl, 550efee tests) -- reasonable grouping
+- [PASS] Commit granularity: 1 commit for FB-01/FB-02 rework -- appropriate for targeted fix
 - [PASS] Encoding: No violations found
 
 ### Review Feedback
 
-> Implementers: address every FB-XX item before returning for re-review.
-
-- [x] **FB-01**: [TESTS] FR-040 dimension 1 - T17-05 tests are vacuous. Tests in `test/suite/folderInstall.test.ts#L335-L358` manually write log messages and assert them back -- `resolveFolderConflict()` is never called. Three checked ACs (quick-pick selection return, dismiss return, logging behavior) have zero test coverage.
-  File: test/suite/folderInstall.test.ts#L335-L358. Expected: Mock `vscode.window.showQuickPick` per spec Section 11.4 and call `resolveFolderConflict()` to verify return values and actual logging.
-  Source skills: review-tests (TEST-001)
-
-- [x] **FB-02**: [TESTS] FR-040 dimension 2 - New FR-013 error handling code in lifecycle.ts (404 detection with descriptive error throw) added by WP17 has no test coverage.
-  File: src/services/lifecycle.ts#L165-L172. Expected: Add a test that exercises `applyUpdate()` with a source 404 and verifies the "Item not found in source" error is thrown.
-  Source skills: review-tests (TEST-002)
+> No FAIL findings. All previous FB-XX items resolved.
 
 ### Warnings
-- [WARN] Activity Log timestamps non-chronological: lane=doing at 2026-04-12 followed by T17-07 at 2025-07-20 (PROC-002)
-- [WARN] WP Spec References cite US-04/US-05 but spec defines these as US-06/US-07 (review-spec, informational)
-- [WARN] API contract shapes deviate from spec IConflictResolver interface: parameter order, function name (resolveFolderConflict vs resolveConflict), extra log param (review-spec, informational)
-- [WARN] T17-04 AC #2 checked off but `isInstalled` field does not exist in ConflictCandidate type (PROC-001, informational)
-- [WARN] conflictResolver.ts created as separate module vs spec preference for installer.ts; WP plan permits this (review-architecture ARCH-004)
-- [WARN] US-06 Scenarios 4-7 (update, uninstall, overwrite, "not found" for folder items) lack corresponding tests (review-tests TEST-003)
-- [WARN] conflictResolver.ts absent from coverage report -- cannot verify 80% threshold (review-tests TEST-004)
-- [WARN] No integration test for full install flow with conflict detection (review-tests TEST-005)
-- [WARN] architecture.md missing conflictResolver.ts module listing (review-docs DOC-001)
-- [WARN] api-reference.md missing cross-folder conflict API documentation (review-docs DOC-002)
-- [WARN] user-guide.md missing cross-folder conflict UX documentation (review-docs DOC-003)
-- [WARN] CHANGELOG.md missing WP17 entry (review-docs DOC-004)
+- [WARN] Activity Log timestamps non-chronological (PROC-002, carried over)
+- [WARN] WP Spec References cite US-04/US-05 but spec defines these as US-06/US-07 (review-spec, carried over)
+- [WARN] API contract shapes deviate from spec IConflictResolver interface (review-spec, carried over)
+- [WARN] T17-04 AC #2 checked off but isInstalled field does not exist in ConflictCandidate type (PROC-001, carried over)
+- [WARN] conflictResolver.ts created as separate module vs spec preference for installer.ts (review-architecture ARCH-004, carried over)
+- [WARN] US-06 Scenarios 4-7 lack corresponding BDD-style tests (review-tests TEST-003, carried over)
+- [WARN] conflictResolver.ts absent from coverage report (review-tests TEST-004, carried over)
+- [WARN] No integration test for full install flow with conflict detection (review-tests TEST-005, carried over)
+- [WARN] architecture.md, api-reference.md, user-guide.md, CHANGELOG.md missing WP17 entries (review-docs DOC-001 to DOC-004, carried over)
 
 ### Cross-Correlation Notes
-- No cross-correlation findings. All findings are unique to their respective skills.
+- No cross-correlation findings.
 
 ### Statistics
 | Dimension | Pass | Warn | Fail |
@@ -256,7 +244,7 @@ This work package extends the installation, manifest tracking, and update/uninst
 | review-security | 3 | 0 | 0 |
 | review-quality | 8 | 0 | 0 |
 | review-performance | 3 | 0 | 0 |
-| review-tests | 4 | 3 | 2 |
+| review-tests | 6 | 3 | 0 |
 | review-deps | 0 | 0 | 0 |
 | review-docs | 3 | 4 | 0 |
-| **Total** | **39** | **9** | **2** |
+| **Total** | **41** | **9** | **0** |
