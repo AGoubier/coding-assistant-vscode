@@ -68,14 +68,38 @@ Classifies file paths into tool type and category, and detects which AI tools ar
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `classifyItem` | `(path: string) => ToolClassification` | Returns `{ tool, category }` for recognized paths, `{ tool: 'unknown', category: 'unknown' }` for unrecognized. Case-insensitive path matching. |
+| `classifyItem` | `(path: string) => ToolClassification` | Returns `{ tool, category }` for recognized paths, `{ tool: 'unknown', category: 'unknown' }` for unrecognized. Case-insensitive path matching. Callers must strip folder prefixes via `stripFolderPrefix()` before calling. |
 | `detectWorkspaceTools` | `(folder: WorkspaceFolder) => Promise<DetectedTool[]>` | Scans workspace folder for tool marker files/directories. Returns array of `{ tool, confidence }`. |
+| `detectFolders` | `(entries: GitHubTreeEntry[]) => FolderDetectionResult[]` | Scans flat tree entries for first-level directories containing `.github/` or `.claude/` subdirectories. Case-sensitive for directory names, case-insensitive for markers. Only first path segment qualifies (FR-002). Pure function, no API calls. |
+| `groupByFolder` | `(entries: GitHubTreeEntry[], folders: Set<string>) => Map<string, GitHubTreeEntry[]>` | Partitions entries by folder name. Root-level entries (`.github/`/`.claude/` at repo root) are grouped under `""`. Entries not matching any folder or root pattern are excluded. |
 
 **classifyItem recognized patterns:**
 - Copilot: `.github/agents/*.agent.md`, `.github/instructions/*.instructions.md`, `.github/skills/*`, `.github/prompts/*.prompt.md`, `.github/hooks/*.json`, `.github/chatmodes/*`
 - Claude Code: `.claude/agents/*`, `.claude/rules/*`, `.claude/commands/*`, `.claude/hooks/*`, `CLAUDE.md`, `.claude/settings.json`
 
+**classifyItem templates/ change**: The `templates/` prefix is no longer stripped inside `classifyItem()`. Callers must use `stripFolderPrefix()` before classification. Passing `templates/.github/agents/x.md` directly returns `{ tool: 'unknown', category: 'unknown' }`.
+
 **Additional ToolType values**: The `ToolType` union also includes `kiro`, `kilocode`, and `opencode` (icon-ready but without classification patterns yet).
+
+**FolderDetectionResult type**:
+```typescript
+{
+  folderName: string;    // Raw directory name (e.g., "frontend-team")
+  isDefault: boolean;    // Always false for detected folders
+  entries: GitHubTreeEntry[];  // All tree entries under this folder
+}
+```
+
+**FolderItem type** (new CatalogItem union member):
+```typescript
+{
+  kind: 'folder';         // Discriminant
+  source: SourceConfig;   // Parent source
+  folderName: string;     // Raw directory name
+  displayName: string;    // Formatted name via formatFolderName()
+  isDefault: boolean;     // True for the virtual "Default" folder
+}
+```
 
 **detectWorkspaceTools markers:**
 
@@ -295,6 +319,33 @@ Parses and validates bundle manifest JSON files from `bundles/*.json` in source 
 8. Cancellable via progress notification
 
 ### Bundle Tree Display
+
+## Path Utilities (`pathUtils.ts`)
+
+Pure path computation functions for folder name formatting and prefix stripping.
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `formatFolderName` | `(rawName: string) => string` | Replaces dashes and underscores with spaces, converts to title case, trims. Returns raw name unchanged if result would be empty (e.g., `"---"`). |
+| `stripFolderPrefix` | `(itemPath: string, folders: Set<string>) => string` | Removes the first path segment if it matches a known folder name. Returns original path if no match. |
+| `validatePath` | `(filePath: string) => boolean` | Validates path safety (no traversal, no absolute paths, no null bytes). |
+| `getTargetDirectory` | `(tool: ToolType, category: CategoryType) => string` | Returns the target directory for a tool/category combination. |
+| `getTargetPath` | `(tool: ToolType, category: CategoryType, fileName: string) => string` | Returns the full target path including filename. |
+| `parseGitHubUrl` | `(url: string) => { owner: string; repo: string } \| null` | Extracts owner and repo from a GitHub URL. |
+| `classifyPath` | `(filePath: string) => { tool: ToolType; category: CategoryType }` | Classifies a file path into tool and category. |
+| `isAllowedDomain` | `(url: string) => boolean` | SSRF protection -- checks if URL domain is in the allowed list. |
+
+**formatFolderName examples**:
+- `"frontend-team"` -> `"Frontend Team"`
+- `"ALLCAPS"` -> `"Allcaps"`
+- `"my-cool_project"` -> `"My Cool Project"`
+- `"---"` -> `"---"` (empty result fallback)
+
+**stripFolderPrefix examples**:
+- `stripFolderPrefix("frontend-team/.github/agents/x.md", new Set(["frontend-team"]))` -> `".github/agents/x.md"`
+- `stripFolderPrefix(".github/agents/x.md", new Set(["frontend-team"]))` -> `".github/agents/x.md"` (unchanged)
+
+## Practice Bundles
 
 Bundles appear as a "Bundles" category under each source that has a `bundles/` directory. Each bundle shows:
 - Label: bundle name

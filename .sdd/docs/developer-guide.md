@@ -67,14 +67,14 @@ awesome-coding-assistants/
       lifecycle.ts       # LifecycleManager: update detection, apply, uninstall (WP06)
       manifestManager.ts # Manifest CRUD for installation tracking (WP05)
       sourceRegistry.ts  # Source config management and master index
-      toolDetector.ts    # File path to tool/category classification + workspace scanning (WP08)
+      toolDetector.ts    # File path to tool/category classification, folder detection (detectFolders, groupByFolder), workspace scanning (WP08, WP15)
       bundleParser.ts    # Bundle manifest parsing and validation (WP09)
       newContentDetector.ts # Tree snapshot diffing for new/removed item detection (WP12)
     models/              # TypeScript interfaces and types
-      types.ts           # All shared type definitions
+      types.ts           # All shared type definitions (incl. FolderItem, FolderDetectionResult)
       errors.ts          # Custom error classes (8 error codes)
     utils/               # Utility functions
-      pathUtils.ts       # Path validation, target mapping, URL parsing
+      pathUtils.ts       # Path validation, target mapping, URL parsing, folder name formatting, folder prefix stripping (WP15)
   test/
     runTest.ts           # Test launcher
     helpers/
@@ -91,7 +91,8 @@ awesome-coding-assistants/
       errors.test.ts
       githubClient.test.ts
       pathUtils.test.ts
-      toolDetector.test.ts   # Tool classification tests (WP03)
+      toolDetector.test.ts   # Tool classification and folder detection tests (WP03, WP15)
+      folderDetection.test.ts  # Folder detection, grouping, formatting, prefix stripping tests (WP15)
       sourceRegistry.test.ts # Source registry tests (WP03)
       catalogTree.test.ts    # Catalog tree provider tests (WP03)
       previewProvider.test.ts # Preview provider and command tests (WP04)

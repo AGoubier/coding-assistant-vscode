@@ -31,7 +31,8 @@ function normalizePath(filePath: string): string {
 /**
  * Classify a file path into tool type and category.
  * Returns { tool: 'unknown', category: 'unknown' } for unrecognized patterns.
- * Spec ref: FR-012 (path detection), FR-015 (tool badge)
+ * Callers must strip folder prefixes via stripFolderPrefix() before calling.
+ * Spec ref: FR-012 (path detection), FR-015 (tool badge), FR-017 (templates unification)
  */
 export function classifyItem(path: string): ToolClassification {
   const normalized = normalizePath(path);

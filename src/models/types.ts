@@ -115,6 +115,12 @@ export interface CatalogFileItem {
   isRemoved?: boolean;
 }
 
+/**
+ * Represents a folder grouping node in the catalog tree.
+ * Folders are first-level directories in a source repo that contain
+ * .github/ or .claude/ subdirectories.
+ * Spec ref: FR-001, FR-004, Section 7.1
+ */
 export interface FolderItem {
   kind: 'folder';
   source: SourceConfig;
@@ -125,6 +131,11 @@ export interface FolderItem {
 
 export type CatalogItem = SourceItem | CategoryItem | CatalogFileItem | FolderItem;
 
+/**
+ * Result of folder detection on a source repository's tree entries.
+ * Each result represents one discovered folder and all entries under it.
+ * Spec ref: FR-001, FR-002, Section 7.2
+ */
 export interface FolderDetectionResult {
   folderName: string;
   isDefault: boolean;

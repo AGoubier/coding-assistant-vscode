@@ -31,16 +31,16 @@ Extension Host (src/extension.ts)
   |     +-- ManifestManager - CRUD for .vscode/awesome-ca-manifest.json (installation tracking)
   |     +-- LifecycleManager - update detection (SHA comparison), update application, uninstall orchestration
   |     +-- AuthManager - SecretStorage token management
-  |     +-- ToolDetector - workspace tool detection
+  |     +-- ToolDetector - workspace tool detection, folder discovery (detectFolders, groupByFolder), item classification
   |     +-- BundleParser - parses and validates bundle manifest JSON from source repos
   |     +-- NewContentDetector - tree snapshot diffing for new/removed item detection
   |
   +-- Models (src/models/)
-  |     +-- types.ts - shared TypeScript interfaces
+  |     +-- types.ts - shared TypeScript interfaces (CatalogItem union incl. FolderItem, FolderDetectionResult)
   |     +-- errors.ts - custom error classes
   |
   +-- Utils (src/utils/)
-        +-- pathUtils.ts - path computation, traversal validation
+        +-- pathUtils.ts - path computation, traversal validation, folder name formatting (formatFolderName), folder prefix stripping (stripFolderPrefix)
 ```
 
 ## Technology Stack
@@ -61,16 +61,17 @@ Extension Host (src/extension.ts)
 2. SourceRegistry resolves and validates source URLs
 3. GitHubClient fetches repository trees and file contents via GitHub API
 4. CacheManager caches responses using ETags and expiration times
-5. CatalogTreeProvider renders the catalog tree view from fetched data
-6. On install: Installer validates paths, downloads content via GitHubClient, writes files to workspace, handles conflicts via QuickPick
-7. ManifestManager records each installation in `.vscode/awesome-ca-manifest.json` with commit SHA, timestamp, and target paths
-8. LifecycleManager checks for upstream updates by comparing manifest SHAs with latest GitHub commit SHAs (concurrency limit of 10)
-9. On update: diff view shows installed vs upstream; on accept, Installer re-downloads and ManifestManager updates SHA
-10. On uninstall: files are deleted and manifest entry is removed
-11. CatalogTreeProvider discovers bundles from `bundles/*.json` in source repos and displays them under a "Bundles" category
-12. On install bundle: each item is installed sequentially with progress, supporting cross-source references and optional/required items
-13. Search/filter: CatalogTreeProvider stores a search query and applies `matchesSearch()` to filter items by name, path, tool, and category when rendering the tree
-14. New content detection: NewContentDetector compares current tree entries against a globalState baseline; new paths and removed paths are stored in globalState keys (`newContent:new:{url}`, `newContent:removed:{url}`). CatalogTreeProvider merges removed items as synthetic entries and marks new items with a sparkle icon. The TreeView badge shows combined new + removed + update counts.
+5. ToolDetector.detectFolders() scans the flat tree entry array to identify first-level directories containing `.github/` or `.claude/` subdirectories; groupByFolder() partitions entries by detected folder. Folder prefixes are stripped via stripFolderPrefix() before classification and installation.
+6. CatalogTreeProvider renders the catalog tree view from fetched data, inserting a Folder level (Source > Folder > Category > Items) when folders are detected
+7. On install: Installer validates paths, downloads content via GitHubClient, writes files to workspace, handles conflicts via QuickPick
+8. ManifestManager records each installation in `.vscode/awesome-ca-manifest.json` with commit SHA, timestamp, and target paths
+9. LifecycleManager checks for upstream updates by comparing manifest SHAs with latest GitHub commit SHAs (concurrency limit of 10)
+10. On update: diff view shows installed vs upstream; on accept, Installer re-downloads and ManifestManager updates SHA
+11. On uninstall: files are deleted and manifest entry is removed
+12. CatalogTreeProvider discovers bundles from `bundles/*.json` in source repos and displays them under a "Bundles" category
+13. On install bundle: each item is installed sequentially with progress, supporting cross-source references and optional/required items
+14. Search/filter: CatalogTreeProvider stores a search query and applies `matchesSearch()` to filter items by name, path, tool, and category when rendering the tree
+15. New content detection: NewContentDetector compares current tree entries against a globalState baseline; new paths and removed paths are stored in globalState keys (`newContent:new:{url}`, `newContent:removed:{url}`). CatalogTreeProvider merges removed items as synthetic entries and marks new items with a sparkle icon. The TreeView badge shows combined new + removed + update counts.
 
 ## Extension Activation
 
