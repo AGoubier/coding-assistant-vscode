@@ -50,6 +50,15 @@ export interface MasterIndex {
 
 // --- Installation Manifest - Section 7.4, 7.5 ---
 
+/**
+ * Build a unique installation entry ID that includes the branch.
+ * Format: `url@branch#path`
+ * This prevents collisions when the same repo is configured on multiple branches.
+ */
+export function installationId(sourceUrl: string, branch: string | undefined, itemPath: string): string {
+  return `${sourceUrl}@${branch || 'main'}#${itemPath}`;
+}
+
 export interface InstallationEntry {
   id: string;
   sourceUrl: string;

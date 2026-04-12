@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import type { CatalogFileItem, GitHubTreeResponse, InstallationEntry, SourceConfig } from '../models/types';
+import { installationId } from '../models/types';
 import type { GitHubClient } from '../services/githubClient';
 import type { Installer } from '../services/installer';
 import type { ManifestManager } from '../services/manifestManager';
@@ -216,7 +217,7 @@ export async function installCommand(
         }
 
         const entry: InstallationEntry = {
-          id: `${item.source.url}#${item.path}`,
+          id: installationId(item.source.url, item.source.branch, item.path),
           sourceUrl: item.source.url,
           sourceBranch: item.source.branch || 'main',
           itemPath: item.path,

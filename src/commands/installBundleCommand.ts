@@ -9,6 +9,7 @@ import type {
   SourceConfig,
   InstallationEntry,
 } from '../models/types';
+import { installationId } from '../models/types';
 import type { Installer } from '../services/installer';
 import type { GitHubClient } from '../services/githubClient';
 import type { ManifestManager } from '../services/manifestManager';
@@ -127,7 +128,7 @@ export async function installBundleCommand(
           // Record in manifest
           const sha = await github.getLatestCommitSha(itemSource, bundleItem.path).catch(() => 'unknown');
           const entry: InstallationEntry = {
-            id: `${itemSource.url}#${bundleItem.path}`,
+            id: installationId(itemSource.url, itemSource.branch, bundleItem.path),
             sourceUrl: itemSource.url,
             sourceBranch: itemSource.branch || 'main',
             itemPath: bundleItem.path,

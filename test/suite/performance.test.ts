@@ -159,7 +159,7 @@ describe('WP07 - Performance Tests', function () {
     // Install 50 items into manifest
     for (let i = 0; i < 50; i++) {
       await manifestManager.addInstallation(folder, {
-        id: `${source.url}#.github/agents/item-${i}.agent.md`,
+        id: `${source.url}@${source.branch}#.github/agents/item-${i}.agent.md`,
         sourceUrl: source.url,
         sourceBranch: 'main',
         itemPath: `.github/agents/item-${i}.agent.md`,

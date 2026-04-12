@@ -18,6 +18,7 @@ import {
   createMockLogOutputChannel,
 } from '../helpers/mocks.js';
 import type { CatalogFileItem, GitHubTreeResponse, InstallationEntry, SourceConfig } from '../../src/models/types.js';
+import { installationId } from '../../src/models/types.js';
 
 // Reuse the in-memory filesystem from e2e-browse-install
 class E2eFsStore {
@@ -107,7 +108,7 @@ describe('WP07 - E2E: Check Updates > Update > Uninstall', function () {
 
   function makeInstallEntry(): InstallationEntry {
     return {
-      id: `${defaultSource.url}#${itemPath}`,
+      id: installationId(defaultSource.url, defaultSource.branch, itemPath),
       sourceUrl: defaultSource.url,
       sourceBranch: 'main',
       itemPath,

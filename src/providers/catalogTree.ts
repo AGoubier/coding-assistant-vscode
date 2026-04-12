@@ -20,6 +20,7 @@ import type {
   BundleFileItem,
   Bundle,
 } from '../models/types';
+import { installationId } from '../models/types';
 import { GitHubClient } from '../services/githubClient';
 import { SourceRegistry, sourceKey } from '../services/sourceRegistry';
 import { classifyItem, detectWorkspaceTools } from '../services/toolDetector';
@@ -522,7 +523,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
         .map(entry => {
           const classification = classifyItem(entry.path);
           const name = this.extractItemName(entry.path);
-          const entryId = `${categoryItem.source.url}#${entry.path}`;
+          const entryId = installationId(categoryItem.source.url, categoryItem.source.branch, entry.path);
           const isInstalled = this.installedIds.has(entryId);
           const hasUpdate = isInstalled && (this.lifecycleMgr?.hasUpdate(entryId) ?? false);
           return {
@@ -559,7 +560,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
           if (classification.category === categoryItem.category) {
             const name = this.extractItemName(removedPath);
             const isInstalled = this.installedIds.has(
-              `${categoryItem.source.url}#${removedPath}`,
+              installationId(categoryItem.source.url, categoryItem.source.branch, removedPath),
             );
             items.push({
               kind: 'item' as const,
@@ -676,7 +677,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
     treeItem.iconPath = new vscode.ThemeIcon('repo');
     treeItem.accessibilityInformation = { label: `Source repository: ${label}` };
     // Assign resourceUri for FileDecorationProvider coloring
-    const updateCount = this.getSourceUpdateCount(item.source.url);
+    const updateCount = this.getSourceUpdateCount(item.source);
     if (updateCount > 0) {
       treeItem.resourceUri = vscode.Uri.parse(`awesome-ca-tree:/${encodeURIComponent(item.source.url)}?state=has-updates&count=${updateCount}`);
     }
@@ -699,7 +700,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       treeItem.description = `${item.filteredCount} match${item.filteredCount === 1 ? '' : 'es'}`;
     }
     // Assign resourceUri for FileDecorationProvider coloring
-    const updateCount = this.getCategoryUpdateCount(item.source.url, item.category);
+    const updateCount = this.getCategoryUpdateCount(item.source, item.category);
     if (updateCount > 0) {
       treeItem.resourceUri = vscode.Uri.parse(`awesome-ca-tree:/${encodeURIComponent(item.source.url)}/${encodeURIComponent(item.category)}?state=has-updates&count=${updateCount}`);
     }
@@ -996,7 +997,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
           continue;
         }
         total++;
-        const entryId = `${source.url}#${entry.path}`;
+        const entryId = installationId(source.url, source.branch, entry.path);
         if (this.installedIds.has(entryId)) {
           installed++;
         }
@@ -1027,7 +1028,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
         continue;
       }
       total++;
-      const entryId = `${source.url}#${entry.path}`;
+      const entryId = installationId(source.url, source.branch, entry.path);
       if (this.installedIds.has(entryId)) {
         installed++;
       }
@@ -1036,13 +1037,14 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   }
 
   /**
-   * Count how many update-available items exist for a given source URL.
+   * Count how many update-available items exist for a given source.
    */
-  private getSourceUpdateCount(sourceUrl: string): number {
+  private getSourceUpdateCount(source: SourceConfig): number {
     if (!this.lifecycleMgr) { return 0; }
+    const prefix = `${source.url}@${source.branch || 'main'}#`;
     let count = 0;
     for (const id of this.installedIds) {
-      if (id.startsWith(sourceUrl + '#') && this.lifecycleMgr.hasUpdate(id)) {
+      if (id.startsWith(prefix) && this.lifecycleMgr.hasUpdate(id)) {
         count++;
       }
     }
@@ -1052,13 +1054,14 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   /**
    * Count how many update-available items exist for a given source + category.
    */
-  private getCategoryUpdateCount(sourceUrl: string, category: CategoryType): number {
+  private getCategoryUpdateCount(source: SourceConfig, category: CategoryType): number {
     if (!this.lifecycleMgr) { return 0; }
+    const prefix = `${source.url}@${source.branch || 'main'}#`;
     let count = 0;
     for (const id of this.installedIds) {
-      if (!id.startsWith(sourceUrl + '#')) { continue; }
+      if (!id.startsWith(prefix)) { continue; }
       if (!this.lifecycleMgr.hasUpdate(id)) { continue; }
-      const path = id.slice(sourceUrl.length + 1);
+      const path = id.slice(prefix.length);
       const classification = classifyItem(path);
       if (classification.category === category) {
         count++;

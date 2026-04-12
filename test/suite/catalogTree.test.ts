@@ -771,7 +771,7 @@ describe('CatalogTreeProvider', () => {
 
       // Manually seed the installedIds to simulate a pre-existing cache
       const ids = (provider as unknown as { installedIds: Set<string> }).installedIds;
-      ids.add('https://github.com/test/repo#.github/agents/coder.agent.md');
+      ids.add('https://github.com/test/repo@main#.github/agents/coder.agent.md');
       assert.strictEqual(ids.size, 1, 'precondition: installedIds should have 1 entry');
 
       // Create a slow mock manifest manager
@@ -781,7 +781,7 @@ describe('CatalogTreeProvider', () => {
           return {
             version: '1.0',
             installations: [
-              { id: 'https://github.com/test/repo#.github/agents/coder.agent.md' },
+              { id: 'https://github.com/test/repo@main#.github/agents/coder.agent.md' },
             ],
           };
         },
@@ -806,7 +806,7 @@ describe('CatalogTreeProvider', () => {
 
       // After swap completes, the new set should be in place
       const idsAfterComplete = (provider as unknown as { installedIds: Set<string> }).installedIds;
-      assert.ok(idsAfterComplete.has('https://github.com/test/repo#.github/agents/coder.agent.md'),
+      assert.ok(idsAfterComplete.has('https://github.com/test/repo@main#.github/agents/coder.agent.md'),
         'installedIds should contain expected ID after refresh completes');
 
       // Restore original workspace folders
@@ -826,7 +826,7 @@ describe('CatalogTreeProvider', () => {
         readManifest: async () => ({
           version: '1.0',
           installations: [
-            { id: 'https://github.com/test/repo#.github/agents/coder.agent.md' },
+            { id: 'https://github.com/test/repo@main#.github/agents/coder.agent.md' },
           ],
         }),
       };

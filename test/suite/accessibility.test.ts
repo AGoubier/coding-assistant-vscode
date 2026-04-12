@@ -17,6 +17,7 @@ import type {
   CategoryItem,
   SourceItem,
 } from '../../src/models/types';
+import { installationId } from '../../src/models/types';
 
 const TEST_SOURCE: SourceConfig = {
   url: 'https://github.com/test/repo',
@@ -171,7 +172,7 @@ describe('Accessibility (Section 10.4)', () => {
 
     it('installed file items include status in accessibility label', async () => {
       // Manually add an installed ID to trigger the installed status
-      const entryId = `${TEST_SOURCE.url}#.github/agents/coder.agent.md`;
+      const entryId = installationId(TEST_SOURCE.url, TEST_SOURCE.branch, '.github/agents/coder.agent.md');
       (provider as any).installedIds.add(entryId);
 
       const roots = await provider.getChildren(undefined);

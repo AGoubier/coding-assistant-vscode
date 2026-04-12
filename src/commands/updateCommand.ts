@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import type { CatalogFileItem, InstallationEntry, UpdateCheckResult } from '../models/types';
+import { installationId } from '../models/types';
 import type { LifecycleManager } from '../services/lifecycle';
 import type { ManifestManager } from '../services/manifestManager';
 import { buildPreviewUri } from '../providers/previewProvider';
@@ -24,7 +25,7 @@ export async function updateCommand(
   let folder: vscode.WorkspaceFolder | undefined;
 
   for (const f of folders) {
-    const entryId = `${item.source.url}#${item.path}`;
+    const entryId = installationId(item.source.url, item.source.branch, item.path);
     const found = await manifest.getInstallation(f, entryId);
     if (found) {
       entry = found;

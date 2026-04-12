@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import type { InstallationEntry, Manifest } from '../models/types';
+import { installationId } from '../models/types';
 import { ManifestCorruptError } from '../models/errors';
 
 const MANIFEST_DIR = '.vscode';
@@ -45,6 +46,21 @@ export class ManifestManager {
       if (!parsed.version || !Array.isArray(parsed.installations)) {
         throw new Error('Invalid manifest structure');
       }
+
+      // Migrate legacy IDs: url#path -> url@branch#path
+      let migrated = false;
+      for (const entry of parsed.installations) {
+        const expected = installationId(entry.sourceUrl, entry.sourceBranch, entry.itemPath);
+        if (entry.id !== expected) {
+          this.log.info(`Migrating manifest entry ID: ${entry.id} -> ${expected}`);
+          entry.id = expected;
+          migrated = true;
+        }
+      }
+      if (migrated) {
+        await this.writeManifest(folder, parsed);
+      }
+
       return parsed;
     } catch (err) {
       // File does not exist - return empty manifest
@@ -89,8 +105,8 @@ export class ManifestManager {
     return manifest.installations.find(e => e.id === id);
   }
 
-  async isInstalled(folder: vscode.WorkspaceFolder, sourceUrl: string, itemPath: string): Promise<boolean> {
-    const id = `${sourceUrl}#${itemPath}`;
+  async isInstalled(folder: vscode.WorkspaceFolder, sourceUrl: string, branch: string | undefined, itemPath: string): Promise<boolean> {
+    const id = installationId(sourceUrl, branch, itemPath);
     const entry = await this.getInstallation(folder, id);
     return entry !== undefined;
   }

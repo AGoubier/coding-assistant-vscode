@@ -19,6 +19,7 @@ import {
   createMockLogOutputChannel,
 } from '../helpers/mocks.js';
 import type { CatalogFileItem, GitHubTreeResponse, SourceConfig } from '../../src/models/types.js';
+import { installationId } from '../../src/models/types.js';
 
 // In-memory filesystem for install targets
 class E2eFsStore {
@@ -240,7 +241,7 @@ describe('WP07 - E2E: Browse > Preview > Install', function () {
 
       // Create manifest entry
       await manifestManager.addInstallation(folder, {
-        id: `${item.source.url}#${item.path}`,
+        id: installationId(item.source.url, item.source.branch, item.path),
         sourceUrl: item.source.url,
         sourceBranch: item.source.branch || 'main',
         itemPath: item.path,
@@ -263,7 +264,7 @@ describe('WP07 - E2E: Browse > Preview > Install', function () {
       // Verify manifest has the entry
       const manifest = await manifestManager.readManifest(folder);
       assert.strictEqual(manifest.installations.length, 1);
-      assert.strictEqual(manifest.installations[0].id, `${item.source.url}#${item.path}`);
+      assert.strictEqual(manifest.installations[0].id, installationId(item.source.url, item.source.branch, item.path));
       assert.strictEqual(manifest.installations[0].commitSha, sha);
     } finally {
       Object.defineProperty(vscode.workspace, 'workspaceFolders', {
@@ -277,7 +278,7 @@ describe('WP07 - E2E: Browse > Preview > Install', function () {
   it('tree item shows installed badge after install', async () => {
     // Install an item into the manifest
     await manifestManager.addInstallation(folder, {
-      id: `${defaultSource.url}#.github/agents/code-review.agent.md`,
+      id: installationId(defaultSource.url, defaultSource.branch, '.github/agents/code-review.agent.md'),
       sourceUrl: defaultSource.url,
       sourceBranch: 'main',
       itemPath: '.github/agents/code-review.agent.md',
@@ -461,7 +462,7 @@ describe('WP14 - E2E: Removed content detection', function () {
 
       // Mark the item as installed
       const ids = (treeProvider as any).installedIds as Set<string>;
-      ids.add(`${defaultSource.url}#${removedPath}`);
+      ids.add(installationId(defaultSource.url, defaultSource.branch, removedPath));
 
       const roots = await treeProvider.getChildren();
       const categories = await treeProvider.getChildren(roots[0]);

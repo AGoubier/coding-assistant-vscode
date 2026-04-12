@@ -249,7 +249,7 @@ describe('WP05 - Installation and Manifest', () => {
       const existing: Manifest = {
         version: '1.0',
         installations: [{
-          id: 'https://github.com/test/repo#path/file.md',
+          id: 'https://github.com/test/repo@main#path/file.md',
           sourceUrl: 'https://github.com/test/repo',
           sourceBranch: 'main',
           itemPath: 'path/file.md',
@@ -265,7 +265,7 @@ describe('WP05 - Installation and Manifest', () => {
       const manifest = await manager.readManifest(mockFolder);
       assert.strictEqual(manifest.version, '1.0');
       assert.strictEqual(manifest.installations.length, 1);
-      assert.strictEqual(manifest.installations[0].id, 'https://github.com/test/repo#path/file.md');
+      assert.strictEqual(manifest.installations[0].id, 'https://github.com/test/repo@main#path/file.md');
     });
 
     it('readManifest handles corrupt JSON by backing up and resetting', async () => {
@@ -298,7 +298,7 @@ describe('WP05 - Installation and Manifest', () => {
 
     it('addInstallation appends entry', async () => {
       const entry: InstallationEntry = {
-        id: 'https://github.com/test/repo#path/file.md',
+        id: 'https://github.com/test/repo@main#path/file.md',
         sourceUrl: 'https://github.com/test/repo',
         sourceBranch: 'main',
         itemPath: 'path/file.md',
@@ -318,7 +318,7 @@ describe('WP05 - Installation and Manifest', () => {
 
     it('addInstallation is idempotent (replaces existing with same ID)', async () => {
       const entry: InstallationEntry = {
-        id: 'https://github.com/test/repo#path/file.md',
+        id: 'https://github.com/test/repo@main#path/file.md',
         sourceUrl: 'https://github.com/test/repo',
         sourceBranch: 'main',
         itemPath: 'path/file.md',
@@ -339,7 +339,7 @@ describe('WP05 - Installation and Manifest', () => {
 
     it('removeInstallation removes entry by ID', async () => {
       const entry: InstallationEntry = {
-        id: 'https://github.com/test/repo#path/file.md',
+        id: 'https://github.com/test/repo@main#path/file.md',
         sourceUrl: 'https://github.com/test/repo',
         sourceBranch: 'main',
         itemPath: 'path/file.md',
@@ -359,7 +359,7 @@ describe('WP05 - Installation and Manifest', () => {
 
     it('getInstallation finds by ID', async () => {
       const entry: InstallationEntry = {
-        id: 'https://github.com/test/repo#path/file.md',
+        id: 'https://github.com/test/repo@main#path/file.md',
         sourceUrl: 'https://github.com/test/repo',
         sourceBranch: 'main',
         itemPath: 'path/file.md',
@@ -384,7 +384,7 @@ describe('WP05 - Installation and Manifest', () => {
 
     it('isInstalled returns true for tracked items', async () => {
       const entry: InstallationEntry = {
-        id: 'https://github.com/test/repo#path/file.md',
+        id: 'https://github.com/test/repo@main#path/file.md',
         sourceUrl: 'https://github.com/test/repo',
         sourceBranch: 'main',
         itemPath: 'path/file.md',
@@ -397,18 +397,18 @@ describe('WP05 - Installation and Manifest', () => {
 
       await manager.addInstallation(mockFolder, entry);
 
-      const result = await manager.isInstalled(mockFolder, 'https://github.com/test/repo', 'path/file.md');
+      const result = await manager.isInstalled(mockFolder, 'https://github.com/test/repo', 'main', 'path/file.md');
       assert.strictEqual(result, true);
     });
 
     it('isInstalled returns false for untracked items', async () => {
-      const result = await manager.isInstalled(mockFolder, 'https://github.com/test/repo', 'nonexistent');
+      const result = await manager.isInstalled(mockFolder, 'https://github.com/test/repo', 'main', 'nonexistent');
       assert.strictEqual(result, false);
     });
 
-    it('InstallationEntry ID format matches spec: sourceUrl#itemPath', async () => {
+    it('InstallationEntry ID format includes branch: sourceUrl@branch#itemPath', async () => {
       const entry: InstallationEntry = {
-        id: 'https://github.com/test/repo#.github/agents/test.agent.md',
+        id: 'https://github.com/test/repo@main#.github/agents/test.agent.md',
         sourceUrl: 'https://github.com/test/repo',
         sourceBranch: 'main',
         itemPath: '.github/agents/test.agent.md',
@@ -419,7 +419,7 @@ describe('WP05 - Installation and Manifest', () => {
         installedAt: '2026-03-15T00:00:00.000Z',
       };
 
-      assert.strictEqual(entry.id, `${entry.sourceUrl}#${entry.itemPath}`);
+      assert.strictEqual(entry.id, `${entry.sourceUrl}@${entry.sourceBranch}#${entry.itemPath}`);
     });
   });
 
@@ -801,7 +801,7 @@ describe('WP05 - Installation and Manifest', () => {
 
       const m = await manifest.readManifest(mockFolder);
       const entry = m.installations[0];
-      assert.strictEqual(entry.id, `${source.url}#${item.path}`);
+      assert.strictEqual(entry.id, `${source.url}@${source.branch}#${item.path}`);
       assert.strictEqual(entry.sourceUrl, source.url);
       assert.strictEqual(entry.sourceBranch, 'develop');
       assert.strictEqual(entry.itemPath, item.path);

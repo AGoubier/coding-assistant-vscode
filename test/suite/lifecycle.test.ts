@@ -104,7 +104,7 @@ function makeFolder(name?: string): vscode.WorkspaceFolder {
 
 function makeEntry(overrides?: Partial<InstallationEntry>): InstallationEntry {
   return {
-    id: 'https://github.com/test/repo#.github/agents/code-review.agent.md',
+    id: 'https://github.com/test/repo@main#.github/agents/code-review.agent.md',
     sourceUrl: 'https://github.com/test/repo',
     sourceBranch: 'main',
     itemPath: '.github/agents/code-review.agent.md',
@@ -203,12 +203,12 @@ describe('WP06 - Lifecycle Management', () => {
 
     it('handles per-item errors without aborting entire check', async () => {
       const entry1 = makeEntry({
-        id: 'https://github.com/test/repo#file1.md',
+        id: 'https://github.com/test/repo@main#file1.md',
         itemPath: 'file1.md',
         commitSha: 'old1',
       });
       const entry2 = makeEntry({
-        id: 'https://github.com/test/repo#file2.md',
+        id: 'https://github.com/test/repo@main#file2.md',
         itemPath: 'file2.md',
         commitSha: 'old2',
       });
@@ -242,12 +242,12 @@ describe('WP06 - Lifecycle Management', () => {
 
     it('checks with mixed results (some updated, some not)', async () => {
       const entry1 = makeEntry({
-        id: 'https://github.com/test/repo#file1.md',
+        id: 'https://github.com/test/repo@main#file1.md',
         itemPath: 'file1.md',
         commitSha: 'sameSha',
       });
       const entry2 = makeEntry({
-        id: 'https://github.com/test/repo#file2.md',
+        id: 'https://github.com/test/repo@main#file2.md',
         itemPath: 'file2.md',
         commitSha: 'differentSha',
       });
@@ -510,7 +510,7 @@ describe('WP06 - Lifecycle Management', () => {
 
       // Step 1: Simulate install (manifest entry written)
       const entry: InstallationEntry = {
-        id: 'https://github.com/test/repo#.github/agents/test.agent.md',
+        id: 'https://github.com/test/repo@main#.github/agents/test.agent.md',
         sourceUrl: 'https://github.com/test/repo',
         sourceBranch: 'main',
         itemPath: '.github/agents/test.agent.md',

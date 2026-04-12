@@ -9,6 +9,7 @@ import type {
   SourceConfig,
   CategoryType,
 } from '../models/types';
+import { installationId } from '../models/types';
 import type { Installer } from '../services/installer';
 import type { GitHubClient } from '../services/githubClient';
 import type { ManifestManager } from '../services/manifestManager';
@@ -105,7 +106,7 @@ export async function installSourceCommand(
               sourceItem.source, item.path,
             ).catch(() => 'unknown');
             const entry: InstallationEntry = {
-              id: `${sourceItem.source.url}#${item.path}`,
+              id: installationId(sourceItem.source.url, sourceItem.source.branch, item.path),
               sourceUrl: sourceItem.source.url,
               sourceBranch: sourceItem.source.branch || 'main',
               itemPath: item.path,
@@ -131,7 +132,7 @@ export async function installSourceCommand(
               sourceItem.source, item.path,
             ).catch(() => 'unknown');
             const entry: InstallationEntry = {
-              id: `${sourceItem.source.url}#${item.path}`,
+              id: installationId(sourceItem.source.url, sourceItem.source.branch, item.path),
               sourceUrl: sourceItem.source.url,
               sourceBranch: sourceItem.source.branch || 'main',
               itemPath: item.path,
