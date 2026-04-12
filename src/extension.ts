@@ -180,7 +180,6 @@ export function activate(context: vscode.ExtensionContext): void {
 
     if (total === 0) {
       treeView.badge = undefined;
-      explorerTreeView.badge = undefined;
     } else {
       const parts: string[] = [];
       if (newCount > 0) { parts.push(`${newCount} new`); }
@@ -188,7 +187,6 @@ export function activate(context: vscode.ExtensionContext): void {
       if (lastUpdateCount > 0) { parts.push(`${lastUpdateCount} update${lastUpdateCount > 1 ? 's' : ''}`); }
       const badge = { value: total, tooltip: parts.join(', ') };
       treeView.badge = badge;
-      explorerTreeView.badge = badge;
     }
     vscode.commands.executeCommand('setContext', 'awesome-coding-assistants.hasNewContent', (newCount + removedCount) > 0);
     // Refresh tree item decorations (coloring for update-available ancestors)
@@ -230,7 +228,7 @@ export function activate(context: vscode.ExtensionContext): void {
         githubClient,
         manifestManager,
         outputChannel,
-        () => { catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
+        () => { lifecycleManager.clearUpdateCache(); lastUpdateCount = 0; catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
         (source) => catalogTreeProvider.getOrFetchTreePublic(source),
       );
     }),
@@ -469,7 +467,7 @@ export function activate(context: vscode.ExtensionContext): void {
         manifestManager,
         sourceRegistry,
         outputChannel,
-        () => { catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
+        () => { lifecycleManager.clearUpdateCache(); lastUpdateCount = 0; catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
       );
     }),
   );
@@ -487,7 +485,7 @@ export function activate(context: vscode.ExtensionContext): void {
         githubClient,
         manifestManager,
         outputChannel,
-        () => { catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
+        () => { lifecycleManager.clearUpdateCache(); lastUpdateCount = 0; catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
         (source) => catalogTreeProvider.getOrFetchTreePublic(source),
       );
     }),
@@ -506,7 +504,7 @@ export function activate(context: vscode.ExtensionContext): void {
         githubClient,
         manifestManager,
         outputChannel,
-        () => { catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
+        () => { lifecycleManager.clearUpdateCache(); lastUpdateCount = 0; catalogTreeProvider.refresh(); updateTreeBadge(); void updateHasInstalledContext(); },
         (source) => catalogTreeProvider.getOrFetchTreePublic(source),
       );
     }),
