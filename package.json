@@ -163,6 +163,11 @@
         "title": "Install All from Source",
         "category": "Awesome Coding Assistants",
         "icon": "$(cloud-download)"
+      },
+      {
+        "command": "awesome-coding-assistants.openWalkthrough",
+        "title": "Get Started",
+        "category": "Awesome Coding Assistants"
       }
     ],
     "menus": {
@@ -315,7 +320,38 @@
           "description": "Detect new and removed items in source repositories. Disable to only check for updates to installed items."
         }
       }
-    }
+    },
+    "walkthroughs": [
+      {
+        "id": "getStarted",
+        "title": "Get Started with Awesome Coding Assistants",
+        "description": "Configure your source catalog and browse AI coding assistant customizations.",
+        "steps": [
+          {
+            "id": "configureSource",
+            "title": "Configure Your Source",
+            "description": "Set the index URL to point to a catalog of AI coding assistant customizations. You can use the default community catalog or add your own private or enterprise index URLs.\n\n[Open Settings](command:workbench.action.openSettings?%5B%22awesome-coding-assistants.indexUrl%22%5D)",
+            "media": {
+              "markdown": "resources/walkthrough/configure-source.md"
+            },
+            "completionEvents": [
+              "onSettingChanged:awesome-coding-assistants.indexUrl"
+            ]
+          },
+          {
+            "id": "browseCatalog",
+            "title": "Browse the Catalog",
+            "description": "Open the Awesome Coding Assistants view in the Activity Bar to browse, preview, and install agents, prompts, skills, and rules.\n\n[Open Catalog](command:awesomeCodingAssistants.catalog.focus)",
+            "media": {
+              "markdown": "resources/walkthrough/browse-catalog.md"
+            },
+            "completionEvents": [
+              "onView:awesomeCodingAssistants.catalog"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
