@@ -4,6 +4,26 @@ All notable changes to this project are documented in this file. Entries are ord
 
 ---
 
+## [WP18] - Search Across Folders (2026-04-12)
+
+### Added
+
+- Folder-level search filtering: when a search query is active, folder nodes with zero matching items are hidden from the tree (FR-019, FR-020)
+- `hasFolderSearchMatch()` helper in `CatalogTreeProvider` to check whether any items within a folder match the current search query
+- Category-level search within folders: categories inside a folder that have zero matching items are hidden during search, with `filteredCount` reflecting matches scoped to the folder (FR-019, FR-020)
+- Folder-aware `hasAnySearchMatch()`: updated to iterate entries within each folder, stripping folder prefixes before classification and search matching (FR-019)
+- Search hierarchy preservation: search results maintain the Source > Folder > Category > Item tree path (FR-020)
+- "Default" folder is hidden during search if none of its items match the query (FR-020)
+- `SearchEmptyItem` returned when all folders across all sources have zero search matches
+- 13 unit tests in `search.test.ts` covering folder search scenarios: multi-folder matches, zero-match folder hiding, Default folder hiding, search clearing, empty state, category filtering, and `filteredCount` accuracy (US-08)
+
+### Changed
+
+- `getSourceChildren()` now filters folder nodes through `hasFolderSearchMatch()` when a search query is active
+- `hasAnySearchMatch()` now accounts for folder-prefixed entries by stripping prefixes before calling `classifyItem()` and `matchesSearch()`
+
+---
+
 ## [WP17] - Folder-Aware Installation and Conflict Resolution (2026-04-12)
 
 ### Added
