@@ -546,6 +546,22 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
   );
 
+  // Open Walkthrough command (FR-032, T20-04)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('awesome-coding-assistants.openWalkthrough', async () => {
+      try {
+        await vscode.commands.executeCommand(
+          'workbench.action.openWalkthrough',
+          'jlacube.awesome-coding-assistants#getStarted',
+          false,
+        );
+      } catch (err) {
+        outputChannel.error(`WALKTHROUGH_NOT_FOUND: ${err}`);
+        await vscode.window.showInformationMessage('Unable to open the Get Started walkthrough.');
+      }
+    }),
+  );
+
   outputChannel.info('All commands registered');
 }
 

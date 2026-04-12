@@ -102,4 +102,9 @@ export const IndexErrorCodes = {
     userMessage: '',
     logLevel: 'warn' as const,
   },
+  WALKTHROUGH_NOT_FOUND: {
+    code: 'WALKTHROUGH_NOT_FOUND',
+    userMessage: 'Unable to open the Get Started walkthrough.',
+    logLevel: 'error' as const,
+  },
 } as const;
