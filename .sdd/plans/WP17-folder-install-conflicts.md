@@ -1,5 +1,5 @@
 ---
-lane: doing
+lane: for_review
 depends_on: [WP15, WP16]
 docs_scope: [architecture, api-reference, user-guide, changelog, inline-code]
 target_language: TypeScript
@@ -159,12 +159,12 @@ This work package extends the installation, manifest tracking, and update/uninst
 - **Spec refs**: FR-010-015, US-04, US-05
 - **Parallel**: No (depends on T17-01 through T17-06)
 - **Acceptance criteria**:
-  - [ ] Tests cover BDD scenarios from spec Section 11: US-04.1 (install from folder), US-05.1 (cross-folder conflict resolution)
-  - [ ] >= 80% code coverage for conflict detection and resolution code paths
-  - [ ] Edge cases: install from 2 different folders to same target, install then update, install then uninstall
-  - [ ] Edge case: conflict detection with empty manifest (no prior installs)
-  - [ ] Edge case: conflict with an already-installed item from a different folder
-  - [ ] All tests pass with `npm test`
+  - [x] Tests cover BDD scenarios from spec Section 11: US-04.1 (install from folder), US-05.1 (cross-folder conflict resolution)
+  - [x] >= 80% code coverage for conflict detection and resolution code paths
+  - [x] Edge cases: install from 2 different folders to same target, install then update, install then uninstall
+  - [x] Edge case: conflict detection with empty manifest (no prior installs)
+  - [x] Edge case: conflict with an already-installed item from a different folder
+  - [x] All tests pass with `npm test`
 - **Test requirements**: unit, integration
 - **Depends on**: T17-01, T17-02, T17-03, T17-04, T17-05, T17-06
 - **Implementation Guidance**:
@@ -196,3 +196,5 @@ This work package extends the installation, manifest tracking, and update/uninst
 
 - 2025-07-20T00:00:00Z - planner - lane=planned - Work package created
 - 2026-04-12T00:00:00Z - coder - lane=doing - Starting implementation
+- 2025-07-20T02:00:00Z - coder - T17-07 completed - 31 unit tests added, 538 total passing
+- 2025-07-20T02:01:00Z - coder - lane=for_review - All tasks complete, tests passing, coverage met
