@@ -1,5 +1,5 @@
 ---
-lane: to_do
+lane: for_review
 depends_on: []
 review_status: changes_required
 docs_scope: [architecture, api-reference, developer-guide, changelog, inline-code]
@@ -216,8 +216,8 @@ This work package lays the foundation for per-folder segregation by implementing
 
 ## Review
 
-- [ ] FB-01 [FAIL] [spec-adherence] `detectFolders()` marker detection is too permissive -- checks all segments from index 1 onward instead of only `segments[1]`. FR-001 requires pattern `<directory>/.github/<subpath>` where `.github`/`.claude` is directly under the first-level dir. Fix: replace loop at toolDetector.ts:178-184 with single `segments[1]` check. Also fix test "should not create additional folder for nested directory" in folderDetection.test.ts to expect `result.length === 0` for `a/b/.github/agents/x.md`.
-- [ ] FB-02 [WARN] [code-quality] Unsafe `as unknown as SourceItem` cast at catalogTree.ts:292-293 in the `'folder'` case. Replace with `new vscode.TreeItem(item.displayName, vscode.TreeItemCollapsibleState.Collapsed)` or equivalent safe placeholder.
+- [x] FB-01 [FAIL] [spec-adherence] `detectFolders()` marker detection is too permissive -- checks all segments from index 1 onward instead of only `segments[1]`. FR-001 requires pattern `<directory>/.github/<subpath>` where `.github`/`.claude` is directly under the first-level dir. Fix: replace loop at toolDetector.ts:178-184 with single `segments[1]` check. Also fix test "should not create additional folder for nested directory" in folderDetection.test.ts to expect `result.length === 0` for `a/b/.github/agents/x.md`.
+- [x] FB-02 [WARN] [code-quality] Unsafe `as unknown as SourceItem` cast at catalogTree.ts:292-293 in the `'folder'` case. Replace with `new vscode.TreeItem(item.displayName, vscode.TreeItemCollapsibleState.Collapsed)` or equivalent safe placeholder.
 
 ## Activity Log
 
@@ -226,3 +226,5 @@ This work package lays the foundation for per-folder segregation by implementing
 - 2026-04-12T00:00:00Z - code-env-setup - Environment: TypeScript 5.9.3, VS Code Extension API. Deps: node_modules present (npm). Baseline: 431 tests passed, 0 failed. Coverage: c8 configured (80% code / 90% branch).
 - 2025-07-20T14:00:00Z - coder - lane=for_review - All tasks complete, 488 tests passing, coverage met
 - 2026-04-12T12:00:00Z - reviewer - lane=to_do - Changes Required: FB-01 (FAIL spec-adherence), FB-02 (WARN code-quality)
+- 2026-04-12T13:00:00Z - coder - lane=doing - Rework mode: addressing 2 FB items
+- 2026-04-12T13:05:00Z - coder - lane=for_review - FB-01 and FB-02 fixed, 488 tests passing
