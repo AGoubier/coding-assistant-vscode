@@ -13,8 +13,8 @@ Analyze all pending code changes, partition them into semantically meaningful gr
 - After completing implementation work that touched multiple concerns
 - When `git status` shows a mix of unrelated changes across files
 - Before submitting a PR to clean up the commit history
-- When an agent (Coder, Orchestrator) needs to commit accumulated changes
-- Anytime a user or agent says: "commit this", "commit changes", "clean up commits", "split commits"
+
+> **Note**: This skill is a **user-facing utility** invoked via `commit-changes.prompt.md`. Pipeline agents (Coder, Review Coordinator, Docs Agent, etc.) use their own inline commit workflows defined in their `<commit_policy>` sections and do NOT dispatch this skill.
 
 ## Principles
 

@@ -11,10 +11,11 @@ This skill is invoked by the Review Coordinator as a subagent. It evaluates impl
 **Input contract** (received via subagent prompt):
 1. Read this SKILL.md file for review instructions.
 2. Read the specification file for context.
-3. Discover and read all implementation code relevant to this WP.
-4. Evaluate each checklist item below against the discovered code.
-5. Write structured findings to the specified output path.
-6. Return a brief summary (counts of PASS/WARN/FAIL/N/A).
+3. Read the WP file to identify what was implemented and scope the review.
+4. Discover and read all implementation code relevant to this WP. Use `#tool:search/searchSubagent` to find WP-scoped files efficiently. Use `#tool:read/problems` to check for lint and compile errors.
+5. Evaluate each checklist item below against the discovered code.
+6. Write structured findings to the specified output path.
+7. Return a brief summary (counts of PASS/WARN/FAIL/N/A).
 
 **Constraint**: Do NOT modify any source code, the WP file, or the spec file. Only write to the specified output path.
 
@@ -137,7 +138,7 @@ files_reviewed:
 
 ### QUAL-001 [FAIL]
 - **Checklist item**: Dead Code - Unused function
-- **Requirement**: FR-037 dimension 7
+- **Requirement**: Dimension 7 - Dead Code
 - **File**: <file_path>#L<start>-L<end>
 - **Description**: Function `process_legacy()` is defined but never called anywhere.
 - **Expected**: Remove unused function or document why it is retained.
@@ -145,7 +146,7 @@ files_reviewed:
 
 ### QUAL-002 [WARN]
 - **Checklist item**: Complexity - High cyclomatic complexity
-- **Requirement**: FR-037 dimension 2
+- **Requirement**: Dimension 2 - Complexity
 - **File**: <file_path>#L<start>-L<end>
 - **Description**: Function has estimated cyclomatic complexity of 14.
 - **Expected**: Refactor into smaller functions or simplify branching logic. Threshold: 10.
@@ -164,3 +165,16 @@ files_reviewed:
 - Every N/A finding MUST include: Checklist item, Justification.
 - `finding_counts` MUST accurately reflect the actual findings in the file.
 - `files_reviewed` MUST list every file read and evaluated during this review.
+
+---
+
+## Quality Checklist
+
+Before completing, verify:
+
+- [ ] All 8 quality dimensions evaluated for every file
+- [ ] Cyclomatic complexity estimated for complex functions (threshold: 10)
+- [ ] Dead code verified via search (not just visual inspection)
+- [ ] Naming conventions checked against project style
+- [ ] `finding_counts` match actual findings in the output
+- [ ] `files_reviewed` lists every file read during this review

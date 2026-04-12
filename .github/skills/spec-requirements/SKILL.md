@@ -27,7 +27,7 @@ This skill receives the following inputs via the coordinator's subagent prompt:
 
 1. **Read this SKILL.md** to load instructions and guidelines
 2. **Read the accumulator** at `accumulator_path` to understand sections 1-3 (Overview, Goals, Users & Roles)
-3. **Read the brief** at `brief_path` for full context on what is being built
+3. **Read the brief** at `brief_path` for full context on what is being built. Read accumulator and brief in parallel.
 4. **Write sections 4, 10, 12, 13** to the accumulator by APPENDING after existing content
 5. **Produce artifacts** - N/A (this skill produces no companion artifacts)
 
@@ -66,6 +66,25 @@ Every functional requirement SHALL follow this exact format:
 6. **Testable** - Every FR must be verifiable by a test. If you cannot write a test for it, it is too vague.
 7. **No ambiguity** - Never use: "appropriate", "reasonable", "as needed", "etc.", "similar", "and/or", "optionally".
 
+### Deep Business Logic -- Beyond Surface-Level FRs
+
+FRs that only describe surface behavior ("the system SHALL create a user") produce shallow specifications that force the Coder to invent business logic. Every feature area SHALL also capture:
+
+1. **Business Rules & Invariants**: Conditions the system MUST enforce at all times (e.g., "account balance SHALL NOT be negative", "order total SHALL equal sum of line items"). Document as FRs with the invariant as the obligation.
+2. **Decision Logic**: When a feature has non-trivial conditional behavior (e.g., discount tiers, approval routing, permission escalation), document each branch as a separate FR or add a decision table:
+   ```markdown
+   | Condition | Outcome | FR Ref |
+   |-----------|---------|--------|
+   | order.total < 50 | No discount | FR-XXX |
+   | order.total >= 50 AND < 200 | 10% discount | FR-XXX |
+   | order.total >= 200 | 20% discount + free shipping | FR-XXX |
+   ```
+3. **Computed Values**: When a feature computes or derives values, document the formula explicitly in the FR (e.g., "The system SHALL compute `tax_amount` as `subtotal * tax_rate` where `tax_rate` is determined by the shipping address jurisdiction").
+4. **Side Effects**: When an operation triggers secondary actions (events, notifications, cache invalidation, audit logging), document each as a separate FR (e.g., "The system SHALL emit an `OrderPlaced` event after successfully creating an order").
+5. **Temporal Rules**: Time-based constraints that affect business behavior (e.g., "The system SHALL reject password resets requested within 5 minutes of the previous reset request").
+
+The goal is that a Coder reading the spec can implement the COMPLETE business behavior without needing to invent or infer any logic.
+
 ### Implementation Contract Subsections
 
 Every feature area in Section 4 SHALL end with an Implementation Contract subsection:
@@ -84,6 +103,9 @@ Contracts SHALL be specific enough for a Coder agent to implement without interp
 - Input parameter names, types, and validation constraints
 - Output field names, types, and structure
 - Exhaustive error-to-response mapping (not just "returns an error")
+- Business rules that apply during this operation (invariants to enforce, computed values to derive)
+- Side effects triggered by successful completion (events, notifications, cache updates)
+- Decision logic tables for non-trivial branching within this feature area
 
 ### Organization Pattern
 

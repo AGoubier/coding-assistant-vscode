@@ -12,7 +12,7 @@ This skill is invoked by the Review Coordinator as a subagent. It compares docum
 1. Read this SKILL.md file for review instructions.
 2. Read the specification file for documentation requirements.
 3. Read the WP file to identify what was implemented.
-4. Read all `.sdd/docs/` files and compare against the actual codebase.
+4. Read all `.sdd/docs/` files and compare against the actual codebase. Use `#tool:search/searchSubagent` to discover implementation files for cross-referencing documentation accuracy.
 5. Evaluate each checklist item below.
 6. Write structured findings to the specified output path.
 7. Return a brief summary (counts of PASS/WARN/FAIL/N/A).
@@ -23,7 +23,7 @@ This skill is invoked by the Review Coordinator as a subagent. It compares docum
 
 ## Documentation Checklist
 
-The project maintains 6 standard documentation files under `.sdd/docs/`. For each file, compare the documented content against the actual implementation.
+The project maintains 7 standard documentation files under `.sdd/docs/`. For each file, compare the documented content against the actual implementation.
 
 ### Category 1: Architecture Docs (FR-046.1)
 - [ ] Does `.sdd/docs/architecture.md` exist and contain substantive content?
@@ -45,6 +45,9 @@ The project maintains 6 standard documentation files under `.sdd/docs/`. For eac
 - [ ] Are all configuration options used in the WP's code documented?
 
 ### Category 4: Data Model Docs (FR-046.4)
+
+Data model documentation may appear in spec contract artifacts, inline code docs, or within `architecture.md`. There is no standalone data-model doc file.
+
 - [ ] Are data entities, fields, and types documented accurately?
 - [ ] Do documented relationships match actual schema definitions?
 - [ ] Are validation rules documented and consistent with code?
@@ -71,9 +74,14 @@ The project maintains 6 standard documentation files under `.sdd/docs/`. For eac
 - [ ] Are there outdated code examples that no longer compile or run?
 - [ ] Are version numbers or dependency references current?
 
-### Category 9: Completeness (FR-046.9)
-- [ ] Do all 6 standard doc files exist under `.sdd/docs/`?
-- [ ] Are any of the 6 files empty or contain only boilerplate headers?
+### Category 9: Changelog (FR-046.9)
+- [ ] Does `.sdd/docs/CHANGELOG.md` exist and contain entries?
+- [ ] Does the latest entry correspond to the most recently approved WP?
+- [ ] Are breaking changes clearly marked?
+
+### Category 10: Completeness (FR-046.10)
+- [ ] Do all 7 standard doc files exist under `.sdd/docs/`? (`architecture.md`, `api-reference.md`, `user-guide.md`, `developer-guide.md`, `configuration-guide.md`, `deployment-guide.md`, `CHANGELOG.md`)
+- [ ] Are any of the 7 files empty or contain only boilerplate headers?
 - [ ] Are all public APIs, config options, and workflows covered?
 
 ---
@@ -118,9 +126,10 @@ files_reviewed:
   - .sdd/docs/architecture.md
   - .sdd/docs/api-reference.md
   - .sdd/docs/configuration-guide.md
+  - .sdd/docs/deployment-guide.md
   - .sdd/docs/user-guide.md
   - .sdd/docs/developer-guide.md
-  - .sdd/docs/deployment-guide.md
+  - .sdd/docs/CHANGELOG.md
 ---
 
 # review-docs Findings for <WP-ID>
@@ -151,3 +160,16 @@ files_reviewed:
 - **Checklist item**: Deployment Guide - Prerequisites
 - **Justification**: No deployment changes in this WP. Deployment guide remains accurate.
 ```
+
+---
+
+## Quality Checklist
+
+Before completing, verify:
+
+- [ ] All 7 standard doc files checked for existence and content
+- [ ] Code-to-docs accuracy verified (not just reading docs in isolation)
+- [ ] Stale/outdated content flagged against current implementation
+- [ ] New features from this WP reflected in relevant docs
+- [ ] `finding_counts` match actual findings in the output
+- [ ] `files_reviewed` lists every file read during this review

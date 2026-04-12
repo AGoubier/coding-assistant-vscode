@@ -117,16 +117,13 @@ Execute this section only if `scope` includes `codebase`.
 
 ### 3.1 Search Strategy
 
-1. Use `grep_search` for exact text matches related to the topic:
-   - File names and directory names related to the topic
+1. Prefer `#tool:search/searchSubagent` with the `Explore` agent for broad codebase Q&A -- it performs multi-file discovery in a single call. Use it for questions like "how does the codebase handle X?" or "what patterns exist for Y?".
+2. Use `#tool:search/usages` to find all references, definitions, and implementations of a specific symbol -- faster and more precise than manual grep for symbol tracing.
+3. Use `grep_search` for exact text matches when you know the specific string:
    - Import statements for relevant packages
    - Configuration keys and values
    - Function/class names matching the topic
-2. Use `semantic_search` for conceptual matches:
-   - Code implementing similar functionality
-   - Patterns and conventions related to the topic
-   - Architecture decisions evident in the code structure
-3. Use `list_dir` and `read_file` to explore directories and files identified by the searches.
+4. Use `list_dir` and `read_file` to explore directories and files identified by the searches. Read multiple independent files in parallel via concurrent tool calls.
 
 ### 3.2 What to Identify
 

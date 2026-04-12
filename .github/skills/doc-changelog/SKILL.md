@@ -10,7 +10,7 @@ This skill is invoked by the Docs Agent Coordinator as a subagent. It prepends a
 
 ## Input Contract (FR-005)
 
-This skill receives the following 6 inputs via the coordinator's subagent prompt, as defined in `DOC-SKILL-CONTRACT.md`:
+This skill receives the following 7 inputs via the coordinator's subagent prompt, as defined in `DOC-SKILL-CONTRACT.md`:
 
 | # | Input | Type | Description |
 |---|-------|------|-------------|
@@ -20,6 +20,7 @@ This skill receives the following 6 inputs via the coordinator's subagent prompt
 | 4 | `source_files` | List(Path) | Implementation source files modified by the WP |
 | 5 | `docs_dir` | Path | Path to existing documentation directory (`.sdd/docs/`) for incremental updates |
 | 6 | `patterns` | Text | Active doc-domain patterns to avoid (from `.sdd/reviews/doc-patterns.md`) |
+| 7 | `contracts_dir` | Path | Path to contract files for this WP (`.sdd/plans/contracts/<WP-slug>/`) |
 
 ## Output Contract
 
@@ -33,7 +34,7 @@ This skill receives the following 6 inputs via the coordinator's subagent prompt
 
 1. **Read SKILL.md** -- Load this file for changelog generation instructions
 2. **Read existing docs** -- Read `.sdd/docs/CHANGELOG.md` if it exists to understand current content and identify the insertion point
-3. **Read source material** -- Read the WP file, spec, contract files, and implementation source files for content
+3. **Read source material** -- Read the WP file, spec, contract files, and implementation source files for content. Read multiple independent files in parallel.
 4. **Write documentation** -- Prepend a new changelog entry after the file header, before existing entries (do NOT append to the end)
 
 ## Constraints
@@ -207,4 +208,20 @@ Assemble and write the complete changelog entry.
 - The "Dependencies" subsection SHALL be omitted if there are no dependency changes
 - Each change description SHALL be a single line starting with `- `
 - Change descriptions SHALL NOT include task IDs (e.g., "T03-02") -- they are user-facing
-- The entry SHALL end with a `---` horizontal rule separator before the next entry
+- A `---` horizontal rule separator SHALL appear between the new entry and the previous entry in the file. This separator belongs to the file structure (Step 5), not to the entry itself.
+- If the WP consists entirely of internal changes with no user-visible impact, write a single entry: `- Internal improvements with no user-visible changes`
+
+---
+
+## Quality Checklist
+
+Before completing, verify:
+
+- [ ] Entry is prepended (newest first) after the file header
+- [ ] WP identifier and date are present in the heading
+- [ ] Change descriptions are user-facing (no task IDs)
+- [ ] Breaking changes subsection is present if applicable, omitted if not
+- [ ] Dependencies subsection is present if applicable, omitted if not
+- [ ] `---` separator appears between new and previous entry
+- [ ] Existing entries are preserved unmodified
+- [ ] No em dashes, smart quotes, or curly apostrophes in output

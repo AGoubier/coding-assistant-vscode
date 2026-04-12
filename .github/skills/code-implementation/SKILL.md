@@ -1,6 +1,6 @@
 ---
 name: code-implementation
-description: "Contract-first task implementation for all tasks in a work package"
+description: "Contract-first single-task implementation dispatched by Coder Coordinator"
 argument-hint: "Invoked by Coder Coordinator - do not call directly"
 ---
 
@@ -10,7 +10,7 @@ argument-hint: "Invoked by Coder Coordinator - do not call directly"
 > **Common contract**: `.github/skills/CODER-SKILL-CONTRACT.md`
 > **Spec refs**: FR-023, FR-024, FR-025, FR-026
 
-This skill is dispatched by the Coder Coordinator during Phase 2. It implements all tasks in a work package contract-first, matching function signatures, field names, types, and error codes from contract files verbatim. One invocation handles all tasks in one WP.
+This skill is dispatched by the Coder Coordinator during Phase 2. It implements a single task contract-first, matching function signatures, field names, types, and error codes from contract files verbatim. Each invocation handles one task as dispatched by the Coder agent.
 
 ---
 
@@ -21,11 +21,13 @@ This skill is dispatched by the Coder Coordinator during Phase 2. It implements 
 | 1 | `skill_path` | Path to this SKILL.md file |
 | 2 | `wp_path` | Path to the WP file being implemented |
 | 3 | `contracts_dir` | Path to contract files for this WP (`.sdd/plans/contracts/<WP-slug>/`) |
-| 4 | `spec_path` | Path to the source spec file |
-| 5 | `patterns` | Active code-domain patterns to avoid (from `code-patterns.md`) |
-| 6 | `target_language` | Programming language (e.g., TypeScript, Python) |
-| 7 | `target_framework` | Framework (e.g., Express, FastAPI, React) |
-| 8 | `task_list` | Tasks with acceptance criteria and spec refs |
+| 4 | `shared_contracts_dir` | Path to shared cross-WP contracts (`.sdd/plans/contracts/shared/`) |
+| 5 | `spec_path` | Path to the source spec file |
+| 6 | `patterns` | Active code-domain patterns to avoid (from `code-patterns.md`) |
+| 7 | `target_language` | Programming language (e.g., TypeScript, Python) |
+| 8 | `target_framework` | Framework (e.g., Express, FastAPI, React) |
+| 9 | `task_list` | Tasks with acceptance criteria and spec refs |
+| 10 | `dependency_source_summary` | Actual file paths, exports, and import paths from completed dependency WPs |
 
 ---
 
@@ -56,14 +58,13 @@ Report to the coordinator with these fields:
 
 ## Step 1 -- Read and Order Tasks (FR-026)
 
-One `code-implementation` invocation handles all tasks in one WP. Process tasks sequentially in dependency order.
+Each `code-implementation` invocation handles a single task dispatched by the Coder agent. The Coder dispatches one task at a time in dependency order.
 
-1. Read all tasks from the `task_list` input
-2. Build a dependency graph from each task's `Depends on` field
-3. Sort tasks in topological order (tasks with no dependencies first)
-4. If circular dependencies are detected, report failure immediately
+1. Read the task from the `task_list` input (single task with acceptance criteria)
+2. Verify all task dependencies are satisfied (prior tasks completed)
+3. If dependencies are unmet, report failure immediately
 
-For each task in order, execute Steps 2-4.
+Execute Steps 2-4 for this task.
 
 ---
 
@@ -81,7 +82,9 @@ Before implementing each task, read the contract files it references. Contract f
 
 The `<ext>` matches the target language (e.g., `.ts`, `.py`, `.go`).
 
-**Missing contract file handling**: If a task references a contract file that does not exist in `contracts_dir`:
+**Shared contracts**: Also read contract files from `shared_contracts_dir` (`.sdd/plans/contracts/shared/`). These contain entity types and interfaces defined by earlier WPs that the current WP may depend on. Import shared types from the shared contracts rather than re-defining them.
+
+**Missing contract file handling**: If a task references a contract file that does not exist in `contracts_dir` or `shared_contracts_dir`:
 - Report failure immediately
 - Set `status: failure` and `failure_reason: "Contract file <path> referenced by task <task_id> not found"`
 - Do NOT continue with the remaining tasks -- halt and let the coordinator handle it
@@ -90,11 +93,29 @@ The `<ext>` matches the target language (e.g., `.ts`, `.py`, `.go`).
 
 ## Step 3 -- Implement Contract-First (FR-023, FR-024)
 
-For each task, implement the code that satisfies every acceptance criterion. Follow this sequence:
+Implement the code that satisfies every acceptance criterion for the assigned task. The Coder dispatches this skill once per task, so focus on implementing ONLY the task specified in the prompt. Follow this sequence:
 
-### 3a. Read Spec Refs and Acceptance Criteria
+### 3a. Read Spec Refs, Acceptance Criteria, and Implementation Guidance
 
 Read the task's spec refs (FR-XXX, Section N.X) from the spec file. Understand every SHALL obligation, precondition, postcondition, and error path.
+
+Read the task's **Implementation Guidance** section from the WP file. This section contains specific instructions, recommended libraries, doc links, patterns, and constraints for how to implement this task. Follow its guidance precisely -- it was written by the Planner with knowledge of the target stack and architecture.
+
+### 3a.1. Extract Business Logic from Spec
+
+Beyond the basic FR obligations, extract and implement ALL business logic specified:
+
+1. **Business rules & invariants**: Conditions the system must enforce at all times. These become validation checks, guards, or assertions in the implementation.
+2. **Decision logic**: If the FR includes a decision table or multi-branch conditional logic, implement ALL branches exactly as specified. Do NOT simplify or collapse branches.
+3. **Computed values**: If the FR specifies a formula or derivation (e.g., `total = sum(items.price * items.qty)`), implement the exact computation. Do NOT approximate or use different formulas.
+4. **Side effects**: If the FR specifies events to emit, notifications to send, cache operations, or audit logging, implement them as part of the operation. Side effects are NOT optional enhancements -- they are specified behavior.
+5. **Temporal rules**: If the FR specifies time-based constraints (cooldown periods, expiration windows, rate limits), implement the exact timing logic specified.
+
+If the spec references an invariant, decision table, or side effect but the task description does not repeat it, still implement it -- the spec is the source of truth.
+
+### 3a.1. Directory Structure (Greenfield)
+
+If this is the first task of the first WP (no existing source files), read the spec's **Section 9.3 Directory Structure** to determine where files should be placed. Create directories as needed. For subsequent tasks and WPs, follow the directory structure already established by prior tasks.
 
 ### 3b. Copy Interface/Type Definitions Verbatim (FR-024.1, FR-024.2)
 
@@ -105,6 +126,12 @@ Copy interface and type definitions from contract files into the implementation.
 - Do NOT rename parameters, fields, or types
 - Do NOT add optional parameters not in the contract
 - Do NOT change type signatures
+
+**Tool guidance for implementation efficiency**:
+- Use `#tool:edit/editFiles` with multi-replace mode when making multiple independent edits across files in a single operation
+- Call `#tool:read/problems` after each file edit to catch syntax and type errors immediately -- do not wait until all edits are done
+- Read multiple contract files in parallel via concurrent tool calls
+- Use `#tool:search/usages` to verify contract symbol implementations when checking interface compliance
 
 **Example**: Given a contract defining:
 ```typescript
@@ -154,6 +181,14 @@ Match the existing codebase style:
 - Logging patterns (if the codebase uses a logger, use the same one)
 
 If the codebase is empty (greenfield), follow the conventions specified in the spec or standard conventions for the target language/framework.
+
+### 3g.1. Import from Dependency WPs
+
+When the current WP depends on modules from earlier WPs (per `dependency_source_summary` input):
+- Use the actual file paths and import paths listed in the dependency source summary
+- Do NOT guess import paths -- use the exact module paths from the summary
+- If a needed symbol is listed in the dependency exports, import it directly
+- If a needed symbol is NOT in the dependency exports, check shared contracts first, then report as an issue
 
 ### 3h. Check Off Acceptance Criteria (FR-023.7)
 
@@ -212,11 +247,11 @@ Do NOT halt for ambiguous requirements. Flag, choose the best interpretation, an
 - Do NOT add review checklists or quality scores
 - The Reviewer agent is the sole quality gate
 
-### Single Invocation Per WP (FR-026)
+### Single Task Per Invocation (FR-026)
 
-- One `code-implementation` invocation handles all tasks in one WP
-- Tasks are processed sequentially in dependency order within the single invocation
-- Do NOT request multiple invocations for a single WP
+- Each `code-implementation` invocation handles a single task dispatched by the Coder agent
+- The Coder dispatches one invocation per task in dependency order
+- Do NOT attempt to process multiple tasks within a single invocation
 
 ---
 

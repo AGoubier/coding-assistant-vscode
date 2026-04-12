@@ -10,7 +10,7 @@ This skill is invoked by the Docs Agent Coordinator as a subagent. It produces a
 
 ## Input Contract (FR-005)
 
-This skill receives the following 6 inputs via the coordinator's subagent prompt, as defined in `DOC-SKILL-CONTRACT.md`:
+This skill receives the following 7 inputs via the coordinator's subagent prompt, as defined in `DOC-SKILL-CONTRACT.md`:
 
 | # | Input | Type | Description |
 |---|-------|------|-------------|
@@ -20,6 +20,7 @@ This skill receives the following 6 inputs via the coordinator's subagent prompt
 | 4 | `source_files` | List(Path) | Implementation source files modified by the WP |
 | 5 | `docs_dir` | Path | Path to existing documentation directory (`.sdd/docs/`) for incremental updates |
 | 6 | `patterns` | Text | Active doc-domain patterns to avoid (from `.sdd/reviews/doc-patterns.md`) |
+| 7 | `contracts_dir` | Path | Path to contract files for this WP (`.sdd/plans/contracts/<WP-slug>/`) |
 
 ## Output Contract
 
@@ -33,7 +34,7 @@ This skill receives the following 6 inputs via the coordinator's subagent prompt
 
 1. **Read SKILL.md** -- Load this file for documentation generation instructions
 2. **Read existing docs** -- Read `.sdd/docs/developer-guide.md` if it exists to understand current content
-3. **Read source material** -- Read the WP file, spec, contract files, and implementation source files for content
+3. **Read source material** -- Read the WP file, spec, contract files, and implementation source files for content. Read multiple independent files in parallel.
 4. **Write documentation** -- Update or create `.sdd/docs/developer-guide.md` incrementally (do NOT recreate from scratch)
 
 ## Constraints
@@ -198,7 +199,10 @@ Document the coding conventions in use, derived from the actual codebase.
 
 ### Formatting
 
-<linting/formatting tools in use and their configuration>
+- **Formatter**: `<tool>` (e.g., Prettier, Black, rustfmt)
+- **Linter**: `<tool>` (e.g., ESLint, Ruff, clippy)
+- **Config file**: `<path>` (e.g., `.prettierrc`, `pyproject.toml`)
+- **Auto-format on save**: <yes/no and how to configure>
 ```
 
 ---

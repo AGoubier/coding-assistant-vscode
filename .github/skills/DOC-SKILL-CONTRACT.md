@@ -8,7 +8,7 @@ Reference: FR-005, FR-006 of `.sdd/specs/007-docs-agent.spec.md`
 
 ## 1. Inputs (FR-005)
 
-Every doc skill receives the following 6 inputs in its subagent prompt from the coordinator:
+Every doc skill receives the following 7 inputs in its subagent prompt from the coordinator:
 
 | # | Input | Type | Description |
 |---|-------|------|-------------|
@@ -18,6 +18,8 @@ Every doc skill receives the following 6 inputs in its subagent prompt from the 
 | 4 | `source_files` | List(Path) | Implementation source files modified by the WP |
 | 5 | `docs_dir` | Path | Path to existing documentation directory (`.sdd/docs/`) for incremental updates |
 | 6 | `patterns` | Text | Active doc-domain patterns to avoid (from `.sdd/reviews/doc-patterns.md`) |
+| 7 | `contracts_dir` | Path | Path to the contracts directory for this WP (`.sdd/plans/contracts/<WP-slug>/`) |
+
 
 ---
 
@@ -27,7 +29,7 @@ Every doc skill SHALL execute these 4 steps in order:
 
 1. **Read SKILL.md** - Load its own SKILL.md to get documentation generation instructions
 2. **Read existing docs** - Read the current documentation files in `.sdd/docs/` to understand what already exists
-3. **Read source material** - Read the WP file, spec, contract files, and implementation source files for content
+3. **Read source material** - Read the WP file, spec, contract files, and implementation source files for content. Read multiple independent files in parallel via concurrent tool calls. Use `#tool:search/searchSubagent` to discover implementation files when the file list is not provided.
 4. **Write documentation** - Update or create documentation files incrementally (do NOT recreate from scratch)
 
 ---
@@ -42,8 +44,10 @@ Each skill SHALL produce one of the following:
 | `doc-api-reference` | `.sdd/docs/api-reference.md` | Endpoint docs from contracts |
 | `doc-user-guide` | `.sdd/docs/user-guide.md` | Feature usage instructions |
 | `doc-developer-guide` | `.sdd/docs/developer-guide.md` | Dev setup, conventions |
+| `doc-configuration` | `.sdd/docs/configuration-guide.md` | Env vars, config files, defaults |
+| `doc-deployment` | `.sdd/docs/deployment-guide.md` | Deploy steps, prerequisites, ops |
 | `doc-changelog` | `.sdd/docs/CHANGELOG.md` | Version history entries (prepended, newest first) |
-| `doc-inline-code` | Source files (`*.ts`, `*.py`, `*.go`, `*.rs`) | Docstrings and comments in source files |
+| `doc-inline-code` | Source files (`*.ts`, `*.py`, `*.go`, `*.rs`, `*.java`, `*.cs`) | Docstrings and comments in source files |
 
 ### 3.1 Incremental Updates
 
@@ -77,8 +81,10 @@ The coordinator dispatches doc skills in this canonical order:
 | 2 | `doc-api-reference` | API endpoint documentation from contracts |
 | 3 | `doc-user-guide` | End-user documentation for features |
 | 4 | `doc-developer-guide` | Development setup, conventions, contributing |
-| 5 | `doc-changelog` | Changelog entry for the WP |
-| 6 | `doc-inline-code` | Code comments and docstrings in source files |
+| 5 | `doc-configuration` | Environment variables, config files, defaults |
+| 6 | `doc-deployment` | Deployment prerequisites, steps, operations |
+| 7 | `doc-changelog` | Changelog entry for the WP |
+| 8 | `doc-inline-code` | Code comments and docstrings in source files |
 
 Skills not present are skipped without error. Skills present but not in this list are dispatched after all known skills, in alphabetical order.
 

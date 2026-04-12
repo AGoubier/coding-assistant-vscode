@@ -34,7 +34,7 @@ This skill is dispatched by the Planner Coordinator during Phase 2. It reads the
 
 1. **Read SKILL.md** - Load this file for state machine generation instructions
 2. **Read plan state** - Read README and all WP files to identify WPs with stateful entities
-3. **Read spec + artifacts** - Read the spec and the companion artifact `state-machines.<ext>` from `spec_artifacts_dir`
+3. **Read spec + artifacts** - Read the spec and the companion artifact `state-machines.<ext>` from `spec_artifacts_dir`. Read spec and artifact files in parallel.
 4. **Write contract files** - Write `state-machines.<ext>` to `contracts_dir/<WP-slug>/` per applicable WP
 
 ---

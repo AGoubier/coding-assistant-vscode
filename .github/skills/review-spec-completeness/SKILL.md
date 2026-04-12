@@ -212,7 +212,7 @@ Circuit breaker is "if applicable" -- only flag if the integration pattern warra
 
 Verify that companion artifact files exist in `.sdd/specs/artifacts/<spec-slug>/` and are consistent with the prose spec:
 
-1. **Data model artifacts** -- Every entity in Section 7 has a corresponding type definition in `data-models.<ext>`
+1. **Data model artifacts** -- Every entity in Section 7 has a corresponding type definition in `data-schemas.<ext>`
 2. **API contract artifacts** -- Every API endpoint in Section 8 has corresponding request/response types in `api-contracts.<ext>`
 3. **Error catalog artifacts** -- Every error code in Section 4 has a corresponding entry in `error-catalog.<ext>`
 4. **Field name and type match** -- Field names are identical (case-sensitive) and types match semantically between prose and artifacts
@@ -296,6 +296,8 @@ After all 10 checks complete, produce a verdict:
 
 Include finding counts by severity:
 
+**Severity mapping for YAML frontmatter**: Map internal HIGH→fail, MEDIUM→warn, LOW→warn in the `finding_counts` block. The Verdict section retains the original HIGH/MEDIUM/LOW counts for detail.
+
 ```
 ## Verdict
 
@@ -313,6 +315,22 @@ Include finding counts by severity:
 Produce the full output in this order:
 
 ```markdown
+---
+skill: review-spec-completeness
+wp: pre-planning
+spec: <spec_path>
+reviewed_at: <ISO-8601-timestamp>
+status: completed
+finding_counts:
+  pass: 0
+  warn: <count>
+  fail: <count>
+  na: 0
+files_reviewed:
+  - <spec_path>
+  - <artifact_files>
+---
+
 # review-spec-completeness Findings
 
 ## Summary
@@ -347,3 +365,16 @@ Total findings: <count>
 ```
 
 If a check produces no findings, list it in the "Checks with No Findings" section with either "No issues found" or "N/A" with a brief justification.
+
+---
+
+## Quality Checklist
+
+Before completing, verify:
+
+- [ ] All 9 completeness dimensions checked
+- [ ] Obligation language verified (SHALL/SHOULD/MAY usage)
+- [ ] Error behaviors have specific codes/messages, not just mentions
+- [ ] Data model has typed fields, not just entity names
+- [ ] API contracts have request/response schemas
+- [ ] `finding_counts` match actual findings in the output

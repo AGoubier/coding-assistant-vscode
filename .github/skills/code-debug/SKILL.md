@@ -112,6 +112,11 @@ For each failure group, locate the source code under test:
 3. Read the source file containing the function under test
 4. Read enough surrounding context (the full function, class, or module) to understand the logic
 
+**Diagnostic tool guidance**:
+- Use `#tool:read/problems` to check for compile and lint errors in source files -- these often reveal the root cause faster than reading stack traces
+- Use `#tool:search/usages` to trace how a failing symbol is referenced across the codebase -- this finds all callers, definitions, and implementations in one call
+- Use `#tool:execute/executionSubagent` for running targeted test commands and filtering output to only the relevant failure details
+
 ### 1c. Read Contract and Spec Context (FR-034.3)
 
 For each failure group, load the relevant contracts and spec sections:

@@ -10,7 +10,7 @@ This skill is invoked by the Docs Agent Coordinator as a subagent. It adds and u
 
 ## Input Contract (FR-005)
 
-This skill receives the following 6 inputs via the coordinator's subagent prompt, as defined in `DOC-SKILL-CONTRACT.md`:
+This skill receives the following 7 inputs via the coordinator's subagent prompt, as defined in `DOC-SKILL-CONTRACT.md`:
 
 | # | Input | Type | Description |
 |---|-------|------|-------------|
@@ -20,6 +20,7 @@ This skill receives the following 6 inputs via the coordinator's subagent prompt
 | 4 | `source_files` | List(Path) | Implementation source files modified by the WP |
 | 5 | `docs_dir` | Path | Path to existing documentation directory (`.sdd/docs/`) for incremental updates |
 | 6 | `patterns` | Text | Active doc-domain patterns to avoid (from `.sdd/reviews/doc-patterns.md`) |
+| 7 | `contracts_dir` | Path | Path to contract files for this WP (`.sdd/plans/contracts/<WP-slug>/`) |
 
 ## Output Contract
 
@@ -33,8 +34,8 @@ This skill receives the following 6 inputs via the coordinator's subagent prompt
 
 1. **Read SKILL.md** -- Load this file for inline documentation instructions
 2. **Read existing docs** -- Read the source files listed in `source_files` to understand current documentation state
-3. **Read source material** -- Read the WP file, spec, and contract files to understand the purpose and expected behavior of each function/module
-4. **Write documentation** -- Update source files in-place, adding or updating docstrings, comments, and type annotations without modifying logic
+3. **Read source material** -- Read the WP file, spec, and contract files to understand the purpose and expected behavior of each function/module. Use `#tool:search/usages` to find symbol definitions and call sites for accurate docstrings.
+4. **Write documentation** -- Update source files in-place, adding or updating docstrings, comments, and type annotations without modifying logic. Use `#tool:edit/editFiles` with multi-replace mode for batch docstring additions. Call `#tool:read/problems` after edits to verify no syntax errors were introduced.
 
 ---
 
@@ -65,6 +66,17 @@ The skill SHALL NOT modify implementation logic. Only documentary content may be
 - **Deleting code**: Do not remove any existing code, even dead code or commented-out code
 
 If you discover a bug, a code smell, or an improvement opportunity, include it in your report to the coordinator but do NOT make the change.
+
+### Incremental Update Protocol
+
+When a WP modifies existing source files that already have documentation:
+
+1. **Preserve existing docstrings** that describe unchanged behavior
+2. **Update docstrings** only for functions/parameters whose behavior changed in this WP
+3. **Add new docstrings** for new functions, classes, or modules introduced by this WP
+4. **Do NOT strip or rewrite** documentation on code not touched by this WP
+
+The goal is surgical documentation updates, not wholesale rewrites.
 
 ---
 
@@ -311,7 +323,7 @@ Add type annotations where missing and the language supports them.
    - Contract files (interfaces, data schemas)
    - Function usage patterns in the codebase
    - Test files that show expected inputs/outputs
-6. If the type cannot be confidently determined, use the broader type (e.g., `Any` in Python, `unknown` in TypeScript) and add a `# TODO: narrow type` comment
+6. If the type cannot be confidently determined, use the broader type (e.g., `Any` in Python, `unknown` in TypeScript) and add a `# DOCFIX: narrow type` comment
 
 ---
 
@@ -330,3 +342,17 @@ Before completing, verify that no implementation logic was modified.
    - Typo fixed in existing docstring
 3. If any change modifies logic, undo it immediately
 4. Report the final list of files modified and the types of changes made
+
+---
+
+## Quality Checklist
+
+Before completing, verify:
+
+- [ ] No implementation logic was modified (only docstrings, comments, type annotations)
+- [ ] Every public function/class/method has a docstring
+- [ ] Type annotations were added where inferable from contracts or tests
+- [ ] Existing accurate docstrings were preserved, not overwritten
+- [ ] `# DOCFIX: narrow type` markers used for uncertain types (not `# TODO`)
+- [ ] Module-level docstrings include purpose and key responsibilities
+- [ ] No em dashes, smart quotes, or curly apostrophes in output

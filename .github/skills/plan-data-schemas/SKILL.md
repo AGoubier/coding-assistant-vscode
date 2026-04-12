@@ -34,7 +34,7 @@ This skill is dispatched by the Planner Coordinator during Phase 2. It reads the
 
 1. **Read SKILL.md** - Load this file for data schema generation instructions
 2. **Read plan state** - Read README and all WP files to identify which WPs touch data model entities
-3. **Read spec + artifacts** - Read the spec and the companion artifact `data-models.<ext>` from `spec_artifacts_dir`
+3. **Read spec + artifacts** - Read the spec and the companion artifact `data-schemas.<ext>` from `spec_artifacts_dir`. Read spec and artifact files in parallel.
 4. **Write contract files** - Write `data-schemas.<ext>` to `contracts_dir/<WP-slug>/` per applicable WP
 
 ---
@@ -66,7 +66,7 @@ Payment -> WP02 (defines)
 
 ## Step 2 - Read Spec Companion Artifact (FR-041)
 
-Check if `spec_artifacts_dir` contains a `data-models.<ext>` file. If it exists:
+Check if `spec_artifacts_dir` contains a `data-schemas.<ext>` file. If it exists:
 
 1. Parse the spec-level entity definitions with all fields, types, and constraints
 2. These are the canonical schemas -- WP-level contracts MUST match field names and types
@@ -179,7 +179,18 @@ Include constraints from the spec:
 - Required vs optional
 - Unique constraints (as comments)
 
-### 4d. Relationship Definitions (FR-040.3)
+### 4d. Shared Entity Contracts
+
+For entities that will be consumed by subsequent WPs (referenced in multiple WPs' tasks):
+
+1. Write the full entity definition to BOTH `<contracts_dir>/<WP-slug>/data-schemas.<ext>` AND `<contracts_dir>/shared/data-schemas.<ext>`.
+2. The shared file accumulates entity definitions across WPs -- append new entities to it; do NOT overwrite existing content.
+3. Subsequent WPs' contract files SHALL import shared entities from `../shared/data-schemas` rather than from the owning WP's directory.
+4. If `<contracts_dir>/shared/data-schemas.<ext>` does not exist, create it with the standard manifest header.
+
+This enables the Coder to read `contracts/shared/` for cross-WP type availability without needing to know which WP originally defined an entity.
+
+### 4e. Relationship Definitions (FR-040.3)
 
 For entity relationships:
 

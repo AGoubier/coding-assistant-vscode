@@ -34,7 +34,7 @@ This skill is dispatched by the Planner Coordinator during Phase 2. It reads the
 
 1. **Read SKILL.md** - Load this file for API contract generation instructions
 2. **Read plan state** - Read README and all WP files to identify which WPs have API endpoints
-3. **Read spec + artifacts** - Read the spec and the companion artifact `api-contracts.<ext>` from `spec_artifacts_dir`
+3. **Read spec + artifacts** - Read the spec and the companion artifact `api-contracts.<ext>` from `spec_artifacts_dir`. Read spec and artifact files in parallel.
 4. **Write contract files** - Write `api-contracts.<ext>` to `contracts_dir/<WP-slug>/` per applicable WP
 
 ---

@@ -27,7 +27,7 @@ This skill receives the following inputs via the coordinator's subagent prompt:
 
 1. **Read this SKILL.md** to load instructions and guidelines
 2. **Read the accumulator** at `accumulator_path` to understand sections 1-10.2 (the full spec so far)
-3. **Read the brief** at `brief_path` for context
+3. **Read the brief** at `brief_path` for context. Read accumulator and brief in parallel.
 4. **Write Section 11** to the accumulator by APPENDING after existing content
 5. **Produce artifacts** - N/A (this skill produces no companion artifacts)
 
@@ -46,7 +46,7 @@ ALL tests in this section derive from spec acceptance scenarios (Section 5) and 
 
 - Test names describe BEHAVIOR, not functions: "User can register with valid email" not "test_create_user_service"
 - Test assertions verify SPEC POSTCONDITIONS, not internal state
-- Coverage thresholds: 80% code coverage, 90% branch coverage (minimum)
+- Coverage thresholds are configurable per-WP via `coverage_code` (default 80) and `coverage_branch` (default 90) frontmatter fields
 - Write the test an acceptance scenario describes, not the test an implementation suggests
 
 ---
@@ -62,7 +62,7 @@ Identify modules requiring unit test coverage:
 ```markdown
 ### 11.1 Unit Tests
 
-**Coverage thresholds**: 80% code coverage, 90% branch coverage (minimum)
+**Coverage thresholds**: Configurable per-WP via `coverage_code` (default 80%) and `coverage_branch` (default 90%) frontmatter fields (minimum)
 
 **Coverage tool**: <pytest-cov for Python / c8/istanbul for Node.js / equivalent>
 
@@ -199,7 +199,7 @@ If any acceptance scenarios from Section 5 are missing in Section 11.2:
 ## Quality Checklist
 
 1. [ ] All 6 subsections (11.1-11.6) are present
-2. [ ] Coverage thresholds stated: 80% code, 90% branch
+2. [ ] Coverage thresholds stated as configurable per-WP via `coverage_code`/`coverage_branch` with defaults 80/90
 3. [ ] Every acceptance scenario from Section 5 has a Gherkin scenario in 11.2 (1:1)
 4. [ ] Every Gherkin scenario has a `# Source: US-XX` reference
 5. [ ] Edge cases from Section 5 have corresponding test scenarios

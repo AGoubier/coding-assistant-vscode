@@ -6,7 +6,7 @@ argument-hint: "Invoked by Spec Architect Coordinator - do not call directly"
 
 # spec-data-model - Data Model Skill
 
-This skill is invoked by the Spec Architect Coordinator as a subagent. It produces Section 7 (Data Model) of the specification and companion artifact files: `data-models.<ext>` and `state-machines.<ext>`.
+This skill is invoked by the Spec Architect Coordinator as a subagent. It produces Section 7 (Data Model) of the specification and companion artifact files: `data-schemas.<ext>` and `state-machines.<ext>`.
 
 ## Input Contract
 
@@ -27,9 +27,9 @@ This skill receives the following inputs via the coordinator's subagent prompt:
 
 1. **Read this SKILL.md** to load instructions and guidelines
 2. **Read the accumulator** at `accumulator_path` to understand sections 1-6 (Overview, Goals, Users, FRs, User Stories, Flows)
-3. **Read the brief** at `brief_path` for domain context
+3. **Read the brief** at `brief_path` for domain context. Read accumulator and brief in parallel.
 4. **Write Section 7** to the accumulator by APPENDING after existing content
-5. **Produce companion artifacts** in `artifacts_dir`: `data-models.<ext>` and `state-machines.<ext>` (if applicable)
+5. **Produce companion artifacts** in `artifacts_dir`: `data-schemas.<ext>` and `state-machines.<ext>` (if applicable)
 
 ## Constraints
 
@@ -137,9 +137,9 @@ For each entity, verify:
 
 After writing Section 7 prose, produce companion artifact files in the `artifacts_dir`.
 
-### data-models.<ext>
+### data-schemas.<ext>
 
-Produce `data-models.<ext>` (extension matches target language) containing typed definitions for ALL entities from Section 7.
+Produce `data-schemas.<ext>` (extension matches target language) containing typed definitions for ALL entities from Section 7.
 
 **Critical rule**: Field names, types, constraints, and defaults in the artifact SHALL match Section 7 prose EXACTLY. No renaming, no type coercion, no missing fields.
 
@@ -242,7 +242,7 @@ Before finishing, verify your output against these checks:
 3. [ ] Every entity has relationships documented (or "None")
 4. [ ] Every entity with a status field has a state machine
 5. [ ] State machines list all valid transitions AND declare invalid transitions rejected
-6. [ ] `data-models.<ext>` exists in artifacts directory with all entities
+6. [ ] `data-schemas.<ext>` exists in artifacts directory with all entities
 7. [ ] Field names in artifact match Section 7 prose exactly
 8. [ ] Field types in artifact match Section 7 prose exactly
 9. [ ] `state-machines.<ext>` exists if any entity has state fields

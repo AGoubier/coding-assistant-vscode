@@ -34,7 +34,7 @@ This skill is dispatched by the Planner Coordinator during Phase 1. It analyzes 
 
 1. **Read SKILL.md** - Load this file for planning instructions
 2. **Read plan state** - Read existing plan files (README, any existing WP files) to understand prior context
-3. **Read spec + artifacts** - Read the full spec at `spec_path` and companion artifacts at `spec_artifacts_dir`
+3. **Read spec + artifacts** - Read the full spec at `spec_path` and companion artifacts at `spec_artifacts_dir`. Read multiple independent files in parallel via concurrent tool calls.
 4. **Write plan files** - Write WP files and skeleton README to `plan_dir`
 
 ---
@@ -102,6 +102,15 @@ Each task SHALL include (FR-029):
 
 **Task ID format**: `T<WP-number>-<sequence>` (e.g., T01-01, T01-02, T03-05)
 
+### Business Logic Awareness in Task Descriptions
+
+Task descriptions SHALL capture the FULL business logic the Coder must implement, not just the surface-level CRUD operation. When decomposing spec FRs into tasks:
+
+1. **Carry forward business rules**: If the FR specifies invariants, decision logic, computed values, or temporal constraints, the task description MUST include them explicitly. Do NOT assume the Coder will re-read the spec for these details.
+2. **Include decision tables**: If the FR contains a decision table (e.g., discount tiers, approval routing), reproduce it in the task description or explicitly reference the FR number and say "implement decision logic per FR-XXX decision table."
+3. **List side effects**: If the FR specifies events, notifications, cache operations, or audit logging triggered by the operation, list them in the task description.
+4. **Separate business rule tasks**: When a feature area has complex business rules (more than 3 invariants or a multi-level decision tree), create a dedicated task for the business rule logic separate from the data persistence or API layer task.
+
 **Foundation WP special rule (FR-032)**: The first task of the foundation WP SHALL always be virtual environment setup for languages with package isolation:
 - Python: `python -m venv .venv` or poetry/conda
 - Node.js: local `node_modules` with lockfile
@@ -133,6 +142,12 @@ Write one file per work package at `<plan_dir>/WP<NN>-<slug>.md` with this struc
 ```markdown
 ---
 lane: planned
+depends_on: []
+docs_scope: []
+target_language: <target_language>
+target_framework: <target_framework>
+coverage_code: 80
+coverage_branch: 90
 ---
 
 # WP<NN> - <Title>
@@ -141,7 +156,6 @@ lane: planned
 |-------|-------|
 | Spec | `<spec_path>` |
 | Priority | P0 / P1 / P2 |
-| Lane | planned |
 | Depends on | WP<NN> or none |
 | Goal | One-sentence user-observable outcome |
 | Status | Not Started |
@@ -165,6 +179,10 @@ lane: planned
 
 <Key technical decisions, known pitfalls, sequencing rationale>
 
+## Research Context
+
+<Compact summary of technology-specific research findings relevant to this WP's tasks. Include: library version gotchas, API migration notes, framework-specific patterns, known pitfalls with cited sources. This section is forwarded to the Coder to prevent known-issue regressions. If no WP-specific research applies, write "See spec for general research context.">
+
 ## Risks & Mitigations
 
 <Known risks with mitigation strategies>
@@ -175,6 +193,17 @@ lane: planned
 ```
 
 **WP numbering**: Use two-digit zero-padded numbers (WP01, WP02, ...). If the plan directory already has WP files from a prior spec, continue from the highest existing WP number + 1.
+
+**YAML frontmatter `depends_on`**: The `depends_on` array in YAML frontmatter MUST list all WP dependencies as strings (e.g., `depends_on: [WP01, WP03]`). Use an empty array `depends_on: []` for WPs with no dependencies. This field is read by the Orchestrator's topological sort to determine execution order. The markdown table's "Depends on" field is for human readability; the YAML frontmatter is the machine-readable source of truth.
+
+**YAML frontmatter `docs_scope`**: The `docs_scope` array controls which doc skills the Docs Agent dispatches for this WP. Valid values: `architecture`, `api-reference`, `user-guide`, `developer-guide`, `changelog`, `inline-code`. Use an empty array `docs_scope: []` to let the Docs Agent auto-detect (default). Guidance:
+- Feature WPs with source code: `docs_scope: [architecture, api-reference, user-guide, developer-guide, changelog, inline-code]`
+- Infrastructure/config WPs: `docs_scope: [changelog, developer-guide]`
+- Documentation-only WPs: `docs_scope: [changelog]`
+
+**YAML frontmatter `target_language` and `target_framework`**: Set these to the WP's implementation language and framework (e.g., `target_language: TypeScript`, `target_framework: Express`). Derive from the spec's Section 9.2 Technology Stack. These values are read by the Coder to dispatch skills with the correct language context. Every WP MUST have `target_language` set.
+
+**YAML frontmatter `coverage_code` and `coverage_branch`**: Set code and branch coverage thresholds as integers (defaults: 80 and 90). Adjust per WP if the spec defines different thresholds or if the WP is infrastructure-heavy (lower thresholds may be appropriate for config/setup WPs).
 
 ---
 

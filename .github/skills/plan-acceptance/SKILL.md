@@ -34,7 +34,7 @@ This skill is dispatched by the Planner Coordinator during Phase 1, after plan-d
 
 1. **Read SKILL.md** - Load this file for acceptance criteria instructions
 2. **Read plan state** - Read WP files written by plan-decomposition
-3. **Read spec + artifacts** - Read the full spec at `spec_path` for SHALL obligations, BDD scenarios, and implementation details
+3. **Read spec + artifacts** - Read the full spec at `spec_path` for SHALL obligations, BDD scenarios, and implementation details. Read multiple independent files in parallel via concurrent tool calls.
 4. **Modify WP files** - Update existing WP files and README in `plan_dir` (using `[CONSISTENCY FIX]` marker per FR-027)
 
 ---
@@ -85,6 +85,18 @@ For each task:
 - Ensure every error code and failure mode from the spec is represented
 - Add explicit acceptance criteria for error paths, not just happy paths
 
+### 2d. Add Business Logic Criteria
+
+For each task, check the referenced FRs for deep business logic that must become acceptance criteria:
+
+1. **Invariants**: If the FR specifies an invariant (e.g., "balance SHALL NOT be negative"), add an acceptance criterion: `[ ] System enforces invariant: <invariant statement>`
+2. **Decision logic**: If the FR includes a decision table or conditional branches, add criteria for EACH branch outcome, not just the happy path
+3. **Computed values**: If the FR specifies a formula, add a criterion: `[ ] <field> is computed as <formula>`
+4. **Side effects**: If the FR specifies events, notifications, or cache operations, add criteria: `[ ] <event_name> event is emitted on successful <operation>`
+5. **Temporal rules**: If the FR specifies time constraints, add criteria: `[ ] System rejects <action> within <duration> of previous <action>`
+
+Business logic criteria prevent the Coder from implementing only the "shell" of a feature while missing the domain rules that make it correct.
+
 ---
 
 ## Step 3 - Add Implementation Guidance (FR-033.3)
@@ -99,13 +111,16 @@ For each task, replace the implementation guidance placeholder with actionable d
   - Files to create/modify: <Specific paths based on the spec's directory structure>
   - Error handling: <Exact error codes and expected failure behaviors from spec>
   - Spec validation rules: <Copy relevant validation constraints from spec Section 7 Data Model>
+  - Business rules: <Invariants, decision logic, and computed values from the FRs that this task must enforce>
+  - Side effects: <Events, notifications, or cache operations triggered by this task's operations>
 ```
 
 Source the guidance from:
 1. The spec's architecture section (tech stack, directory structure)
 2. The spec's security section (for auth, input validation tasks)
 3. The spec's non-functional requirements (for performance, scaling tasks)
-4. The research summary provided by the coordinator
+4. The spec's FRs for business rules, invariants, decision tables, and side effects
+5. The research summary provided by the coordinator
 
 ---
 

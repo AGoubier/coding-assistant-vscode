@@ -34,7 +34,7 @@ This skill is dispatched by the Planner Coordinator during Phase 2. It reads the
 
 1. **Read SKILL.md** - Load this file for error catalog generation instructions
 2. **Read plan state** - Read README and all WP files to identify which WPs define error paths
-3. **Read spec + artifacts** - Read the spec and the companion artifact `error-catalog.<ext>` from `spec_artifacts_dir`
+3. **Read spec + artifacts** - Read the spec and the companion artifact `error-catalog.<ext>` from `spec_artifacts_dir`. Read spec and artifact files in parallel.
 4. **Write contract files** - Write `error-catalog.<ext>` to `contracts_dir/<WP-slug>/` per applicable WP
 
 ---

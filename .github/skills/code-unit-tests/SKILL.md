@@ -294,7 +294,7 @@ Group tests logically:
 
 ## Step 5 -- Run Tests and Report Results (FR-029)
 
-After writing all unit tests, run the complete test suite.
+After writing all unit tests, run the complete test suite. Use `#tool:execute/executionSubagent` to run test commands -- it filters output to relevant portions (failures, coverage summary) and preserves context budget.
 
 ### 5a. Run Tests with Coverage
 
@@ -335,18 +335,28 @@ If any tests fail:
 
 ---
 
-## Step 6 -- Coverage Threshold Enforcement (FR-030)
+## Step 6 -- Coverage Threshold Enforcement (FR-030, FR-036, FR-037)
 
-### 6a. Verify Thresholds
+### 6a. Read Coverage Thresholds from WP Frontmatter
 
-After running tests, verify coverage meets the minimum thresholds:
+Before verifying coverage, read the minimum thresholds from the WP file's YAML frontmatter:
+
+1. Read `coverage_code` from WP frontmatter. If the field is absent, use the default: **80**.
+2. Read `coverage_branch` from WP frontmatter. If the field is absent, use the default: **90**.
+3. Each field is independent -- specifying one does not require specifying the other. An absent field always uses its own default.
+4. **Validation**: If either field is present but is not an integer or is outside the range 0-100, halt with: "Invalid coverage_code value '<value>'. Must be an integer 0-100." (or the equivalent message for `coverage_branch`).
+5. A value of 0 is valid (no coverage enforcement for prototyping WPs).
+
+### 6b. Verify Thresholds
+
+After running tests, verify coverage meets the WP-specific minimum thresholds determined in Step 6a:
 
 | Metric | Minimum Threshold |
 |--------|------------------|
-| Code coverage (line/statement) | 80% |
-| Branch coverage | 90% |
+| Code coverage (line/statement) | `coverage_code` from WP frontmatter (default 80%) |
+| Branch coverage | `coverage_branch` from WP frontmatter (default 90%) |
 
-### 6b. Below Threshold: Add More Tests
+### 6c. Below Threshold: Add More Tests
 
 If coverage is below either threshold:
 
@@ -361,7 +371,7 @@ If coverage is below either threshold:
 4. **Re-run tests**: Run the full test suite again with coverage
 5. **Repeat**: Continue adding tests and re-running until both thresholds are met
 
-### 6c. Coverage Iteration Limit
+### 6d. Coverage Iteration Limit
 
 If after 3 iterations of adding tests the coverage still does not meet thresholds:
 - Report the current coverage percentages
@@ -370,7 +380,7 @@ If after 3 iterations of adding tests the coverage still does not meet threshold
 - Include coverage shortfall details in `issues`
 - The coordinator will handle further coverage improvement
 
-### 6d. Already at Threshold
+### 6e. Already at Threshold
 
 If coverage meets or exceeds both thresholds on the first run:
 - Report the coverage percentages

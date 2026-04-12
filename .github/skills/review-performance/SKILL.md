@@ -11,10 +11,11 @@ This skill is invoked by the Review Coordinator as a subagent. It detects perfor
 **Input contract** (received via subagent prompt):
 1. Read this SKILL.md file for review instructions.
 2. Read the specification file for any performance NFRs (Section 10.1).
-3. Discover and read all implementation code relevant to this WP.
-4. Evaluate each checklist item below against the discovered code.
-5. Write structured findings to the specified output path.
-6. Return a brief summary (counts of PASS/WARN/FAIL/N/A).
+3. Read the WP file to identify what was implemented and scope the review.
+4. Discover and read all implementation code relevant to this WP. Use `#tool:search/usages` to trace hot-path function call chains. Use `#tool:search/searchSubagent` to find WP-scoped files efficiently.
+5. Evaluate each checklist item below against the discovered code.
+6. Write structured findings to the specified output path.
+7. Return a brief summary (counts of PASS/WARN/FAIL/N/A).
 
 **Constraint**: Do NOT modify any source code, the WP file, or the spec file. Only write to the specified output path (FR-028).
 
@@ -122,3 +123,17 @@ files_reviewed:
 - **Checklist item**: Blocking in Async Contexts
 - **Justification**: No async code in this WP. All functions are synchronous.
 ```
+
+---
+
+## Quality Checklist
+
+Before completing, verify:
+
+- [ ] N+1 query patterns checked in all database access paths
+- [ ] Unbounded data fetching flagged (missing LIMIT/pagination)
+- [ ] Blocking calls in async contexts identified
+- [ ] Missing indexes cross-referenced with query patterns
+- [ ] Caching opportunities evaluated for repeated computations
+- [ ] `finding_counts` match actual findings in the output
+- [ ] `files_reviewed` lists every file read during this review

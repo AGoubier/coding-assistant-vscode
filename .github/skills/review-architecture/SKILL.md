@@ -12,7 +12,7 @@ This skill is invoked by the Review Coordinator as a subagent. It evaluates whet
 1. Read this SKILL.md file for review instructions.
 2. Read the specification file, focusing on Sections 9.1-9.4 (architecture).
 3. Read the WP file to identify in-scope tasks and declared scope.
-4. Discover and read all implementation files modified or created by this WP.
+4. Discover and read all implementation files modified or created by this WP. Use `#tool:search/searchSubagent` with the `Explore` agent to efficiently discover WP-scoped files. Use `#tool:read/problems` to check for structural issues.
 5. Evaluate each checklist item below against the discovered code.
 6. Write structured findings to the specified output path.
 7. Return a brief summary (counts of PASS/WARN/FAIL/N/A).
@@ -168,3 +168,17 @@ files_reviewed:
 - **Checklist item**: Dependency Direction - Module imports
 - **Justification**: WP does not introduce any new module dependencies. All files are standalone skills.
 ```
+
+---
+
+## Quality Checklist
+
+Before completing, verify:
+
+- [ ] All 8 architecture dimensions are evaluated
+- [ ] Every finding references a specific checklist item and requirement
+- [ ] Evidence includes file paths with line numbers and code snippets
+- [ ] N/A findings include a justification
+- [ ] YAML frontmatter includes `finding_counts` and `files_reviewed`
+- [ ] Verdict follows REVIEW-SKILL-CONTRACT aggregation rules
+- [ ] No findings are duplicated across dimensions

@@ -16,7 +16,7 @@ Every coding skill receives the following 8 inputs in its subagent prompt from t
 | 2 | `wp_path` | Path | Path to the WP file being implemented |
 | 3 | `contracts_dir` | Path | Path to contract files for this WP (`.sdd/plans/contracts/<WP-slug>/`) |
 | 4 | `spec_path` | Path | Path to the source spec file |
-| 5 | `patterns` | Text | Active code-domain patterns to avoid (from `code-patterns.md`) |
+| 5 | `patterns` | Text | Active code-domain patterns to avoid (from `.sdd/reviews/code-patterns.md`) |
 | 6 | `target_language` | String | Programming language (e.g., TypeScript, Python) |
 | 7 | `target_framework` | String | Framework (e.g., Express, FastAPI, React) |
 | 8 | `task_list` | Text | Tasks with acceptance criteria and spec refs |
@@ -28,9 +28,9 @@ Every coding skill receives the following 8 inputs in its subagent prompt from t
 Every coding skill SHALL execute these 5 steps in order:
 
 1. **Read SKILL.md** - Load its own SKILL.md to get implementation instructions and guidelines
-2. **Read WP + contracts** - Read the WP file and contract files (interfaces, data schemas, API contracts, state machines, error catalogs) to understand what to implement
+2. **Read WP + contracts** - Read the WP file and contract files (interfaces, data schemas, API contracts, state machines, error catalogs) to understand what to implement. Read multiple independent files in parallel via concurrent tool calls.
 3. **Read spec sections** - Read the spec sections referenced by its tasks for requirements context
-4. **Execute implementation work** - Perform the skill's primary function (code, tests, or debugging)
+4. **Execute implementation work** - Perform the skill's primary function (code, tests, or debugging). Use `#tool:edit/editFiles` with multi-replace mode for batch edits. Call `#tool:read/problems` after file edits to catch compile and lint errors immediately. Use `#tool:execute/executionSubagent` for multi-step terminal tasks. Use `#tool:search/usages` to trace symbol references when needed.
 5. **Report results** - Report files modified, tasks completed, test results, and issues back to the coordinator
 
 ---
@@ -52,16 +52,23 @@ Each skill SHALL report to the coordinator with these fields:
 
 ## 4. Skill Subagent Prompt Template (Section 8.2)
 
+The Coder dispatches skills with this template. For `code-implementation`, one invocation = one task.
+
 ```
 Implement: <skill_name>
 
 1. Read the skill instructions at: <skill_path>
 2. Read the WP file at: <wp_path>
 3. Read contract files at: <contracts_dir>
-4. Read spec sections: <spec_refs>
-5. Active patterns to avoid: <patterns>
-6. Target: <target_language> with <target_framework>
-7. Tasks: <task_list_with_acceptance_criteria>
+4. Read shared contracts at: <shared_contracts_dir>
+5. Read spec sections: <spec_refs>
+6. Active patterns to avoid: <patterns>
+7. Target: <target_language> with <target_framework>
+8. Tasks: <task_list_with_acceptance_criteria>
+9. Artifact summary: <artifact_summary>
+10. Research context: <research_context>
+11. Dependency source context: <dependency_source_summary>
+12. Prior task output files: <prior_task_files>
 
 Rules:
 - Implement contract-first: signatures, types, fields MUST match contract files exactly
@@ -81,7 +88,7 @@ The coordinator dispatches coding skills in this deterministic order:
 | Phase | Skill | Purpose |
 |-------|-------|---------|
 | 1 | `code-env-setup` | Environment verification, dependency installation, baseline test verification |
-| 2 | `code-implementation` | Contract-first task implementation for all tasks in the WP |
+| 2 | `code-implementation` | Contract-first task implementation, dispatched once per task |
 | 3 | `code-unit-tests` | Unit test writing and execution with coverage threshold enforcement |
 | 4 | `code-integration-tests` | Integration test writing for component boundaries |
 | 5 | `code-debug` | Conditional: test failure diagnosis and fix (max 3 attempts) |

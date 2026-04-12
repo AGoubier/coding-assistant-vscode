@@ -27,7 +27,7 @@ This skill receives the following inputs via the coordinator's subagent prompt:
 
 1. **Read this SKILL.md** to load instructions and guidelines
 2. **Read the accumulator** at `accumulator_path` to understand sections 1-8 (FRs, user stories, data model, API design)
-3. **Read the brief** at `brief_path` for architecture preferences
+3. **Read the brief** at `brief_path` for architecture preferences. Read accumulator and brief in parallel.
 4. **Write Section 9** to the accumulator by APPENDING after existing content
 5. **Produce companion artifact** in `artifacts_dir`: `config-schema.<ext>`
 

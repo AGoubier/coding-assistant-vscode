@@ -238,6 +238,8 @@ Name integration tests to describe the boundary being tested:
 
 ## Step 4 -- Run Integration Tests and Report Results (FR-033)
 
+Use `#tool:execute/executionSubagent` for running test commands -- it filters output to relevant portions (failures, summary) and preserves context budget.
+
 ### 4a. Run Integration Tests
 
 Execute integration tests separately from unit tests:

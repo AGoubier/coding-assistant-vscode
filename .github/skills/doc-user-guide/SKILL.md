@@ -10,7 +10,7 @@ This skill is invoked by the Docs Agent Coordinator as a subagent. It produces a
 
 ## Input Contract (FR-005)
 
-This skill receives the following 6 inputs via the coordinator's subagent prompt, as defined in `DOC-SKILL-CONTRACT.md`:
+This skill receives the following 7 inputs via the coordinator's subagent prompt, as defined in `DOC-SKILL-CONTRACT.md`:
 
 | # | Input | Type | Description |
 |---|-------|------|-------------|
@@ -20,6 +20,7 @@ This skill receives the following 6 inputs via the coordinator's subagent prompt
 | 4 | `source_files` | List(Path) | Implementation source files modified by the WP |
 | 5 | `docs_dir` | Path | Path to existing documentation directory (`.sdd/docs/`) for incremental updates |
 | 6 | `patterns` | Text | Active doc-domain patterns to avoid (from `.sdd/reviews/doc-patterns.md`) |
+| 7 | `contracts_dir` | Path | Path to contract files for this WP (`.sdd/plans/contracts/<WP-slug>/`) |
 
 ## Output Contract
 
@@ -33,7 +34,7 @@ This skill receives the following 6 inputs via the coordinator's subagent prompt
 
 1. **Read SKILL.md** -- Load this file for documentation generation instructions
 2. **Read existing docs** -- Read `.sdd/docs/user-guide.md` if it exists to understand current content
-3. **Read source material** -- Read the WP file, spec, contract files, and implementation source files for content
+3. **Read source material** -- Read the WP file, spec, contract files, and implementation source files for content. Read multiple independent files in parallel.
 4. **Write documentation** -- Update or create `.sdd/docs/user-guide.md` incrementally (do NOT recreate from scratch)
 
 ## Constraints
@@ -116,14 +117,15 @@ Generate step-by-step instructions for using each feature.
 
 ## Section 3 -- Configuration Options (FR-014.3)
 
-Generate configuration documentation from config schema contracts.
+Generate configuration documentation from config schema contracts and source code.
 
 ### Instructions
 
-1. Check for config schema contract files:
-   a. Look in `.sdd/plans/contracts/<WP-slug>/` for `config-schema.<ext>` files
+1. Check for configuration information:
+   a. Look in `.sdd/plans/contracts/<WP-slug>/` for any config-related contract files
    b. Look in `.sdd/plans/contracts/shared/` for shared config schemas
    c. Check the spec for configuration sections (typically Section 9 or a "Configuration" section)
+   d. Search the source code for environment variable reads and config file parsing
 2. If config schema contracts exist:
    a. Extract each configuration option with its name, type, default value, and description
    b. Group options by category (e.g., general, security, performance, display)

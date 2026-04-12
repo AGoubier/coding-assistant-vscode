@@ -27,7 +27,7 @@ This skill receives the following inputs via the coordinator's subagent prompt:
 
 1. **Read this SKILL.md** to load instructions and guidelines
 2. **Read the accumulator** at `accumulator_path` to understand sections 1-9 (including data model and architecture)
-3. **Read the brief** at `brief_path` for security context
+3. **Read the brief** at `brief_path` for security context. Read accumulator and brief in parallel.
 4. **Conduct web research** (MANDATORY - see below)
 5. **Expand Section 10.2** in the accumulator by replacing the placeholder with detailed security content
 6. **Produce artifacts** - N/A (this skill produces no companion artifacts)

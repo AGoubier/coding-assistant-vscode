@@ -1,6 +1,5 @@
 ---
 description: "Commit current code changes in semantically grouped commits. Use when you have multiple changed files and want each commit to represent a single coherent, logical unit of work. Analyzes diffs, groups related changes, and commits each group with a descriptive conventional-commit message."
-agent: "agent"
 tools: [execute/runInTerminal, execute/getTerminalOutput, read/readFile, search/changes, search/textSearch, search/fileSearch, search/listDirectory, vscode/askQuestions]
 argument-hint: "Optional: scope hint (e.g. 'auth module refactor') or leave blank for auto-detection"
 ---
