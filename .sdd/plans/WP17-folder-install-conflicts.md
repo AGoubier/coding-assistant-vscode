@@ -6,6 +6,7 @@ target_language: TypeScript
 target_framework: VS Code Extension API
 coverage_code: 80
 coverage_branch: 90
+docs_completed: true
 ---
 
 # WP17 - Folder-Aware Installation and Conflict Resolution
@@ -202,6 +203,7 @@ This work package extends the installation, manifest tracking, and update/uninst
 - 2026-04-12T13:00:00Z - coder - lane=doing - Rework mode: addressing 2 FB-XX items (FB-01, FB-02)
 - 2026-04-12T13:30:00Z - coder - lane=for_review - FB-01 and FB-02 fixed, all 541 tests passing
 - 2026-04-12T14:00:00Z - review-coordinator - lane=done - Verdict: Approved with Findings (9 WARNs)
+- 2026-04-12T15:00:00Z - docs-agent - docs-complete - Documentation generated for WP17
 
 ## Review
 
