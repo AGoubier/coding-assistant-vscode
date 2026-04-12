@@ -2,6 +2,7 @@
 lane: done
 depends_on: []
 review_status: approved
+docs_completed: true
 docs_scope: [architecture, api-reference, developer-guide, changelog, inline-code]
 target_language: TypeScript
 target_framework: VS Code Extension API
@@ -229,3 +230,4 @@ This work package lays the foundation for per-folder segregation by implementing
 - 2026-04-12T13:00:00Z - coder - lane=doing - Rework mode: addressing 2 FB items
 - 2026-04-12T13:05:00Z - coder - lane=for_review - FB-01 and FB-02 fixed, 488 tests passing
 - 2026-04-12T14:00:00Z - reviewer - lane=done - Approved: FB-01 and FB-02 fixes verified, 488 tests passing, no new issues
+- 2026-04-12T15:00:00Z - docs-agent - docs-complete - Documentation generated for WP15
