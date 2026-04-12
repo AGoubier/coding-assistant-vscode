@@ -1,6 +1,6 @@
 // Tests for search and filter functionality
-// Spec refs: US-08 (Search and Filter)
-// WP10 T10-05
+// Spec refs: US-08 (Search and Filter), FR-019 (Search Across Folders), FR-020 (Folder Hierarchy in Search)
+// WP10 T10-05, WP18 T18-01 through T18-05
 
 import * as assert from 'assert';
 import * as vscode from 'vscode';
@@ -309,6 +309,374 @@ describe('Search and Filter (WP10)', () => {
       const commandIds = (pkg.contributes?.commands || []).map((c: { command: string }) => c.command);
       assert.ok(commandIds.includes('awesome-coding-assistants.search'), 'search command missing');
       assert.ok(commandIds.includes('awesome-coding-assistants.clearSearch'), 'clearSearch command missing');
+    });
+  });
+
+  describe('Folder search (WP18)', () => {
+    // Tree with two folders and root-level (Default) entries
+    const FOLDER_SEARCH_TREE: GitHubTreeResponse = {
+      sha: 'foldersearch',
+      url: 'https://api.github.com/repos/test/repo/git/trees/main',
+      tree: [
+        // Root-level entries (Default folder)
+        { path: '.github/agents/root-agent.agent.md', mode: '100644', type: 'blob', sha: 'r1', url: '' },
+        { path: '.github/prompts/root-prompt.prompt.md', mode: '100644', type: 'blob', sha: 'r2', url: '' },
+        // frontend-team folder entries
+        { path: 'frontend-team/.github/agents/fe-agent.agent.md', mode: '100644', type: 'blob', sha: 'f1', url: '' },
+        { path: 'frontend-team/.github/instructions/fe-setup.instructions.md', mode: '100644', type: 'blob', sha: 'f2', url: '' },
+        // backend folder entries
+        { path: 'backend/.github/agents/be-agent.agent.md', mode: '100644', type: 'blob', sha: 'b1', url: '' },
+        { path: 'backend/.claude/rules/be-rules.md', mode: '100644', type: 'blob', sha: 'b2', url: '' },
+        // Tree entries (directories - ignored by classification)
+        { path: '.github', mode: '040000', type: 'tree', sha: 'g1', url: '' },
+        { path: 'frontend-team', mode: '040000', type: 'tree', sha: 'g2', url: '' },
+        { path: 'backend', mode: '040000', type: 'tree', sha: 'g3', url: '' },
+      ],
+      truncated: false,
+    };
+
+    // Tree with folders but no items matching a specific query
+    const FOLDER_NO_MATCH_TREE: GitHubTreeResponse = {
+      sha: 'foldernomatch',
+      url: 'https://api.github.com/repos/test/repo/git/trees/main',
+      tree: [
+        { path: 'frontend-team/.github/agents/fe-agent.agent.md', mode: '100644', type: 'blob', sha: 'f1', url: '' },
+        { path: 'backend/.github/agents/be-agent.agent.md', mode: '100644', type: 'blob', sha: 'b1', url: '' },
+      ],
+      truncated: false,
+    };
+
+    let log: ReturnType<typeof createMockLogOutputChannel>;
+
+    beforeEach(() => {
+      log = createMockLogOutputChannel();
+    });
+
+    it('T18-01: search matches items from ALL folders and the Default folder (FR-019)', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(FOLDER_SEARCH_TREE);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // "agent" should match items in both folders AND default
+      provider.setSearchQuery('agent');
+
+      const roots = await provider.getChildren(undefined);
+      assert.ok(roots.length > 0);
+      assert.strictEqual((roots[0] as any).kind, 'source');
+
+      // Get source children - should show filtered folders
+      const children = await provider.getChildren(roots[0]);
+      const folders = children.filter((c: any) => c.kind === 'folder');
+
+      // All three folders should have matching items (Default, Backend, Frontend Team)
+      assert.ok(folders.length >= 2, `Expected at least 2 folder nodes with matches, got ${folders.length}`);
+
+      const folderNames = (folders as any[]).map((f: any) => f.displayName);
+      assert.ok(folderNames.includes('Backend'), 'Backend folder should be visible (has agent match)');
+      assert.ok(folderNames.includes('Frontend Team'), 'Frontend Team folder should be visible (has agent match)');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T18-01: folders with zero matching items are hidden during search (FR-020)', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(FOLDER_SEARCH_TREE);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // "fe-agent" should only match in frontend-team folder
+      provider.setSearchQuery('fe-agent');
+
+      const roots = await provider.getChildren(undefined);
+      const children = await provider.getChildren(roots[0]);
+      const folders = children.filter((c: any) => c.kind === 'folder');
+
+      const folderNames = (folders as any[]).map((f: any) => f.displayName);
+      assert.ok(folderNames.includes('Frontend Team'), 'Frontend Team should be visible (has fe-agent match)');
+      assert.ok(!folderNames.includes('Backend'), 'Backend should be hidden (no fe-agent match)');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T18-01: Default folder is hidden if none of its items match (FR-020)', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(FOLDER_SEARCH_TREE);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // "be-rules" only matches in backend folder, not Default
+      provider.setSearchQuery('be-rules');
+
+      const roots = await provider.getChildren(undefined);
+      const children = await provider.getChildren(roots[0]);
+      const folders = children.filter((c: any) => c.kind === 'folder');
+
+      const folderNames = (folders as any[]).map((f: any) => f.displayName);
+      assert.ok(!folderNames.includes('Default'), 'Default folder should be hidden (no match)');
+      assert.ok(folderNames.includes('Backend'), 'Backend should be visible (has be-rules match)');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T18-01: SearchEmptyItem when no items match across ALL folders and sources (FR-019)', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(FOLDER_NO_MATCH_TREE);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // "nonexistent" matches nothing
+      provider.setSearchQuery('nonexistent');
+
+      const roots = await provider.getChildren(undefined);
+      assert.strictEqual(roots.length, 1);
+      assert.strictEqual((roots[0] as any).kind, 'searchEmpty');
+      assert.strictEqual((roots[0] as any).query, 'nonexistent');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T18-01: clearing search restores full folder hierarchy', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(FOLDER_SEARCH_TREE);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // Search then clear
+      provider.setSearchQuery('fe-agent');
+      provider.setSearchQuery('');
+
+      const roots = await provider.getChildren(undefined);
+      assert.strictEqual((roots[0] as any).kind, 'source');
+
+      const children = await provider.getChildren(roots[0]);
+      const folders = children.filter((c: any) => c.kind === 'folder');
+
+      // All folders should be restored
+      const folderNames = (folders as any[]).map((f: any) => f.displayName);
+      assert.ok(folderNames.includes('Backend'), 'Backend folder should be restored');
+      assert.ok(folderNames.includes('Frontend Team'), 'Frontend Team folder should be restored');
+      assert.ok(folderNames.includes('Default'), 'Default folder should be restored');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T18-02: categories within a folder with zero matching items are hidden during search (FR-019)', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(FOLDER_SEARCH_TREE);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // "fe-setup" matches only instructions in frontend-team
+      provider.setSearchQuery('fe-setup');
+
+      const roots = await provider.getChildren(undefined);
+      const sourceChildren = await provider.getChildren(roots[0]);
+      const frontendFolder = sourceChildren.find(
+        (c: any) => c.kind === 'folder' && c.displayName === 'Frontend Team',
+      );
+      assert.ok(frontendFolder, 'Frontend Team folder should be visible');
+
+      const folderCategories = await provider.getChildren(frontendFolder!);
+      const categoryNames = (folderCategories as any[])
+        .filter(c => (c as any).kind === 'category')
+        .map(c => (c as CategoryItem).category);
+
+      assert.ok(categoryNames.includes('instructions'), 'Instructions category should be visible (has match)');
+      assert.ok(!categoryNames.includes('agents'), 'Agents category should be hidden (no match)');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T18-02: filteredCount on category nodes within folders is correct during search (FR-020)', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(FOLDER_SEARCH_TREE);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // "agent" matches agent items in every folder
+      provider.setSearchQuery('agent');
+
+      const roots = await provider.getChildren(undefined);
+      const sourceChildren = await provider.getChildren(roots[0]);
+      const frontendFolder = sourceChildren.find(
+        (c: any) => c.kind === 'folder' && c.displayName === 'Frontend Team',
+      );
+      assert.ok(frontendFolder, 'Frontend Team folder should be visible');
+
+      const folderCategories = await provider.getChildren(frontendFolder!);
+      const agentsCat = folderCategories.find(
+        (c: any) => c.kind === 'category' && (c as CategoryItem).category === 'agents',
+      ) as CategoryItem;
+      assert.ok(agentsCat, 'Agents category should be visible');
+      assert.strictEqual(agentsCat.filteredCount, 1, 'filteredCount should be 1 for single match');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T18-03: hasAnySearchMatch returns true when match exists in any folder (FR-019)', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(FOLDER_SEARCH_TREE);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // "be-rules" matches only in backend folder -- should still return source (not searchEmpty)
+      provider.setSearchQuery('be-rules');
+
+      const roots = await provider.getChildren(undefined);
+      assert.ok(roots.length > 0);
+      assert.strictEqual((roots[0] as any).kind, 'source', 'Should return source (not searchEmpty) when match exists in any folder');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T18-03: hasAnySearchMatch returns false when no items match across all folders (FR-019)', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(FOLDER_NO_MATCH_TREE);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      provider.setSearchQuery('zzz-no-match-zzz');
+
+      const roots = await provider.getChildren(undefined);
+      assert.strictEqual(roots.length, 1);
+      assert.strictEqual((roots[0] as any).kind, 'searchEmpty');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T18-04: tree path during search preserves Source > Folder > Category > Item hierarchy (FR-020)', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(FOLDER_SEARCH_TREE);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // "fe-agent" matches frontend-team agent
+      provider.setSearchQuery('fe-agent');
+
+      // Level 1: Source
+      const roots = await provider.getChildren(undefined);
+      assert.strictEqual((roots[0] as any).kind, 'source');
+
+      // Level 2: Folder
+      const sourceChildren = await provider.getChildren(roots[0]);
+      const frontendFolder = sourceChildren.find(
+        (c: any) => c.kind === 'folder' && c.displayName === 'Frontend Team',
+      );
+      assert.ok(frontendFolder, 'Frontend Team folder should be at level 2');
+
+      // Level 3: Category
+      const categories = await provider.getChildren(frontendFolder!);
+      const agentsCat = categories.find(
+        (c: any) => c.kind === 'category' && (c as CategoryItem).category === 'agents',
+      );
+      assert.ok(agentsCat, 'Agents category should be at level 3');
+
+      // Level 4: Item
+      const items = await provider.getChildren(agentsCat!) as CatalogFileItem[];
+      assert.strictEqual(items.length, 1);
+      assert.ok(items[0].name.includes('fe-agent'), 'Matching item should be at level 4');
+      assert.ok(items[0].path.includes('frontend-team/'), 'Item path should include folder prefix');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T18-04: no duplicate items appear across folders during search', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(FOLDER_SEARCH_TREE);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // "agent" matches in all folders
+      provider.setSearchQuery('agent');
+
+      const roots = await provider.getChildren(undefined);
+      const sourceChildren = await provider.getChildren(roots[0]);
+      const folders = sourceChildren.filter((c: any) => c.kind === 'folder');
+
+      // Collect all item paths across all folders
+      const allPaths: string[] = [];
+      for (const folder of folders) {
+        const categories = await provider.getChildren(folder);
+        for (const cat of categories) {
+          if ((cat as any).kind === 'category') {
+            const items = await provider.getChildren(cat) as CatalogFileItem[];
+            for (const item of items) {
+              allPaths.push(item.path);
+            }
+          }
+        }
+      }
+
+      // Check no duplicates
+      const uniquePaths = new Set(allPaths);
+      assert.strictEqual(allPaths.length, uniquePaths.size, 'No duplicate item paths should appear across folders');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T18-05: search with all folders matching shows all folders', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(FOLDER_SEARCH_TREE);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // "agent" should match in Default, Frontend Team, and Backend
+      provider.setSearchQuery('agent');
+
+      const roots = await provider.getChildren(undefined);
+      const sourceChildren = await provider.getChildren(roots[0]);
+      const folders = sourceChildren.filter((c: any) => c.kind === 'folder');
+
+      assert.ok(folders.length >= 3, `Expected at least 3 folders with matches, got ${folders.length}`);
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T18-05: search with only one folder matching hides others', async () => {
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(FOLDER_SEARCH_TREE);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // "be-agent" matches only in backend folder
+      provider.setSearchQuery('be-agent');
+
+      const roots = await provider.getChildren(undefined);
+      const sourceChildren = await provider.getChildren(roots[0]);
+      const folders = sourceChildren.filter((c: any) => c.kind === 'folder');
+
+      assert.strictEqual(folders.length, 1, 'Only one folder should have matches');
+      assert.strictEqual((folders[0] as any).displayName, 'Backend');
+
+      provider.dispose();
+      registry.dispose();
+    });
+
+    it('T18-03: hasAnySearchMatch correctly strips folder prefixes before classifyItem', async () => {
+      // Use a tree where items would fail classification without prefix stripping
+      const prefixTree: GitHubTreeResponse = {
+        sha: 'prefix',
+        url: 'https://api.github.com/repos/test/repo/git/trees/main',
+        tree: [
+          { path: 'teamA/.github/agents/special-agent.agent.md', mode: '100644', type: 'blob', sha: 'p1', url: '' },
+        ],
+        truncated: false,
+      };
+
+      const registry = createMockSourceRegistry([TEST_SOURCE]);
+      const github = createMockGitHubClient(prefixTree);
+      const provider = new CatalogTreeProvider(registry, github, log, getExtensionUri());
+
+      // "special" should match even though the path has a folder prefix
+      provider.setSearchQuery('special');
+
+      const roots = await provider.getChildren(undefined);
+      // Should NOT be searchEmpty -- the match should be found via prefix stripping
+      assert.ok(roots.length > 0);
+      assert.strictEqual((roots[0] as any).kind, 'source', 'Match should be found after folder prefix stripping');
+
+      provider.dispose();
+      registry.dispose();
     });
   });
 });

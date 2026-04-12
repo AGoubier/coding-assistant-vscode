@@ -418,6 +418,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
   /**
    * Get children for a source node. Detects folders and returns folder nodes
    * when folders exist (FR-004), otherwise falls back to category nodes (FR-005, FR-007).
+   * When search is active, filters out folders with zero matching items (FR-019, FR-020).
    * Wraps detectFolders in try/catch for error resilience (T16-06).
    */
   private async getSourceChildren(sourceItem: SourceItem): Promise<TreeElement[]> {
@@ -428,6 +429,17 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       try {
         const folderNodes = this.getFolderNodes(sourceItem.source, tree.tree);
         if (folderNodes.length > 0) {
+          // FR-019/FR-020: When search is active, hide folders with zero matching items
+          if (this.searchQuery) {
+            await this.ensureDetectedTools();
+            const detectionResults = detectFolders(tree.tree);
+            const folderNames = new Set(detectionResults.map(r => r.folderName));
+            const grouped = groupByFolder(tree.tree, folderNames);
+
+            return folderNodes.filter(fn =>
+              this.hasFolderSearchMatch(fn, grouped, folderNames),
+            );
+          }
           return folderNodes;
         }
       } catch (err) {
@@ -479,6 +491,40 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
         source: folderItem.source,
       }];
     }
+  }
+
+  /**
+   * Check if any item in a folder matches the current search query.
+   * Used to filter out folder nodes with zero matches during active search (FR-019, FR-020).
+   */
+  private hasFolderSearchMatch(
+    folderItem: FolderItem,
+    grouped: Map<string, GitHubTreeEntry[]>,
+    folderNames: Set<string>,
+  ): boolean {
+    const key = folderItem.isDefault ? '' : folderItem.folderName;
+    const rawEntries = grouped.get(key) || [];
+
+    return rawEntries.some(e => {
+      if (e.type !== 'blob') { return false; }
+      const strippedPath = folderItem.isDefault ? e.path : stripFolderPrefix(e.path, folderNames);
+      const classification = classifyItem(strippedPath);
+      if (classification.tool === 'unknown') { return false; }
+      if (!this.shouldShowTool(classification.tool)) { return false; }
+
+      const name = this.extractItemName(strippedPath);
+      const fakeItem: CatalogFileItem = {
+        kind: 'item',
+        source: folderItem.source,
+        path: e.path,
+        name,
+        tool: classification.tool,
+        category: classification.category,
+        installed: false,
+        updateAvailable: false,
+      };
+      return matchesSearch(fakeItem, this.searchQuery);
+    });
   }
 
   private getSourceNodes(): SourceItem[] {
@@ -1059,6 +1105,7 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
 
   /**
    * Check if any items across all sources match the current search query.
+   * For folder-enabled sources, iterates entries per folder with prefix stripping (FR-019).
    * Used to decide whether to show the empty-state node (US-08 Scenario 2).
    */
   private async hasAnySearchMatch(sources: SourceItem[]): Promise<boolean> {
@@ -1066,27 +1113,61 @@ export class CatalogTreeProvider implements vscode.TreeDataProvider<TreeElement>
       try {
         await this.ensureDetectedTools();
         const tree = await this.getOrFetchTree(sourceItem.source);
-        const entryMap = this.groupByCategory(tree.tree);
 
-        for (const [, entries] of entryMap) {
-          for (const entry of entries) {
-            const classification = classifyItem(entry.path);
-            if (!this.shouldShowTool(classification.tool)) {
-              continue;
+        // Check for folder-enabled sources (FR-019)
+        const detectionResults = detectFolders(tree.tree);
+        if (detectionResults.length > 0) {
+          const folderNames = new Set(detectionResults.map(r => r.folderName));
+          const grouped = groupByFolder(tree.tree, folderNames);
+
+          for (const [folderKey, entries] of grouped) {
+            for (const entry of entries) {
+              if (entry.type !== 'blob') { continue; }
+              const strippedPath = folderKey === '' ? entry.path : stripFolderPrefix(entry.path, folderNames);
+              const classification = classifyItem(strippedPath);
+              if (classification.tool === 'unknown') { continue; }
+              if (!this.shouldShowTool(classification.tool)) { continue; }
+
+              const name = this.extractItemName(strippedPath);
+              const fakeItem: CatalogFileItem = {
+                kind: 'item',
+                source: sourceItem.source,
+                path: entry.path,
+                name,
+                tool: classification.tool,
+                category: classification.category,
+                installed: false,
+                updateAvailable: false,
+              };
+              if (matchesSearch(fakeItem, this.searchQuery)) {
+                return true;
+              }
             }
-            const name = this.extractItemName(entry.path);
-            const fakeItem: CatalogFileItem = {
-              kind: 'item',
-              source: sourceItem.source,
-              path: entry.path,
-              name,
-              tool: classification.tool,
-              category: classification.category,
-              installed: false,
-              updateAvailable: false,
-            };
-            if (matchesSearch(fakeItem, this.searchQuery)) {
-              return true;
+          }
+        } else {
+          // Flat source: existing logic
+          const entryMap = this.groupByCategory(tree.tree);
+
+          for (const [, entries] of entryMap) {
+            for (const entry of entries) {
+              const classification = classifyItem(entry.path);
+              if (!this.shouldShowTool(classification.tool)) {
+                continue;
+              }
+              const name = this.extractItemName(entry.path);
+              const fakeItem: CatalogFileItem = {
+                kind: 'item',
+                source: sourceItem.source,
+                path: entry.path,
+                name,
+                tool: classification.tool,
+                category: classification.category,
+                installed: false,
+                updateAvailable: false,
+              };
+              if (matchesSearch(fakeItem, this.searchQuery)) {
+                return true;
+              }
             }
           }
         }
