@@ -82,3 +82,24 @@ export class CacheError extends ExtensionError {
     this.message = `Cache write failed: ${detail}`;
   }
 }
+
+// --- Index URL error codes (FR-022, FR-024) ---
+// Used for structured logging and error classification, not thrown as exceptions.
+
+export const IndexErrorCodes = {
+  INDEX_FETCH_FAILED: {
+    code: 'INDEX_FETCH_FAILED',
+    userMessage: 'Failed to fetch index from {url}.',
+    logLevel: 'warn' as const,
+  },
+  INDEX_SCHEMA_INVALID: {
+    code: 'INDEX_SCHEMA_INVALID',
+    userMessage: 'Index at {url} has an invalid format.',
+    logLevel: 'warn' as const,
+  },
+  INVALID_INDEX_URL_TYPE: {
+    code: 'INVALID_INDEX_URL_TYPE',
+    userMessage: '',
+    logLevel: 'warn' as const,
+  },
+} as const;
