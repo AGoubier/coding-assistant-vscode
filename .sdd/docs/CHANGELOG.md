@@ -4,6 +4,30 @@ All notable changes to this project are documented in this file. Entries are ord
 
 ---
 
+## [WP19] - Index URL Migration and Multi-Index Merge (2026-04-12)
+
+### Added
+
+- Multiple index URL support: the `indexUrl` setting now accepts an array of strings, enabling users and enterprises to combine sources from multiple catalogs (FR-021, FR-024)
+- `normalizeIndexUrls()` function in `sourceRegistry.ts` for backward-compatible runtime coercion of the `indexUrl` setting: single strings are coerced to `[string]`, undefined falls back to defaults, invalid types log a warning and use defaults (FR-022, FR-023)
+- `loadMultipleIndexes()` function in `sourceRegistry.ts` for parallel multi-URL fetch using `Promise.allSettled()` with union merge and dedup by `sourceKey()` (`url@branch`, first-seen-wins) (FR-024, FR-025, FR-026)
+- `MergedSourceList` and `IndexFetchResult` types in `types.ts` for representing multi-index fetch results (Section 7.9)
+- `IndexErrorCodes` in `errors.ts`: `INDEX_FETCH_FAILED`, `INDEX_SCHEMA_INVALID`, `INVALID_INDEX_URL_TYPE` for structured logging
+- HTTPS-only validation for index URLs: non-HTTPS URLs are rejected with a logged warning (NFR-006)
+- Partial failure handling: if one index URL fails, remaining URLs continue and their sources are still merged (FR-024)
+- Total failure handling: if all index URLs fail, falls back to user-configured sources and default source (FR-024)
+- Per-URL fetch result logging at info/warn level (NFR-015)
+- 31 unit tests in `multiIndex.test.ts` covering normalizeIndexUrls coercion, multi-index fetch, dedup, partial/total failure, HTTPS rejection, schema validation, cache invalidation, and backward compatibility (T19-08)
+
+### Changed
+
+- `indexUrl` setting schema in `package.json` changed from `"type": "string"` to `"type": "array"` with `"items": { "type": "string" }` (FR-021)
+- Default `indexUrl` value changed from a single string to a single-element array (FR-021)
+- `loadMasterIndex()` reads raw `indexUrl` setting without type parameter, coerces via `normalizeIndexUrls()`, and dispatches to single-fetch or `loadMultipleIndexes()` based on URL count (FR-024, FR-027)
+- Settings UI renders `indexUrl` as an editable list of strings
+
+---
+
 ## [WP18] - Search Across Folders (2026-04-12)
 
 ### Added

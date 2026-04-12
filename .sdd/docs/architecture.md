@@ -24,7 +24,7 @@ Extension Host (src/extension.ts)
   |     +-- PreviewProvider - TextDocumentContentProvider for item preview
   |
   +-- Services (src/services/)
-  |     +-- SourceRegistry - reads settings/index, validates sources
+  |     +-- SourceRegistry - reads settings/index, validates sources, multi-index URL fetch and union merge (normalizeIndexUrls, loadMultipleIndexes)
   |     +-- GitHubClient - HTTP client for GitHub API and raw content
   |     +-- CacheManager - in-memory and persistent caching
   |     +-- Installer - file/directory download, target path computation, multi-root folder selection
@@ -37,8 +37,8 @@ Extension Host (src/extension.ts)
   |     +-- NewContentDetector - tree snapshot diffing for new/removed item detection
   |
   +-- Models (src/models/)
-  |     +-- types.ts - shared TypeScript interfaces (CatalogItem union incl. FolderItem, FolderDetectionResult, CrossFolderConflict, ConflictCandidate)
-  |     +-- errors.ts - custom error classes
+  |     +-- types.ts - shared TypeScript interfaces (CatalogItem union incl. FolderItem, FolderDetectionResult, CrossFolderConflict, ConflictCandidate, MergedSourceList, IndexFetchResult)
+  |     +-- errors.ts - custom error classes and IndexErrorCodes (INDEX_FETCH_FAILED, INDEX_SCHEMA_INVALID, INVALID_INDEX_URL_TYPE)
   |
   +-- Utils (src/utils/)
         +-- pathUtils.ts - path computation, traversal validation, folder name formatting (formatFolderName), folder prefix stripping (stripFolderPrefix)
@@ -58,8 +58,8 @@ Extension Host (src/extension.ts)
 
 ## Data Flow
 
-1. User configures source repositories in settings or via master index
-2. SourceRegistry resolves and validates source URLs
+1. User configures source repositories in settings or via master index. The `indexUrl` setting accepts an array of strings; legacy single-string values are coerced to arrays at runtime via `normalizeIndexUrls()` (WP19)
+2. SourceRegistry resolves and validates source URLs. For multiple index URLs, `loadMultipleIndexes()` fetches all indexes in parallel using `Promise.allSettled()`, validates HTTPS-only, and union-merges source lists with dedup by `sourceKey()` (`url@branch`) using first-seen-wins ordering (WP19)
 3. GitHubClient fetches repository trees and file contents via GitHub API
 4. CacheManager caches responses using ETags and expiration times
 5. ToolDetector.detectFolders() scans the flat tree entry array to identify first-level directories containing `.github/` or `.claude/` subdirectories; groupByFolder() partitions entries by detected folder. Folder prefixes are stripped via stripFolderPrefix() before classification and installation.
@@ -83,7 +83,7 @@ The extension activates lazily. On activation:
 4. Initializes CatalogTreeProvider (lazy-loading tree view for browsing customizations)
 5. Registers tree views via `createTreeView` for programmatic access: Activity Bar catalog (`awesomeCodingAssistants.catalog`) and Explorer panel catalog (`awesomeCodingAssistants.explorerCatalog`), both powered by the same CatalogTreeProvider
 6. Sets `awesome-coding-assistants.noSources` context key for the welcome view
-7. Loads master index from configurable URL (silently falls back on failure)
+7. Loads master index from configurable URL(s) -- supports single URL (existing behavior) or multiple URLs with parallel fetch and union merge (WP19). Silently falls back on partial or total failure.
 8. Wires token management commands (addToken, removeToken) to AuthManager
 9. Wires cache management command (clearCache) to CacheManager
 10. Wires refresh command to invalidate caches (including preview cache) and reload the catalog tree
@@ -107,6 +107,6 @@ The extension activates lazily. On activation:
 ## Security
 
 - No secrets stored in code or settings; GitHub tokens use VS Code SecretStorage
-- All HTTP requests use HTTPS exclusively
+- All HTTP requests use HTTPS exclusively; non-HTTPS index URLs are rejected with a logged warning (NFR-006, WP19)
 - Path traversal validation on all file write operations
 - Rate limit tracking for GitHub API calls

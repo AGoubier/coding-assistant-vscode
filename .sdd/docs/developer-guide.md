@@ -66,13 +66,13 @@ awesome-coding-assistants/
       installer.ts       # File/directory installer with path validation (WP05)
       lifecycle.ts       # LifecycleManager: update detection, apply, uninstall (WP06)
       manifestManager.ts # Manifest CRUD for installation tracking (WP05)
-      sourceRegistry.ts  # Source config management and master index
+      sourceRegistry.ts  # Source config management, master index, multi-index URL fetch and merge (WP19)
       toolDetector.ts    # File path to tool/category classification, folder detection (detectFolders, groupByFolder), workspace scanning (WP08, WP15)
       bundleParser.ts    # Bundle manifest parsing and validation (WP09)
       newContentDetector.ts # Tree snapshot diffing for new/removed item detection (WP12)
     models/              # TypeScript interfaces and types
-      types.ts           # All shared type definitions (incl. FolderItem, FolderDetectionResult)
-      errors.ts          # Custom error classes (8 error codes)
+      types.ts           # All shared type definitions (incl. FolderItem, FolderDetectionResult, MergedSourceList, IndexFetchResult)
+      errors.ts          # Custom error classes and IndexErrorCodes (11 error codes)
     utils/               # Utility functions
       pathUtils.ts       # Path validation, target mapping, URL parsing, folder name formatting, folder prefix stripping (WP15)
   test/
@@ -109,6 +109,7 @@ awesome-coding-assistants/
       workspaceDetection.test.ts # Workspace tool detection, filtering, toggle, badges (WP08)
       search.test.ts             # Search and filter tests: matchesSearch, filtered tree, state (WP10)
       newContentDetector.test.ts # New content detector: snapshot diffing, mark seen (WP12)
+      multiIndex.test.ts   # Multi-index URL migration: normalizeIndexUrls, loadMultipleIndexes, dedup, partial failure (WP19)
   dist/                  # Bundled extension output (esbuild)
   out/                   # TypeScript compiled output (for tests)
   resources/

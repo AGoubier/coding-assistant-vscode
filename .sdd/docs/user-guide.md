@@ -74,7 +74,34 @@ When no sources are configured, the extension uses the default source: `https://
 
 ### Master Index
 
-The extension can read a master index JSON file from a configurable URL to discover additional sources. Configure the URL in `awesome-coding-assistants.indexUrl`.
+The extension can read master index JSON files from one or more configurable URLs to discover additional sources. Configure URLs in `awesome-coding-assistants.indexUrl`.
+
+#### Multiple Index URLs (WP19)
+
+The `indexUrl` setting accepts an array of strings. You can configure multiple index URLs to combine sources from different catalogs (e.g., a community index and a private enterprise index):
+
+```jsonc
+// settings.json
+{
+  "awesome-coding-assistants.indexUrl": [
+    "https://example.com/community-index.json",
+    "https://internal.corp.com/enterprise-index.json"
+  ]
+}
+```
+
+When multiple URLs are configured:
+
+- All indexes are fetched in parallel for fast loading
+- Source lists are union-merged across all indexes
+- Duplicate sources (same URL and branch) are deduplicated -- the version from the earlier URL in the array wins
+- If one index fails to load, the remaining indexes still work (partial failure is handled gracefully)
+- If all indexes fail, the extension falls back to user-configured sources and the default source
+- Only HTTPS URLs are accepted; non-HTTPS URLs are rejected with a warning
+
+**Backward compatibility**: If you have a single string in your `indexUrl` setting from a previous version, it is automatically coerced to a single-element array at runtime. No manual migration is needed.
+
+**Enterprise pre-configuration**: Administrators can set `indexUrl` in machine-level `settings.json` (via Intune, GPO, or image-based provisioning) to point users to a private catalog on first launch.
 
 ### Refreshing
 

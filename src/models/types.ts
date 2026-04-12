@@ -264,11 +264,13 @@ export interface BundleFileItem {
 
 // --- Multi-index merge types - Section 7.9, 7.10 ---
 
+/** Union-merged result from fetching multiple index URLs (WP19, FR-024). */
 export interface MergedSourceList {
   sources: SourceConfig[];
   fetchResults: IndexFetchResult[];
 }
 
+/** Per-URL fetch outcome used in MergedSourceList (WP19, FR-024). */
 export interface IndexFetchResult {
   url: string;
   success: boolean;

@@ -51,7 +51,7 @@ Called when the extension is deactivated. Currently a no-op.
 
 ### SourceRegistry
 
-Manages configured source repositories. Reads from VS Code settings and the master index URL.
+Manages configured source repositories. Reads from VS Code settings and the master index URL(s). Supports single and multiple index URLs with backward-compatible coercion (WP19).
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
@@ -59,8 +59,55 @@ Manages configured source repositories. Reads from VS Code settings and the mast
 | `addSource` | `(source: SourceConfig) => Promise<void>` | Validates and adds a source to settings |
 | `removeSource` | `(url: string) => Promise<void>` | Removes a source by URL |
 | `validateSource` | `(source: SourceConfig) => Promise<ValidationResult>` | Validates a source via GitHubClient |
-| `loadMasterIndex` | `() => Promise<void>` | Fetches and parses master index from indexUrl |
+| `loadMasterIndex` | `() => Promise<void>` | Fetches and parses master index from configured indexUrl(s). Reads the raw setting, coerces via `normalizeIndexUrls()`, and dispatches to single-fetch or `loadMultipleIndexes()` based on URL count (WP19) |
+| `loadMultipleIndexes` | `(urls: string[]) => Promise<MergedSourceList>` | Fetches multiple index JSON files in parallel using `Promise.allSettled()`, validates HTTPS-only (NFR-006), and union-merges source lists with dedup by `sourceKey()` using first-seen-wins ordering (FR-024, FR-025, FR-026) (WP19) |
 | `invalidateCache` | `() => void` | Clears cached master index data |
+
+### normalizeIndexUrls (exported utility, WP19)
+
+```typescript
+normalizeIndexUrls(raw: unknown, defaultUrls: string[], log?: LogOutputChannel): string[]
+```
+
+Coerces the raw `indexUrl` setting value to a validated `string[]`. Implements the coercion state machine: `string` -> `[string]`, `string[]` -> as-is, `undefined` -> `defaultUrls`, invalid type -> `defaultUrls` with logged warning. Logs coercion events at warn level (NFR-017).
+
+### sourceKey (exported utility)
+
+```typescript
+sourceKey(source: SourceConfig): string
+```
+
+Returns `url@branch` (defaulting to `main`) as the dedup key for source entries. Used by `loadMultipleIndexes()` for first-seen-wins merge and by `getSources()` for collision detection.
+
+### MergedSourceList (WP19)
+
+```typescript
+interface MergedSourceList {
+  sources: SourceConfig[];        // Union-merged, deduped source list
+  fetchResults: IndexFetchResult[]; // Per-URL fetch outcome
+}
+```
+
+### IndexFetchResult (WP19)
+
+```typescript
+interface IndexFetchResult {
+  url: string;           // The index URL that was fetched
+  success: boolean;      // Whether the fetch and validation succeeded
+  sourceCount: number | null; // Number of sources added from this URL (null on failure)
+  error: string | null;  // Error message (null on success)
+}
+```
+
+### IndexErrorCodes (WP19)
+
+Error code constants in `src/models/errors.ts` used for structured logging and error classification (not thrown as exceptions):
+
+| Code | Log Level | Description |
+|------|-----------|-------------|
+| `INDEX_FETCH_FAILED` | warn | Fetch failure for a single index URL |
+| `INDEX_SCHEMA_INVALID` | warn | Fetched JSON fails schema validation |
+| `INVALID_INDEX_URL_TYPE` | warn | Setting value is not string or string array |
 
 ### ToolDetector (toolDetector)
 
